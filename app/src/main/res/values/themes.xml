@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Compose 自己管配色,这个主题只负责启动窗口到第一帧之间那一下。
+      NoActionBar 是必须的:Material3 的顶栏画在 Compose 里,再叠一个系统 ActionBar 就是两条。
+    -->
+    <style name="Theme.Vana" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

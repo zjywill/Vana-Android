@@ -1,0 +1,89 @@
+[versions]
+# 这一组和旁边的 rq-app-android 对齐:那套组合在这台机器上是跑通过的,
+# Gradle 发行版和插件都已经在本地缓存里,第一次 sync 不用等下载。
+agp = "8.12.1"
+kotlin = "2.2.10"
+ksp = "2.2.10-2.0.2"
+
+# compileSdk 36 = Android 16。
+# minSdk 34 是有意的,理由和 iOS 那边「iOS 26 only,不写旧版本可用性分支」同源:
+# Health Connect 从 Android 14(API 34)起是系统的一部分,34 以下要引导用户去装一个
+# 独立的 APK,还要判断装没装、版本够不够。把那整条分支砍掉换来的是——
+# 「读不到健康数据」在这个 app 里永远只有一个原因:用户没授权,或者没有 app 往里写数据。
+# 真要往下放的话,先想清楚多出来的那条安装引导路径由谁来写。
+compileSdk = "36"
+minSdk = "34"
+targetSdk = "36"
+
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.9.0"
+kotlinx-datetime = "0.6.2"
+
+composeBom = "2025.08.00"
+activity = "1.10.1"
+lifecycle = "2.9.2"
+core = "1.17.0"
+navigation = "2.9.3"
+datastore = "1.1.7"
+security-crypto = "1.1.0-alpha06"
+work = "2.10.2"
+
+# 健康数据。androidx.health.connect 是 HealthKit 在 Android 上的对等物:
+# 睡眠、步数、静息心率、HRV、锻炼、体重都有,读写按项授权,数据归本机这个用户所有。
+health-connect = "1.1.0-rc02"
+
+# 化验单 / 药瓶 OCR。ML Kit 的中日韩识别模型顶 iOS 那边的 Vision,同样全在本机跑。
+mlkit-text-chinese = "16.0.1"
+
+okhttp = "4.12.0"
+
+junit = "4.13.2"
+junit-android = "1.3.0"
+espressoCore = "3.7.0"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+
+androidx-health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
+
+mlkit-text-recognition-chinese = { module = "com.google.mlkit:text-recognition-chinese", version.ref = "mlkit-text-chinese" }
+
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse", version.ref = "okhttp" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junit-android" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

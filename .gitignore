@@ -1,0 +1,21 @@
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+/.idea/
+.DS_Store
+/build
+*/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# 签名和密钥,一个都不进版本库。
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+/key/
+.env
+.env.*

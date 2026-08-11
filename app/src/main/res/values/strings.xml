@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 用户看到的名字是 Vana。工程名叫 Vana-Android,包名 com.pinapia.vana。 -->
+    <string name="app_name">Vana</string>
+</resources>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 早上那条 check-in 通知。Android 13 起是运行时权限,拒了就没有送达的路子。 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      只要粗定位。城市决定气候、季节、时差、饮食和就医方式,而那几件正是要位置的全部理由;
+      街道地址一件都回答不了,只是多给模型一样能说漏嘴的东西。
+      **不要**加 ACCESS_FINE_LOCATION——iOS 那边是靠 NSLocationDefaultAccuracyReduced
+      让授权面板连「精确位置」的开关都不露出来,这里的对等做法就是根本不声明它。
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- 拍化验单、药瓶、说明书。识别在本机跑(ML Kit),照片默认不出这台设备。 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- 按住说话。识别在本机跑,录音不落盘。 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      ===== Health Connect =====
+      每一条声明都是用户在授权面板上会逐条读到的一行,所以这里只列这个 app 真的会读的项目。
+      多声明一项的代价不是「多一个字段」,是他在那一屏上多读到一句用不着的话,
+      而那一屏正是他决定要不要把健康数据交出来的地方——同 iOS 那边权限用途字符串
+      「必须和 app 实际做的事逐字对上」。
+
+      全部是 READ。这个 app 一次都不写健康数据(同 iOS「HealthKit 只读」)。
+    -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
+
+    <!--
+      **这一条最容易漏,漏了整套「和最近常态比」都会静默地只剩 30 天**:
+      不带它的话 Health Connect 只给最近 30 天的数据,更早的一条都读不到,而且不报错。
+      体重趋势、几个月前的锻炼记录、跨季度的对比全部靠它。
+    -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <application
+        android:name=".VanaApplication"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Vana"
+        android:enableOnBackInvokedCallback="true"
+        android:localeConfig="@xml/locales_config"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Vana">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Health Connect 的「为什么要这些数据」入口。用户在系统的健康权限页点那一下,
+          落到的就是这里。API 34 起走 activity-alias 这条路,不需要单独的 rationale activity。
+          没有它,授权页上那行说明是空的——而那正是他决定给不给的地方。
+        -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+    </application>
+
+</manifest>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 占位图标:一片叶子的轮廓。正式图标另做,这里只是让 build 有东西可用。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,32c0,0 -22,-4 -32,8c-10,11 -6,26 -6,26s-4,6 -6,10l4,2c2,-4 5,-9 5,-9s14,4 24,-4C72,56 72,32 72,32zM44,60c8,-11 20,-17 20,-17s-8,10 -16,20c-4,5 -8,7 -8,7S41,64 44,60z" />
+</vector>
