@@ -1,0 +1,8 @@
+{
+  "id": "jiekou",
+  "name": "JieKou.AI",
+  "api": "https://api.jiekou.ai/openai",
+  "adapter": "openai",
+  "modelsFile": "models/jiekou.json",
+  "defaultModelId": "claude-fable-5"
+}

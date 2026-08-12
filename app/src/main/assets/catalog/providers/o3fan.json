@@ -1,0 +1,8 @@
+{
+  "id": "o3fan",
+  "name": "o3.fan",
+  "api": "https://api.o3.fan/v1",
+  "adapter": "openai",
+  "customModels": true,
+  "models": []
+}

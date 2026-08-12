@@ -10,6 +10,7 @@ import com.pinapia.vana.agentruntime.AgentTranscript
 import com.pinapia.vana.agentruntime.AgentUsage
 import com.pinapia.vana.agentruntime.CapabilityDefinition
 import com.pinapia.vana.agentruntime.CapabilityInvocation
+import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.CloudCatalog
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -77,12 +78,33 @@ class OpenAICompatibleModelClient(
             .url(url)
             .post(body.toRequestBody("application/json".toMediaType()))
             .header("Content-Type", "application/json")
+            .header("Accept", "text/event-stream")
         when (wireProtocol) {
             CloudCatalog.WireProtocol.OPENAI -> {
-                builder.header("Authorization", "Bearer $apiKey")
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (!key.isValid) {
+                    trySend(
+                        AgentModelStreamEvent.Completed(
+                            AgentModelResponse(failureMessage = key.error ?: "API 密钥无效"),
+                        ),
+                    )
+                    close()
+                    return@callbackFlow
+                }
+                builder.header("Authorization", "Bearer ${key.value}")
             }
             CloudCatalog.WireProtocol.ANTHROPIC -> {
-                builder.header("x-api-key", apiKey)
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (!key.isValid) {
+                    trySend(
+                        AgentModelStreamEvent.Completed(
+                            AgentModelResponse(failureMessage = key.error ?: "API 密钥无效"),
+                        ),
+                    )
+                    close()
+                    return@callbackFlow
+                }
+                builder.header("x-api-key", key.value)
                 builder.header("anthropic-version", "2023-06-01")
             }
         }
@@ -318,6 +340,10 @@ class OpenAICompatibleModelClient(
         return buildJsonObject {
             put("model", request.profile.modelId)
             put("stream", true)
+            put(
+                "stream_options",
+                buildJsonObject { put("include_usage", true) },
+            )
             put("messages", messages)
             if (request.capabilities.isNotEmpty()) {
                 put("tools", toolsOpenAI(request.capabilities))

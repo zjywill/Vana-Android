@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,12 +28,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -167,83 +173,46 @@ fun SettingsScreen(
                 label = { Text("API 密钥") },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
+                isError = apiKey.isNotBlank() && !ApiKeyNormalizer.normalize(apiKey).isValid,
             )
-            Text(
-                "API 密钥只保存在本机加密存储里。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Text(
-                "Provider：${CloudCatalog.providerName(providerId)}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showProviders = !showProviders }
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            if (showProviders) {
-                CloudCatalog.providers.forEach { provider ->
-                    Text(
-                        provider.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                providerId = provider.id
-                                engineSettings.providerId = provider.id
-                                CloudCatalog.defaultModel(provider.id)?.let {
-                                    modelId = it
-                                    engineSettings.model = it
-                                }
-                                showProviders = false
-                            }
-                            .padding(vertical = 6.dp, horizontal = 8.dp),
-                        color = if (provider.id == providerId) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                }
+            val keyError = ApiKeyNormalizer.normalize(apiKey).error
+                ?.takeIf { apiKey.isNotBlank() && it.contains("非法字符") }
+            if (keyError != null) {
+                Text(
+                    keyError,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            } else {
+                Text(
+                    "API 密钥只保存在本机加密存储里。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
-            Text(
-                "模型：${CloudCatalog.modelName(modelId, providerId)}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showModels = !showModels }
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
+            SettingsPickerRow(
+                label = "Provider",
+                value = CloudCatalog.providerName(providerId),
+                onClick = { showProviders = true },
             )
-            if (showModels) {
-                CloudCatalog.models(providerId).forEach { model ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                modelId = model.id
-                                engineSettings.model = model.id
-                                showModels = false
-                            }
-                            .padding(vertical = 6.dp, horizontal = 8.dp),
-                    ) {
-                        Text(
-                            model.name,
-                            color = if (model.id == modelId) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                        )
-                        ModelCapabilityTags(
-                            model = model,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                        CloudCatalog.limitSummary(model)?.let {
-                            Text(it, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
+            SettingsPickerRow(
+                label = "模型",
+                value = CloudCatalog.modelName(modelId, providerId),
+                onClick = { showModels = true },
+            )
+            if (!CloudCatalog.isLoaded) {
+                Text(
+                    "未能载入 AIKit provider 目录：${CloudCatalog.diagnostics}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            } else {
+                Text(
+                    "Provider 和模型都从 AIKit 内置目录里选。API 密钥只保存在本机加密存储。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             HorizontalDivider()
@@ -268,39 +237,16 @@ fun SettingsScreen(
 
             HorizontalDivider()
             Text("助手", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "说话方式：${persona.label}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showPersonas = !showPersonas }
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
+            SettingsPickerRow(
+                label = "说话方式",
+                value = persona.label,
+                onClick = { showPersonas = true },
             )
             Text(
                 persona.instruction,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (showPersonas) {
-                AssistantPersona.entries.forEach { option ->
-                    Text(
-                        option.label,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                persona = option
-                                engineSettings.persona = option
-                                showPersonas = false
-                            }
-                            .padding(vertical = 6.dp, horizontal = 8.dp),
-                        color = if (option == persona) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                }
-            }
             SettingSwitch("回答前先思考", thinking) {
                 thinking = it
                 engineSettings.thinkingEnabled = it
@@ -350,13 +296,10 @@ fun SettingsScreen(
 
             HorizontalDivider()
             Text("照片", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "照片原图：${photoPolicy.label}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showPhotoPolicies = !showPhotoPolicies }
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
+            SettingsPickerRow(
+                label = "照片原图",
+                value = photoPolicy.label,
+                onClick = { showPhotoPolicies = true },
             )
             Text(
                 photoPolicy.summary,
@@ -369,26 +312,6 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            if (showPhotoPolicies) {
-                PhotoImagePolicy.entries.forEach { option ->
-                    Text(
-                        option.label,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                photoPolicy = option
-                                engineSettings.photoImagePolicy = option
-                                showPhotoPolicies = false
-                            }
-                            .padding(vertical = 6.dp, horizontal = 8.dp),
-                        color = if (option == photoPolicy) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                }
             }
             Text(
                 "照片里的文字一律在本机识别，发出去的默认只有文字。这一项管的只是原图要不要跟着走，而且只是默认——发送之前点开任意一张，都能单独决定这一张发不发。",
@@ -659,6 +582,171 @@ fun SettingsScreen(
             },
             onDismiss = { showEveningPicker = false },
         )
+    }
+
+    if (showProviders) {
+        ProviderPickerSheet(
+            selectedId = providerId,
+            onSelect = { id ->
+                providerId = id
+                engineSettings.providerId = id
+                CloudCatalog.defaultModel(id)?.let {
+                    modelId = it
+                    engineSettings.model = it
+                }
+            },
+            onDismiss = { showProviders = false },
+        )
+    }
+
+    if (showModels) {
+        ModelPickerSheet(
+            providerId = providerId,
+            selectedId = modelId,
+            apiKey = apiKey,
+            onSelect = { id ->
+                modelId = id
+                engineSettings.model = id
+            },
+            onDismiss = { showModels = false },
+        )
+    }
+
+    if (showPersonas) {
+        SettingsOptionSheet(
+            title = "说话方式",
+            onDismiss = { showPersonas = false },
+        ) {
+            AssistantPersona.entries.forEach { option ->
+                SettingsOptionRow(
+                    title = option.label,
+                    selected = option == persona,
+                    subtitle = option.instruction,
+                    onClick = {
+                        persona = option
+                        engineSettings.persona = option
+                        showPersonas = false
+                    },
+                )
+            }
+        }
+    }
+
+    if (showPhotoPolicies) {
+        SettingsOptionSheet(
+            title = "照片原图",
+            onDismiss = { showPhotoPolicies = false },
+        ) {
+            PhotoImagePolicy.entries.forEach { option ->
+                SettingsOptionRow(
+                    title = option.label,
+                    selected = option == photoPolicy,
+                    subtitle = option.summary,
+                    onClick = {
+                        photoPolicy = option
+                        engineSettings.photoImagePolicy = option
+                        showPhotoPolicies = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsOptionSheet(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 8.dp, end = 8.dp, bottom = 28.dp),
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsPickerRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SettingsOptionRow(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+        trailing?.invoke()
+        if (!subtitle.isNullOrBlank()) {
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 }
 

@@ -1,0 +1,7 @@
+{
+  "id": "dimcode-api-oauth",
+  "name": "DimCode OAuth",
+  "adapter": "openai",
+  "customModels": true,
+  "models": []
+}

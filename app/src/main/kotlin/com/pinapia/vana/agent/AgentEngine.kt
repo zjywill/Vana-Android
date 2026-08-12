@@ -15,6 +15,8 @@ sealed class AgentError(message: String) : Exception(message) {
         private fun readResolve(): Any = NeedsAPIKey
     }
 
+    data class InvalidAPIKey(val detail: String) : AgentError(detail)
+
     data object NeedsModelSelection : AgentError("需要先在设置里选择云端模型") {
         private fun readResolve(): Any = NeedsModelSelection
     }

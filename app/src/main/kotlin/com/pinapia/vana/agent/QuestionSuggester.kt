@@ -35,7 +35,7 @@ class QuestionSuggester(
             ),
             apiKey = key,
             baseUrl = provider.apiBaseUrl,
-            wireProtocol = provider.wireProtocol,
+            wireProtocol = provider.requireWireProtocol(),
             thinkingEnabled = false,
             supportsReasoning = modelInfo?.supportsReasoning == true,
         )

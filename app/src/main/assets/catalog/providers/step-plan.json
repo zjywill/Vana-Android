@@ -1,0 +1,138 @@
+{
+  "id": "step-plan",
+  "name": "Step Plan",
+  "api": "https://api.stepfun.com/step_plan/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "step-3.7-flash",
+      "display_name": "Step 3.7 Flash",
+      "description": "Flagship multimodal reasoning model with native image and video input",
+      "type": "chat",
+      "attachment": true,
+      "reasoning": { "supported": true, "default": true },
+      "reasoning_options": [{ "type": "effort", "values": ["low", "medium", "high"] }],
+      "tool_call": true,
+      "interleaved": { "field": "reasoning_content" },
+      "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
+      "limit": { "context": 256000, "input": 256000, "output": 256000 },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": ["thinking_blocks"]
+        }
+      }
+    },
+    {
+      "id": "step-router-v1",
+      "display_name": "Step Router V1",
+      "description": "Intelligent router between DeepSeek V4 Pro and Step 3.7 Flash",
+      "type": "chat",
+      "reasoning": { "supported": true, "default": true },
+      "tool_call": true,
+      "modalities": { "input": ["text"], "output": ["text"] },
+      "limit": { "context": 1000000, "output": 384000 }
+    },
+    {
+      "id": "stepaudio-2.5-chat",
+      "display_name": "StepAudio 2.5 Chat",
+      "description": "Text conversation model with text-only output in the Step Plan channel",
+      "type": "chat",
+      "reasoning": { "supported": false },
+      "tool_call": true,
+      "modalities": { "input": ["text"], "output": ["text"] },
+      "limit": { "context": 128000, "output": 16384 },
+      "modalityCapabilities": []
+    },
+    {
+      "id": "stepaudio-2.5-tts",
+      "display_name": "StepAudio 2.5 TTS",
+      "description": "Context-aware text-to-speech model",
+      "type": "speech-synthesis",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": { "input": ["text"], "output": ["audio"] },
+      "limit": { "context": 1000, "output": 8192 },
+      "modalityCapabilities": ["speech.synthesize"]
+    },
+    {
+      "id": "stepaudio-2.5-asr",
+      "display_name": "StepAudio 2.5 ASR",
+      "description": "Speech transcription model exposed through the Step Plan HTTP SSE API",
+      "type": "speech-transcription",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": { "input": ["audio"], "output": ["text"] },
+      "limit": { "context": 8192, "output": 8192 },
+      "modalityCapabilities": ["speech.transcribe"]
+    },
+    {
+      "id": "stepaudio-2.5-realtime",
+      "display_name": "StepAudio 2.5 Realtime",
+      "description": "Realtime speech-to-speech conversation model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": { "input": ["text", "audio"], "output": ["text", "audio"] },
+      "limit": { "context": 8192, "output": 8192 },
+      "modalityCapabilities": ["realtime.voice"]
+    },
+    {
+      "id": "step-image-edit-2",
+      "display_name": "Step Image Edit 2",
+      "description": "Low-latency model for text-to-image generation and image editing",
+      "type": "image-generation",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": { "input": ["text", "image"], "output": ["image"] },
+      "limit": { "context": 512, "output": 1 },
+      "modalityCapabilities": ["image.generate", "image.edit"]
+    },
+    {
+      "id": "step-3.5-flash-2603",
+      "display_name": "Step 3.5 Flash 2603",
+      "description": "Agent-optimized Step 3.5 Flash model",
+      "type": "chat",
+      "reasoning": { "supported": true, "default": true },
+      "reasoning_options": [{ "type": "effort", "values": ["low", "high"] }],
+      "tool_call": true,
+      "interleaved": { "field": "reasoning_content" },
+      "modalities": { "input": ["text"], "output": ["text"] },
+      "limit": { "context": 256000, "input": 256000, "output": 256000 },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": ["thinking_blocks"]
+        }
+      }
+    },
+    {
+      "id": "step-3.5-flash",
+      "display_name": "Step 3.5 Flash",
+      "description": "Text reasoning model optimized for agents, coding, and tool use",
+      "type": "chat",
+      "reasoning": { "supported": true, "default": true },
+      "reasoning_options": [{ "type": "effort", "values": ["low", "high"] }],
+      "tool_call": true,
+      "interleaved": { "field": "reasoning_content" },
+      "modalities": { "input": ["text"], "output": ["text"] },
+      "limit": { "context": 256000, "input": 256000, "output": 256000 },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": ["thinking_blocks"]
+        }
+      }
+    }
+  ],
+  "defaultModelId": "step-3.7-flash"
+}

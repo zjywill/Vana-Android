@@ -1,0 +1,13 @@
+{
+  "id": "new-api",
+  "name": "New API",
+  "api": "https://www.newapi.ai",
+  "adapter": "openai",
+  "customModels": true,
+  "models": [],
+  "newApi": {
+    "modelSource": "new-api",
+    "routeStrategy": "new-api",
+    "embeddingStrategy": "new-api"
+  }
+}

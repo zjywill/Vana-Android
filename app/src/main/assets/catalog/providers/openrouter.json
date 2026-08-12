@@ -1,0 +1,8 @@
+{
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "api": "https://openrouter.ai/api/v1",
+  "adapter": "openai",
+  "modelsFile": "models/openrouter.json",
+  "defaultModelId": "aion-labs/aion-2.0"
+}

@@ -20,6 +20,7 @@ import com.pinapia.vana.memory.MemorySnapshot
 import com.pinapia.vana.recall.SessionRecallTools
 import com.pinapia.vana.search.WebSearchTools
 import com.pinapia.vana.session.ChatMessage
+import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.AssistantPersona
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.SecureKeyStore
@@ -54,19 +55,22 @@ class CloudEngine(
     ): Flow<AgentTurnEvent> = flow {
         val provider = CloudCatalog.provider(providerId)
             ?: throw AgentError.NeedsModelSelection
+        val wire = provider.wireProtocol
+            ?: throw AgentError.NeedsModelSelection
         val modelInfo = CloudCatalog.model(model, providerId)
+            ?: CloudCatalog.ModelInfo(id = model)
         val client = OpenAICompatibleModelClient(
             profile = AgentModelProfile(
                 providerId = providerId,
                 modelId = model,
-                contextWindow = modelInfo?.contextWindow,
-                maxOutputTokens = modelInfo?.maxOutputTokens,
+                contextWindow = modelInfo.contextWindow,
+                maxOutputTokens = modelInfo.maxOutputTokens,
             ),
             apiKey = apiKey,
             baseUrl = provider.apiBaseUrl,
-            wireProtocol = provider.wireProtocol,
+            wireProtocol = wire,
             thinkingEnabled = thinkingEnabled,
-            supportsReasoning = modelInfo?.supportsReasoning == true,
+            supportsReasoning = modelInfo.supportsReasoning,
         )
         val loop = AgentLoop(
             client = client,
@@ -160,13 +164,18 @@ class CloudEngine(
             focusMedication: MedicationItem? = null,
             topic: ChatTopic? = null,
         ): CloudEngine {
-            val key = secureKeyStore.apiKey?.trim().orEmpty()
-            if (key.isEmpty()) throw AgentError.NeedsAPIKey
+            val normalized = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
+            when {
+                normalized.error?.contains("非法字符") == true ->
+                    throw AgentError.InvalidAPIKey(normalized.error)
+                !normalized.isValid ->
+                    throw AgentError.NeedsAPIKey
+            }
             if (providerId.isBlank() || model.isBlank()) throw AgentError.NeedsModelSelection
             return CloudEngine(
                 providerId = providerId,
                 model = model,
-                apiKey = key,
+                apiKey = normalized.value,
                 tenant = tenant,
                 memory = memory,
                 medications = medications,

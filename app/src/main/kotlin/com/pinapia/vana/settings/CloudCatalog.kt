@@ -1,159 +1,157 @@
 package com.pinapia.vana.settings
 
+import android.content.Context
+import android.content.res.AssetManager
+import java.net.URI
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
+
 /**
- * 精选的托管云端 provider。健康工具是刚需,只列支持 tools 的默认模型。
+ * 云端 provider / 模型选项。**全部来自 AIKit 内置 catalog**（`assets/catalog/providers`），
+ * 设置页只做选择，不维护一份手写名单。
+ *
+ * 过滤规则同 iOS [CloudCatalog]：
+ * - 有已实现的 wire protocol（Android 目前：openai / anthropic）
+ * - 有可连的托管 API（排除 localhost / 无 api）
+ * - 模型列表只列 `tool_call == true`（健康工具是刚需）
  */
 object CloudCatalog {
-    enum class WireProtocol {
-        OPENAI,
-        ANTHROPIC,
+    enum class WireProtocol(val adapter: String) {
+        OPENAI("openai"),
+        ANTHROPIC("anthropic"),
+        ;
+
+        companion object {
+            fun fromAdapter(adapter: String?): WireProtocol? = when (adapter) {
+                OPENAI.adapter -> OPENAI
+                ANTHROPIC.adapter -> ANTHROPIC
+                else -> null
+            }
+        }
     }
 
     data class ModelInfo(
         val id: String,
-        val name: String = id,
+        val name: String? = null,
+        val toolCall: Boolean? = null,
+        val reasoningSupported: Boolean? = null,
         val contextWindow: Int? = null,
         val maxOutputTokens: Int? = null,
-        val supportsTools: Boolean = true,
-        val supportsReasoning: Boolean = false,
-        val supportsVision: Boolean = false,
-    )
+        val inputModalities: List<String> = emptyList(),
+    ) {
+        val displayName: String get() = name ?: id
+        val supportsTools: Boolean get() = toolCall == true
+        val supportsReasoning: Boolean get() = reasoningSupported == true
+        /** 看图看 modalities.input 含 image，不是 attachment 字段。 */
+        val supportsVision: Boolean get() = inputModalities.contains("image")
+    }
 
     data class ProviderInfo(
         val id: String,
-        val name: String,
-        val apiBaseUrl: String,
-        val wireProtocol: WireProtocol,
-        val models: List<ModelInfo>,
-    )
+        val name: String? = null,
+        val api: String? = null,
+        val adapter: String? = null,
+        val models: List<ModelInfo> = emptyList(),
+    ) {
+        val displayName: String get() = name ?: id
+        val apiBaseUrl: String get() = api.orEmpty()
+        val wireProtocol: WireProtocol? get() = WireProtocol.fromAdapter(adapter)
 
-    val providers: List<ProviderInfo> = listOf(
-        ProviderInfo(
-            id = "anthropic",
-            name = "Anthropic",
-            apiBaseUrl = "https://api.anthropic.com",
-            wireProtocol = WireProtocol.ANTHROPIC,
-            models = listOf(
-                ModelInfo("claude-sonnet-4-5", "Claude Sonnet 4.5", 200_000, 64_000, supportsVision = true),
-                ModelInfo("claude-opus-4-5", "Claude Opus 4.5", 200_000, 64_000, supportsVision = true),
-                ModelInfo("claude-haiku-4-5", "Claude Haiku 4.5", 200_000, 64_000, supportsVision = true),
-            ),
-        ),
-        ProviderInfo(
-            id = "openai",
-            name = "OpenAI",
-            apiBaseUrl = "https://api.openai.com/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("gpt-4.1", "GPT-4.1", 1_047_576, 32_768, supportsVision = true),
-                ModelInfo("gpt-4.1-mini", "GPT-4.1 mini", 1_047_576, 32_768, supportsVision = true),
-                ModelInfo("gpt-4o", "GPT-4o", 128_000, 16_384, supportsVision = true),
-            ),
-        ),
-        ProviderInfo(
-            id = "deepseek",
-            name = "DeepSeek",
-            apiBaseUrl = "https://api.deepseek.com",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("deepseek-chat", "DeepSeek Chat", 128_000, 8_192),
-                ModelInfo("deepseek-reasoner", "DeepSeek Reasoner", 128_000, 64_000, supportsReasoning = true),
-            ),
-        ),
-        ProviderInfo(
-            id = "moonshot",
-            name = "月之暗面 Kimi",
-            apiBaseUrl = "https://api.moonshot.cn/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("kimi-k2-turbo-preview", "Kimi K2 Turbo", 256_000, 16_384),
-                ModelInfo("moonshot-v1-128k", "Moonshot v1 128K", 128_000, 8_192),
-            ),
-        ),
-        ProviderInfo(
-            id = "dashscope",
-            name = "通义千问",
-            apiBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("qwen-plus", "Qwen Plus", 131_072, 16_384, supportsReasoning = true),
-                ModelInfo("qwen-max", "Qwen Max", 32_768, 8_192, supportsVision = true),
-                ModelInfo("qwen-turbo", "Qwen Turbo", 131_072, 8_192),
-            ),
-        ),
-        ProviderInfo(
-            id = "zhipuai",
-            name = "智谱 GLM",
-            apiBaseUrl = "https://open.bigmodel.cn/api/paas/v4",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("glm-4.5", "GLM-4.5", 128_000, 16_384, supportsReasoning = true),
-                ModelInfo("glm-4-plus", "GLM-4 Plus", 128_000, 4_096),
-            ),
-        ),
-        ProviderInfo(
-            id = "groq",
-            name = "Groq",
-            apiBaseUrl = "https://api.groq.com/openai/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("llama-3.3-70b-versatile", "Llama 3.3 70B", 128_000, 32_768),
-                ModelInfo("openai/gpt-oss-120b", "GPT OSS 120B", 128_000, 65_536),
-            ),
-        ),
-        ProviderInfo(
-            id = "openrouter",
-            name = "OpenRouter",
-            apiBaseUrl = "https://openrouter.ai/api/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("anthropic/claude-sonnet-4.5", "Claude Sonnet 4.5", 200_000, 64_000, supportsVision = true),
-                ModelInfo("openai/gpt-4.1", "GPT-4.1", 1_047_576, 32_768, supportsVision = true),
-                ModelInfo("deepseek/deepseek-chat", "DeepSeek Chat", 128_000, 8_192),
-            ),
-        ),
-        ProviderInfo(
-            id = "siliconflow",
-            name = "硅基流动",
-            apiBaseUrl = "https://api.siliconflow.cn/v1",
-            wireProtocol = WireProtocol.OPENAI,
-            models = listOf(
-                ModelInfo("deepseek-ai/DeepSeek-V3", "DeepSeek V3", 64_000, 8_192),
-                ModelInfo("Qwen/Qwen2.5-72B-Instruct", "Qwen2.5 72B", 32_768, 8_192),
-            ),
-        ),
-        ProviderInfo(
-            id = "minimax",
-            name = "MiniMax",
-            apiBaseUrl = "https://api.minimaxi.com/anthropic",
-            wireProtocol = WireProtocol.ANTHROPIC,
-            models = listOf(
-                ModelInfo("MiniMax-M2.5", "MiniMax M2.5", 200_000, 16_384),
-            ),
-        ),
-    ).sortedBy { it.name.lowercase() }
+        fun requireWireProtocol(): WireProtocol =
+            wireProtocol ?: error("provider $id（adapter=$adapter）的协议尚未在 Android 实现")
+
+        fun model(modelId: String): ModelInfo? = models.firstOrNull { it.id == modelId }
+    }
+
+    @Volatile
+    private var allProviders: List<ProviderInfo> = emptyList()
+
+    @Volatile
+    private var diagnosticsMessage: String = "尚未载入 catalog"
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun bootstrap(context: Context) {
+        val (loaded, diagnostics) = loadFromAssets(context.assets)
+        allProviders = loaded
+        diagnosticsMessage = diagnostics
+    }
+
+    val diagnostics: String get() = diagnosticsMessage
+
+    val isLoaded: Boolean get() = providers.isNotEmpty()
+
+    /** 只列 Android 能发请求、且填 key 就能连的托管云端 provider，按显示名排序。 */
+    val providers: List<ProviderInfo>
+        get() = allProviders
+            .filter { it.wireProtocol != null && isHostedCloud(it) }
+            .sortedBy { it.displayName.lowercase() }
+
+    private fun isHostedCloud(provider: ProviderInfo): Boolean {
+        val api = provider.api ?: return false
+        val host = runCatching { URI(api).host?.lowercase() }.getOrNull() ?: return false
+        val loopback = setOf("localhost", "127.0.0.1", "::1", "0.0.0.0")
+        return host !in loopback && !host.endsWith(".local")
+    }
 
     fun provider(id: String): ProviderInfo? = providers.firstOrNull { it.id == id }
 
-    fun providerName(forId: String): String = provider(forId)?.name ?: forId
+    fun providerName(forId: String): String = provider(forId)?.displayName ?: forId
 
+    /** 该 provider 内置模型；不支持工具调用的不列。保持 catalog 原始顺序。 */
     fun models(forProviderId: String): List<ModelInfo> =
-        provider(forProviderId)?.models?.filter { it.supportsTools }.orEmpty()
+        (provider(forProviderId)?.models ?: emptyList()).filter { it.supportsTools }
 
     fun model(modelId: String, inProviderId: String): ModelInfo? =
-        models(inProviderId).firstOrNull { it.id == modelId }
+        provider(inProviderId)?.model(modelId)
+            ?: models(inProviderId).firstOrNull { it.id == modelId }
+
+    /** 任意 provider 里找同 id（拉列表时补能力用）。 */
+    fun modelAnywhere(modelId: String): ModelInfo? {
+        for (provider in allProviders) {
+            provider.model(modelId)?.let { return it }
+        }
+        return null
+    }
 
     fun defaultModel(forProviderId: String): String? =
         models(forProviderId).firstOrNull()?.id
 
     fun modelName(modelId: String, inProviderId: String): String =
-        model(modelId, inProviderId)?.name ?: modelId
+        model(modelId, inProviderId)?.displayName ?: modelId
 
     fun limitSummary(of: ModelInfo): String? {
         val parts = mutableListOf<String>()
         of.contextWindow?.let { parts += "上下文 ${tokenCount(it)}" }
         of.maxOutputTokens?.let { parts += "输出 ${tokenCount(it)}" }
         return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+    }
+
+    /**
+     * 向服务端要模型列表。catalog 没内置模型、或要看最新可用模型时用。
+     * 存在性以服务端为准；能力以 catalog 为准（enrich）。
+     */
+    fun fetchModels(providerId: String, apiKey: String): List<ModelInfo> {
+        val provider = provider(providerId)
+            ?: error("未知 provider：$providerId")
+        val wire = provider.wireProtocol
+            ?: error("该 provider 的协议尚未实现")
+        val base = provider.api ?: error("该 provider 没有 API 地址")
+        val listed = ModelListClient.fetch(baseUrl = base, apiKey = apiKey, wire = wire)
+        return listed.map { bare ->
+            provider.model(bare.id)
+                ?: modelAnywhere(bare.id)
+                ?: bare
+        }
     }
 
     private fun tokenCount(tokens: Int): String = when {
@@ -163,5 +161,148 @@ object CloudCatalog {
         }
         tokens >= 1_000 -> "${tokens / 1_000}K"
         else -> "$tokens"
+    }
+
+    private fun loadFromAssets(assets: AssetManager): Pair<List<ProviderInfo>, String> {
+        val dir = "catalog/providers"
+        val names = runCatching { assets.list(dir)?.toList().orEmpty() }.getOrDefault(emptyList())
+        if (names.isEmpty()) {
+            return emptyList<ProviderInfo>() to "assets/$dir 为空或未打包"
+        }
+        val loaded = mutableListOf<ProviderInfo>()
+        val errors = mutableListOf<String>()
+        for (name in names.sorted()) {
+            if (!name.endsWith(".json")) continue
+            try {
+                val text = assets.open("$dir/$name").bufferedReader().use { it.readText() }
+                val raw = json.decodeFromString(ProviderJson.serializer(), text)
+                loaded += raw.toProvider()
+            } catch (error: Throwable) {
+                errors += "$name: ${error.message}"
+            }
+        }
+        val diagnostics = buildString {
+            append("载入 ${loaded.size} 个 provider")
+            if (errors.isNotEmpty()) {
+                append("；失败 ${errors.size}：")
+                append(errors.take(3).joinToString("；"))
+            }
+        }
+        return loaded to diagnostics
+    }
+
+    @Serializable
+    private data class ProviderJson(
+        val id: String,
+        val name: String? = null,
+        val api: String? = null,
+        val adapter: String? = null,
+        val models: List<ModelJson>? = null,
+    ) {
+        fun toProvider(): ProviderInfo = ProviderInfo(
+            id = id,
+            name = name,
+            api = api,
+            adapter = adapter,
+            models = models.orEmpty().map { it.toModel() },
+        )
+    }
+
+    @Serializable
+    private data class ModelJson(
+        val id: String,
+        val name: String? = null,
+        @SerialName("tool_call") val toolCall: Boolean? = null,
+        val reasoning: ReasoningJson? = null,
+        val limit: LimitJson? = null,
+        val modalities: ModalitiesJson? = null,
+    ) {
+        fun toModel(): ModelInfo = ModelInfo(
+            id = id,
+            name = name,
+            toolCall = toolCall,
+            reasoningSupported = reasoning?.supported,
+            contextWindow = limit?.context,
+            maxOutputTokens = limit?.output,
+            inputModalities = modalities?.input.orEmpty(),
+        )
+    }
+
+    @Serializable
+    private data class ReasoningJson(val supported: Boolean? = null)
+
+    @Serializable
+    private data class LimitJson(
+        val context: Int? = null,
+        val output: Int? = null,
+    )
+
+    @Serializable
+    private data class ModalitiesJson(
+        val input: List<String>? = null,
+        val output: List<String>? = null,
+    )
+}
+
+/** `GET …/models`，三种协议里 Android 实现了 openai / anthropic 两种响应形。 */
+internal object ModelListClient {
+    private val http = OkHttpClient.Builder()
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun fetch(
+        baseUrl: String,
+        apiKey: String,
+        wire: CloudCatalog.WireProtocol,
+    ): List<CloudCatalog.ModelInfo> {
+        val url = modelsEndpoint(baseUrl, wire)
+        val builder = Request.Builder()
+            .url(url)
+            .get()
+            .header("Accept", "application/json")
+        when (wire) {
+            CloudCatalog.WireProtocol.OPENAI -> {
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (key.isValid) builder.header("Authorization", "Bearer ${key.value}")
+            }
+            CloudCatalog.WireProtocol.ANTHROPIC -> {
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (key.isValid) {
+                    builder.header("x-api-key", key.value)
+                    builder.header("anthropic-version", "2023-06-01")
+                }
+            }
+        }
+        http.newCall(builder.build()).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                error("HTTP ${response.code}: ${body.take(200)}")
+            }
+            return decodeModels(body)
+        }
+    }
+
+    private fun modelsEndpoint(baseUrl: String, wire: CloudCatalog.WireProtocol): String {
+        val trimmed = baseUrl.trimEnd('/')
+        val needsV1 = !trimmed.endsWith("/v1")
+        return when (wire) {
+            CloudCatalog.WireProtocol.OPENAI,
+            CloudCatalog.WireProtocol.ANTHROPIC,
+            -> if (needsV1) "$trimmed/v1/models" else "$trimmed/models"
+        }
+    }
+
+    private fun decodeModels(body: String): List<CloudCatalog.ModelInfo> {
+        val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return emptyList()
+        val data = root["data"]?.jsonArray ?: return emptyList()
+        return data.mapNotNull { entry ->
+            val obj = entry as? JsonObject ?: return@mapNotNull null
+            val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val name = obj["display_name"]?.jsonPrimitive?.contentOrNull
+            CloudCatalog.ModelInfo(id = id, name = name)
+        }
     }
 }

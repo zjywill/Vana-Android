@@ -1,0 +1,8 @@
+{
+  "id": "aihubmix",
+  "name": "Aihubmix",
+  "api": "https://aihubmix.com/v1",
+  "adapter": "openai",
+  "modelsFile": "models/aihubmix.json",
+  "defaultModelId": "auto"
+}

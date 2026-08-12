@@ -1,0 +1,841 @@
+{
+  "id": "stepfun",
+  "name": "StepFun",
+  "api": "https://api.stepfun.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "step-tts-2",
+      "display_name": "Step TTS 2",
+      "description": "Text-to-speech model",
+      "type": "speech-synthesis",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 1000,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.synthesize"
+      ]
+    },
+    {
+      "id": "stepaudio-2.5-tts",
+      "display_name": "StepAudio 2.5 TTS",
+      "description": "Context-aware text-to-speech model",
+      "type": "speech-synthesis",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 1000,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.synthesize"
+      ]
+    },
+    {
+      "id": "step-3.7-flash",
+      "display_name": "Step 3.7 Flash",
+      "description": "Flagship multimodal reasoning model with native image and video input",
+      "type": "chat",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      ],
+      "tool_call": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 256000,
+        "input": 256000,
+        "output": 256000
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      }
+    },
+    {
+      "id": "step-3.5-flash",
+      "display_name": "Step 3.5 Flash",
+      "description": "Text reasoning model optimized for agents, coding, and tool use",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "low",
+            "high"
+          ]
+        }
+      ],
+      "tool_call": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 256000,
+        "input": 256000,
+        "output": 256000
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      }
+    },
+    {
+      "id": "step-1-32k",
+      "name": "Step 1 (32K)",
+      "description": "StepFun flash model for efficient multimodal reasoning, coding, and tool use",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "release_date": "2025-01-01",
+      "last_updated": "2026-02-13",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "input": 32768,
+        "output": 32768
+      },
+      "cost": {
+        "input": 2.05,
+        "output": 9.59,
+        "cache_read": 0.41
+      },
+      "display_name": "Step 1 (32K)",
+      "type": "other",
+      "chat": false,
+      "structured_output": false
+    },
+    {
+      "id": "step-3.5-flash-2603",
+      "display_name": "Step 3.5 Flash 2603",
+      "description": "Agent-optimized Step 3.5 Flash model",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "low",
+            "high"
+          ]
+        }
+      ],
+      "tool_call": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 256000,
+        "input": 256000,
+        "output": 256000
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      }
+    },
+    {
+      "id": "step-2-16k",
+      "name": "Step 2 (16K)",
+      "description": "StepFun flash model for efficient multimodal reasoning, coding, and tool use",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-06",
+      "release_date": "2025-01-01",
+      "last_updated": "2026-02-13",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 16384,
+        "input": 16384,
+        "output": 8192
+      },
+      "cost": {
+        "input": 5.21,
+        "output": 16.44,
+        "cache_read": 1.04
+      },
+      "display_name": "Step 2 (16K)",
+      "type": "other",
+      "chat": false,
+      "structured_output": false
+    },
+    {
+      "id": "stepaudio-2.5-asr",
+      "display_name": "StepAudio 2.5 ASR",
+      "description": "Recommended speech transcription model",
+      "type": "speech-transcription",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.transcribe"
+      ]
+    },
+    {
+      "id": "step-tts-mini",
+      "display_name": "Step TTS Mini",
+      "description": "Compact text-to-speech model",
+      "type": "speech-synthesis",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 1000,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.synthesize"
+      ]
+    },
+    {
+      "id": "step-asr",
+      "display_name": "Step ASR",
+      "description": "Legacy synchronous audio transcription model",
+      "type": "speech-transcription",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.transcribe"
+      ]
+    },
+    {
+      "id": "step-1o-turbo-vision",
+      "display_name": "Step 1o Turbo Vision",
+      "description": "Vision model with text, image, and video input and text output",
+      "type": "chat",
+      "attachment": true,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 32768,
+        "output": 8192
+      }
+    },
+    {
+      "id": "step-1o-audio",
+      "display_name": "Step 1o Audio",
+      "description": "Realtime voice conversation model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    },
+    {
+      "id": "step-tts-vivid",
+      "display_name": "Step TTS Vivid",
+      "description": "Legacy text-to-speech model; StepFun recommends newer TTS model names",
+      "type": "speech-synthesis",
+      "lifecycle": "deprecated",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 1000,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.synthesize"
+      ]
+    },
+    {
+      "id": "step-2x-large",
+      "display_name": "Step 2X Large",
+      "description": "Image generation model with text-to-image and image-to-image APIs",
+      "type": "image-generation",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "image"
+        ]
+      },
+      "limit": {
+        "context": 512,
+        "output": 1
+      },
+      "modalityCapabilities": [
+        "image.generate",
+        "image.edit"
+      ]
+    },
+    {
+      "id": "step-audio-2",
+      "display_name": "Step Audio 2",
+      "description": "Realtime voice conversation model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    },
+    {
+      "id": "step-audio-2-mini",
+      "display_name": "Step Audio 2 Mini",
+      "description": "Compact realtime voice conversation model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    },
+    {
+      "id": "step-audio-2-think",
+      "display_name": "Step Audio 2 Think",
+      "description": "Unclassified StepFun endpoint without a public model contract",
+      "type": "other",
+      "chat": false,
+      "lifecycle": "preview",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "dr-search-api",
+      "display_name": "DR Search API",
+      "description": "Service endpoint without a public chat model contract",
+      "type": "other",
+      "chat": false,
+      "lifecycle": "preview",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "step-gui",
+      "display_name": "Step GUI",
+      "description": "Unclassified StepFun endpoint without a public model contract",
+      "type": "other",
+      "chat": false,
+      "lifecycle": "preview",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "step-audio-r1.1",
+      "display_name": "Step Audio R1.1",
+      "description": "Legacy realtime voice reasoning model superseded by Step Audio R1.5",
+      "type": "realtime",
+      "chat": false,
+      "lifecycle": "deprecated",
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    },
+    {
+      "id": "step-asr-1.1",
+      "display_name": "Step ASR 1.1",
+      "description": "Asynchronous file transcription model that requires a public audio URL",
+      "type": "other",
+      "chat": false,
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "step-asr-1.1-stream",
+      "display_name": "Step ASR 1.1 Stream",
+      "description": "Legacy realtime ASR model being replaced by StepAudio 2.5 ASR Stream",
+      "type": "realtime",
+      "chat": false,
+      "lifecycle": "deprecated",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.transcribe"
+      ]
+    },
+    {
+      "id": "stepaudio-2.5-asr-stream",
+      "display_name": "StepAudio 2.5 ASR Stream",
+      "description": "Recommended realtime speech transcription model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.transcribe"
+      ]
+    },
+    {
+      "id": "stepaudio-2-asr-pro",
+      "display_name": "StepAudio 2 ASR Pro",
+      "description": "Speech transcription model exposed through the HTTP SSE API",
+      "type": "speech-transcription",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "speech.transcribe"
+      ]
+    },
+    {
+      "id": "step-router-v1",
+      "display_name": "Step Router V1",
+      "description": "Step Plan-only intelligent chat router",
+      "type": "other",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      }
+    },
+    {
+      "id": "stepaudio-2.5-chat",
+      "display_name": "StepAudio 2.5 Chat",
+      "description": "Audio and text input conversation model with text-only output",
+      "type": "chat",
+      "attachment": true,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "modalityCapabilities": []
+    },
+    {
+      "id": "step-image-edit-2",
+      "display_name": "Step Image Edit 2",
+      "description": "Low-latency model for text-to-image generation and image editing",
+      "type": "image-generation",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "image"
+        ]
+      },
+      "limit": {
+        "context": 512,
+        "output": 1
+      },
+      "modalityCapabilities": [
+        "image.generate",
+        "image.edit"
+      ]
+    },
+    {
+      "id": "stepaudio-2.5-realtime",
+      "display_name": "StepAudio 2.5 Realtime",
+      "description": "Recommended realtime speech-to-speech conversation model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    },
+    {
+      "id": "step-overture-preview",
+      "display_name": "Step Overture Preview",
+      "description": "Preview endpoint without a public model contract",
+      "type": "other",
+      "chat": false,
+      "lifecycle": "preview",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "search-image",
+      "display_name": "Search Image",
+      "description": "Text-to-image search API endpoint identifier, not a chat model",
+      "type": "other",
+      "chat": false,
+      "lifecycle": "disabled",
+      "tool_call": false,
+      "structured_output": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      }
+    },
+    {
+      "id": "step-audio-r1.5",
+      "display_name": "Step Audio R1.5",
+      "description": "Realtime voice reasoning model",
+      "type": "realtime",
+      "chat": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
+      },
+      "modalityCapabilities": [
+        "realtime.voice"
+      ]
+    }
+  ],
+  "defaultModelId": "step-3.7-flash"
+}

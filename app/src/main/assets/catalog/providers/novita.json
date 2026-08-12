@@ -1,0 +1,9 @@
+{
+  "id": "novita",
+  "name": "Novita AI",
+  "api": "https://api.novita.ai/openai",
+  "adapter": "openai",
+  "providerDbSourceId": "novita-ai",
+  "modelsFile": "models/novita.json",
+  "defaultModelId": "minimaxai/minimax-m1-80k"
+}

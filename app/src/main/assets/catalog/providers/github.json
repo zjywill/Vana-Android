@@ -1,0 +1,9 @@
+{
+  "id": "github",
+  "name": "GitHub Models",
+  "api": "https://models.github.ai/inference",
+  "adapter": "openai",
+  "providerDbSourceId": "github-models",
+  "modelsFile": "models/github.json",
+  "defaultModelId": "xai/grok-3-mini"
+}

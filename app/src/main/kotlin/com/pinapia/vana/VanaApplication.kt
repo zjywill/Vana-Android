@@ -3,6 +3,7 @@ package com.pinapia.vana
 import android.app.Application
 import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.location.LocationProvider
+import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.settings.SecureKeyStore
 import com.pinapia.vana.tenant.TenantScope
@@ -31,5 +32,6 @@ class VanaApplication : Application() {
         locationProvider = LocationProvider(this)
         tenantStore = TenantStore(filesDir)
         TenantScope.bootstrap(parent = filesDir, store = tenantStore)
+        CloudCatalog.bootstrap(this)
     }
 }

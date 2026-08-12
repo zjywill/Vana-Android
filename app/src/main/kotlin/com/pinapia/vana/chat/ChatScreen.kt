@@ -4,16 +4,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.pinapia.vana.Features
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +104,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -759,7 +757,7 @@ private fun MessageBubble(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 340.dp)
+                .then(if (isUser) Modifier.widthIn(max = 340.dp) else Modifier.fillMaxWidth())
                 .alpha(if (message.isQueued) 0.55f else 1f),
             horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -821,27 +819,23 @@ private fun MessageBubble(
                 }
             }
             if (message.text.isNotBlank() || (!isUser && message.textIsPlaceholder)) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isUser) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        },
-                    ),
-                ) {
-                    if (isUser) {
+                if (isUser) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
+                    ) {
                         Text(
                             text = message.text,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    } else {
-                        MarkdownText(
-                            markdown = message.text.ifBlank { "…" },
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                         )
                     }
+                } else {
+                    // 助手侧不走气泡：和 iOS 一样直接铺正文，方便表格/列表阅读。
+                    MarkdownText(
+                        markdown = message.text.ifBlank { "…" },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
             message.foldedSpan?.let { count ->
@@ -978,6 +972,7 @@ private fun toolCallLabel(call: com.pinapia.vana.session.ToolCallRecord): String
     else -> "调用了 ${call.name}"
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ComposerBar(
     input: String,
@@ -1128,7 +1123,7 @@ private fun ComposerBar(
                     },
                 )
                 AttachSheetRow(
-                    icon = Icons.Default.InsertDriveFile,
+                    icon = Icons.AutoMirrored.Filled.InsertDriveFile,
                     title = "添加文件",
                     subtitle = "PDF 或 Word",
                     onClick = {

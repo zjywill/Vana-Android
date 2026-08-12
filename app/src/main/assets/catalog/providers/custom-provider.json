@@ -1,0 +1,8 @@
+{
+  "id": "custom-provider",
+  "name": "Custom Provider",
+  "adapter": "openai",
+  "lookupOnly": true,
+  "modelsFile": "models/custom-provider.json",
+  "defaultModelId": "deepseek-reasoner"
+}

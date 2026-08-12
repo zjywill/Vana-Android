@@ -1,0 +1,9 @@
+{
+  "id": "qiniu",
+  "name": "Qiniu",
+  "api": "https://api.qnaigc.com/v1",
+  "adapter": "openai",
+  "providerDbSourceId": "qiniu-ai",
+  "modelsFile": "models/qiniu.json",
+  "defaultModelId": "claude-4.5-opus"
+}

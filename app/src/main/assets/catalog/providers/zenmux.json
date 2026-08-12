@@ -1,0 +1,8 @@
+{
+  "id": "zenmux",
+  "name": "ZenMux",
+  "api": "https://zenmux.ai/api/v1/",
+  "adapter": "openai",
+  "modelsFile": "models/zenmux.json",
+  "defaultModelId": "anthropic/claude-fable-5"
+}

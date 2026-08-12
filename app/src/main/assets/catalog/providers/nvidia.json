@@ -1,0 +1,8 @@
+{
+  "id": "nvidia",
+  "name": "NVIDIA",
+  "api": "https://integrate.api.nvidia.com/v1",
+  "adapter": "openai",
+  "modelsFile": "models/nvidia.json",
+  "defaultModelId": "z-ai/glm-5.2"
+}

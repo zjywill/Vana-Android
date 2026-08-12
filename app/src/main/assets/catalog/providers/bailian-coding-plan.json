@@ -1,0 +1,250 @@
+{
+  "id": "bailian-coding-plan",
+  "name": "Model Studio Coding Plan",
+  "api": "https://coding.dashscope.aliyuncs.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["text"]
+      },
+      "open_weights": false,
+      "cost": {
+        "input": 0.1096,
+        "output": 0.6576,
+        "cache_read": 0.01096
+      },
+      "limit": {
+        "context": 991000,
+        "output": 991000
+      },
+      "display_name": "Qwen3.5 Plus",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-max-2026-01-23",
+      "name": "Qwen3 Max 2026-01-23",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": false,
+      "cost": {
+        "input": 0.34246,
+        "output": 1.36984,
+        "cache_read": 0.34246
+      },
+      "limit": {
+        "context": 252000,
+        "output": 252000
+      },
+      "display_name": "Qwen3 Max 2026-01-23",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-next",
+      "name": "Qwen3 Coder Next",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "release_date": "2026-02-02",
+      "last_updated": "2026-02-08",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": true,
+      "cost": {
+        "input": 0.137,
+        "output": 0.548,
+        "cache_read": 0.137
+      },
+      "limit": {
+        "context": 2000000,
+        "output": 2000000
+      },
+      "display_name": "Qwen3 Coder Next",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-07-23",
+      "last_updated": "2025-07-23",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": true,
+      "cost": {
+        "input": 0.54,
+        "output": 2.16,
+        "cache_read": 0.108
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "display_name": "Qwen3 Coder Plus",
+      "type": "chat"
+    },
+    {
+      "id": "MiniMax-M2.5",
+      "name": "MiniMax M2.5",
+      "family": "minimax",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2025-01",
+      "release_date": "2026-02-12",
+      "last_updated": "2026-02-12",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": true,
+      "cost": {
+        "input": 0.288,
+        "output": 1.152
+      },
+      "limit": {
+        "context": 204800,
+        "output": 204800
+      },
+      "display_name": "MiniMax M2.5",
+      "type": "chat"
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "family": "glm",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-02-11",
+      "last_updated": "2026-02-11",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": false,
+      "cost": {
+        "input": 0.88,
+        "output": 2.816,
+        "cache_read": 0.176
+      },
+      "limit": {
+        "context": 202752,
+        "output": 202752
+      },
+      "display_name": "GLM-5",
+      "type": "chat"
+    },
+    {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "family": "glm",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-12-22",
+      "last_updated": "2025-12-22",
+      "modalities": {
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "open_weights": true,
+      "cost": {
+        "input": 0.273974,
+        "output": 1.095896,
+        "cache_read": 0.054795
+      },
+      "limit": {
+        "context": 200000,
+        "output": 200000
+      },
+      "display_name": "GLM-4.7",
+      "type": "chat"
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "family": "kimi",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": false,
+      "knowledge": "2025-01",
+      "release_date": "2026-01",
+      "last_updated": "2026-01",
+      "modalities": {
+        "input": ["text", "image"],
+        "output": ["text"]
+      },
+      "open_weights": true,
+      "cost": {
+        "input": 0.6,
+        "output": 3,
+        "cache_read": 0.105
+      },
+      "limit": {
+        "context": 256000,
+        "output": 256000
+      },
+      "display_name": "Kimi K2.5",
+      "type": "chat"
+    }
+  ],
+  "defaultModelId": "qwen3.5-plus"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "vercel-ai-gateway",
+  "name": "Vercel AI Gateway",
+  "api": "https://ai-gateway.vercel.sh/v1",
+  "adapter": "openai",
+  "providerDbSourceId": "vercel",
+  "modelsFile": "models/vercel-ai-gateway.json",
+  "defaultModelId": "xai/grok-4.20-reasoning-beta"
+}

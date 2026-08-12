@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
 
 class ChatViewModel(
@@ -737,7 +738,17 @@ class ChatViewModel(
                 }
                 queued.map { AgentPendingInput(id = it.uuid, text = it.text) }
             },
-        ).collect { event -> applyEvent(event) }
+        ).collect { event ->
+            applyEvent(event)
+            // SSE 的 delta 往往在同一次调度里连发几十上百个；若不主动让出主线程，
+            // Compose 读到的永远是最后一帧，看起来就像「整段蹦出来」。
+            when (event) {
+                is AgentTurnEvent.TextDelta,
+                is AgentTurnEvent.ReasoningDelta,
+                -> yield()
+                else -> Unit
+            }
+        }
     }
 
     private fun applyEvent(event: AgentTurnEvent) {
