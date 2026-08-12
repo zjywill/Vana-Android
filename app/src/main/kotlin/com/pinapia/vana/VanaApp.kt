@@ -146,6 +146,7 @@ fun VanaApp(
                         navController.navigate(Routes.SETTINGS)
                     },
                     onOpenMedications = { navController.navigate(Routes.MEDICATIONS) },
+                    onOpenTenants = { navController.navigate(Routes.TENANTS) },
                 )
             }
         }

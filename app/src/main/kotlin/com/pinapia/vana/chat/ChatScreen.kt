@@ -104,6 +104,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -112,15 +115,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -1223,6 +1221,7 @@ private fun SessionDrawer(
     onOpenGoal: (GoalSummary) -> Unit,
     onDelete: (String) -> Unit,
     onDeleteGoal: (GoalSummary) -> Unit,
+    onOpenTenants: () -> Unit,
 ) {
     var showGoalDialog by remember { mutableStateOf(false) }
     var goalName by remember { mutableStateOf("") }
@@ -1235,6 +1234,36 @@ private fun SessionDrawer(
     ) {
         Text("会话", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(12.dp))
+        if (TenantScope.isolationAvailable) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onOpenTenants)
+                    .padding(vertical = 12.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    "家庭成员",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    TenantScope.current.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        }
         Button(
             onClick = onNew,
             modifier = Modifier.fillMaxWidth(),
