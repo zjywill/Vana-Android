@@ -1,9 +1,11 @@
 package com.pinapia.vana.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.pinapia.vana.Features
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
@@ -45,7 +47,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -72,6 +73,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -106,13 +108,28 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
@@ -222,15 +239,25 @@ fun ChatScreen(
     val offerEmptyPhotos = drafts.any { it.canSendImage && !it.hasText && !it.sendsImage } &&
         viewModel.supportsVision
 
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            // ModalDrawerSheet 默认 maxWidth=360dp，会话列表按全屏页处理。
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = RectangleShape,
+                color = MaterialTheme.colorScheme.surface,
+            ) {
                 val goals by viewModel.goals.collectAsStateWithLifecycle()
                 SessionDrawer(
                     summaries = summaries,
                     goals = goals,
                     currentId = session.id,
+                    onClose = { scope.launch { drawerState.close() } },
                     onNew = {
                         viewModel.startNewSession(isPrivate = false)
                         scope.launch { drawerState.close() }
@@ -1261,11 +1288,13 @@ private fun ComposerCircleButton(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SessionDrawer(
     summaries: List<SessionSummary>,
     goals: List<GoalSummary>,
     currentId: String,
+    onClose: () -> Unit,
     onNew: () -> Unit,
     onNewPrivate: () -> Unit,
     onNewGoal: (String) -> Unit,
@@ -1276,123 +1305,184 @@ private fun SessionDrawer(
     onOpenTenants: () -> Unit,
 ) {
     var showGoalDialog by remember { mutableStateOf(false) }
+    var showNewMenu by remember { mutableStateOf(false) }
     var goalName by remember { mutableStateOf("") }
     var pendingDeleteSessionId by remember { mutableStateOf<String?>(null) }
     var pendingDeleteGoal by remember { mutableStateOf<GoalSummary?>(null) }
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        Text("会话", style = MaterialTheme.typography.titleLarge)
-        Spacer(modifier = Modifier.height(12.dp))
-        if (TenantScope.isolationAvailable) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onOpenTenants)
-                    .padding(vertical = 12.dp, horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    "家庭成员",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    TenantScope.current.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        }
-        Button(
-            onClick = onNew,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("+ 新对话") }
-        Spacer(modifier = Modifier.height(8.dp))
-        FilledTonalButton(
-            onClick = onNewPrivate,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("隐私对话（不保存）") }
-        TextButton(
-            onClick = { showGoalDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("新目标") }
-        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-        if (goals.isNotEmpty()) {
-            Text("目标", style = MaterialTheme.typography.titleSmall)
-            goals.forEach { goal ->
-                Column(
-                    modifier = Modifier
-                        .width(280.dp)
-                        .clickable { onOpenGoal(goal) }
-                        .padding(vertical = 8.dp),
+    // 目标线已在上方单独列出，时间分组里再出现同一条会当成两条。
+    val goalThreads = remember(goals) { goals.map { it.threadId }.toSet() }
+    val looseSummaries = remember(summaries, goalThreads) {
+        summaries.filter { summary ->
+            summary.threadId == null || summary.threadId !in goalThreads
+        }
+    }
+    val groups = remember(looseSummaries) { SessionTimeSection.group(looseSummaries) }
+    val currentThreadId = remember(currentId, summaries) {
+        summaries.firstOrNull { it.id == currentId }?.threadId
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("会话") },
+            navigationIcon = {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.semantics { contentDescription = "关闭会话列表" },
                 ) {
-                    Text(goal.title, style = MaterialTheme.typography.bodyLarge)
-                    TextButton(onClick = { pendingDeleteGoal = goal }) { Text("删除") }
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                }
+            },
+            actions = {
+                Box {
+                    IconButton(
+                        onClick = { showNewMenu = true },
+                        modifier = Modifier.semantics { contentDescription = "新建" },
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null)
+                    }
+                    DropdownMenu(
+                        expanded = showNewMenu,
+                        onDismissRequest = { showNewMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("新对话") },
+                            onClick = {
+                                showNewMenu = false
+                                onNew()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Edit, contentDescription = null)
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("隐私对话（不保存）") },
+                            onClick = {
+                                showNewMenu = false
+                                onNewPrivate()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.VisibilityOff, contentDescription = null)
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("新目标") },
+                            onClick = {
+                                showNewMenu = false
+                                showGoalDialog = true
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                            },
+                        )
+                    }
+                }
+            },
+        )
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            if (TenantScope.isolationAvailable) {
+                item(key = "tenant") {
+                    ListItem(
+                        headlineContent = { Text("家庭成员") },
+                        supportingContent = {
+                            Text(
+                                TenantScope.current.displayName,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        },
+                        trailingContent = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onOpenTenants)
+                            .semantics {
+                                contentDescription =
+                                    "家庭成员，当前 ${TenantScope.current.displayName}"
+                            },
+                    )
+                    HorizontalDivider()
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-        }
 
-        val groups = SessionTimeSection.group(summaries)
-        if (summaries.isEmpty() && goals.isEmpty()) {
-            Text("还没有会话", style = MaterialTheme.typography.bodyMedium)
-            Text(
-                "问一个健康问题，这里就会出现记录。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            groups.forEach { group ->
-                Text(
-                    group.bucket.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
-                group.sessions.forEach { summary ->
+            if (goals.isNotEmpty()) {
+                item(key = "section-goals") { SessionSectionLabel("目标") }
+                items(goals, key = { "goal-${it.threadId}" }) { goal ->
+                    val selected = goal.threadId == currentThreadId
+                    SessionListRow(
+                        title = goal.title,
+                        subtitle = buildString {
+                            append(SessionTimeSection.rowTimeLabel(goal.updatedAt.toEpochMilliseconds()))
+                            append(" · ${goal.messageCount} 条")
+                            if (goal.segmentCount > 1) append(" · ${goal.segmentCount} 段")
+                        },
+                        selected = selected,
+                        pendingDelete = pendingDeleteGoal?.threadId == goal.threadId,
+                        onOpen = { onOpenGoal(goal) },
+                        onRequestDelete = { pendingDeleteGoal = goal },
+                        deleteLabel = "左滑删除目标 ${goal.title}",
+                    )
+                }
+            }
+
+            if (looseSummaries.isEmpty() && goals.isEmpty()) {
+                item(key = "empty") {
                     Column(
                         modifier = Modifier
-                            .width(280.dp)
-                            .clickable { onOpen(summary.id) }
-                            .padding(vertical = 8.dp),
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 48.dp),
                     ) {
                         Text(
-                            summary.title,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (summary.id == currentId) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                            "还没有会话",
+                            style = MaterialTheme.typography.titleMedium,
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            SessionTimeSection.rowTimeLabel(summary.updatedAt.toEpochMilliseconds()),
-                            style = MaterialTheme.typography.labelSmall,
+                            "问一个健康问题，这里就会出现记录。",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        TextButton(onClick = { pendingDeleteSessionId = summary.id }) {
-                            Text("删除")
-                        }
+                    }
+                }
+            } else {
+                groups.forEach { group ->
+                    item(key = "section-${group.bucket}") {
+                        SessionSectionLabel(group.bucket.title)
+                    }
+                    items(group.sessions, key = { it.id }) { summary ->
+                        val selected = summary.id == currentId
+                        SessionListRow(
+                            title = summary.title,
+                            subtitle = "${SessionTimeSection.rowTimeLabel(summary.updatedAt.toEpochMilliseconds())} · ${summary.messageCount} 条",
+                            selected = selected,
+                            pendingDelete = pendingDeleteSessionId == summary.id,
+                            onOpen = { onOpen(summary.id) },
+                            onRequestDelete = { pendingDeleteSessionId = summary.id },
+                            deleteLabel = "左滑删除对话 ${summary.title}",
+                        )
                     }
                 }
             }
+
+            item(key = "bottom-spacer") {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
+
     if (showGoalDialog) {
         AlertDialog(
             onDismissRequest = { showGoalDialog = false },
@@ -1462,4 +1552,120 @@ private fun SessionDrawer(
             },
         )
     }
+}
+
+@Composable
+private fun SessionSectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SessionListRow(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    pendingDelete: Boolean,
+    onOpen: () -> Unit,
+    onRequestDelete: () -> Unit,
+    deleteLabel: String,
+) {
+    val requestDelete by rememberUpdatedState(onRequestDelete)
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                requestDelete()
+                true
+            } else {
+                false
+            }
+        },
+        positionalThreshold = { distance -> distance * 0.35f },
+    )
+
+    // 取消确认后把行滑回来；确认删除则条目会从列表消失。
+    LaunchedEffect(pendingDelete) {
+        if (!pendingDelete && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissState.reset()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.error)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onError,
+                )
+            }
+        },
+        content = {
+            ListItem(
+                headlineContent = {
+                    Text(
+                        title,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                supportingContent = {
+                    Text(
+                        subtitle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                trailingContent = if (selected) {
+                    {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                } else {
+                    null
+                },
+                colors = ListItemDefaults.colors(
+                    containerColor = if (selected) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    headlineColor = if (selected) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    supportingColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpen)
+                    .semantics(mergeDescendants = true) {
+                        this.selected = selected
+                        contentDescription = deleteLabel
+                    },
+            )
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
