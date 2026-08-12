@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.Icons
@@ -143,6 +144,7 @@ fun ChatScreen(
     exerciseLibrary: ExerciseLibrary,
     onOpenSettings: () -> Unit,
     onOpenMedications: () -> Unit,
+    onOpenMeasurements: () -> Unit = {},
     onOpenTenants: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -314,6 +316,9 @@ fun ChatScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onOpenMeasurements) {
+                            Icon(Icons.Default.MonitorHeart, contentDescription = "测量卡片")
+                        }
                         IconButton(onClick = onOpenMedications) {
                             Icon(Icons.Default.Medication, contentDescription = "用药与补剂")
                         }
@@ -1047,6 +1052,8 @@ private fun toolCallLabel(call: com.pinapia.vana.session.ToolCallRecord): String
     "remember" -> "记住了"
     "list_medications" -> "查看了用药表"
     "log_medication", "update_medication" -> "更新了用药表"
+    "list_measurements" -> "查看了测量卡片"
+    "log_measurement" -> "记下了测量"
     AskUserTools.ASK_TOOL_NAME -> "问了你一句"
     "web_search" -> "搜索了网页"
     "search_sessions" -> "查找了过往对话"

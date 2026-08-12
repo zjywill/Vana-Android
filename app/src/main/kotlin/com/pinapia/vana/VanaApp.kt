@@ -31,6 +31,7 @@ import com.pinapia.vana.legal.DataUseNoticeScreen
 import com.pinapia.vana.legal.PrivacyPolicyScreen
 import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationListScreen
+import com.pinapia.vana.measurements.MeasurementListScreen
 import com.pinapia.vana.memory.MemoryListScreen
 import com.pinapia.vana.recall.BackgroundDigest
 import com.pinapia.vana.settings.DeveloperScreen
@@ -46,6 +47,7 @@ private object Routes {
     const val SETTINGS = "settings"
     const val MEMORY = "memory"
     const val MEDICATIONS = "medications"
+    const val MEASUREMENTS = "measurements"
     const val TENANTS = "tenants"
     const val ABOUT = "about"
     const val PRIVACY = "privacy"
@@ -116,6 +118,7 @@ fun VanaApp(
                         exerciseLibrary = exerciseLibrary,
                         memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
                         medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
+                        measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
                     ),
                 )
                 LaunchedEffect(checkInQuestion) {
@@ -146,6 +149,7 @@ fun VanaApp(
                         navController.navigate(Routes.SETTINGS)
                     },
                     onOpenMedications = { navController.navigate(Routes.MEDICATIONS) },
+                    onOpenMeasurements = { navController.navigate(Routes.MEASUREMENTS) },
                     onOpenTenants = { navController.navigate(Routes.TENANTS) },
                 )
             }
@@ -159,6 +163,7 @@ fun VanaApp(
                 sessionStore = TenantScope.currentStores.sessions,
                 onBack = { navController.popBackStack() },
                 onOpenMemory = { navController.navigate(Routes.MEMORY) },
+                onOpenMeasurements = { navController.navigate(Routes.MEASUREMENTS) },
                 onOpenTenants = { navController.navigate(Routes.TENANTS) },
                 onOpenAbout = { navController.navigate(Routes.ABOUT) },
                 onOpenDeveloper = {
@@ -200,6 +205,13 @@ fun VanaApp(
                     pendingMedication = medication
                     navController.popBackStack(Routes.CHAT, inclusive = false)
                 },
+            )
+        }
+        composable(Routes.MEASUREMENTS) {
+            MeasurementListScreen(
+                store = TenantScope.currentStores.measurements,
+                engineSettings = app.engineSettings,
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.ABOUT) {

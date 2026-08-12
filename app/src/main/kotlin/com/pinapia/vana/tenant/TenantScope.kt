@@ -1,6 +1,7 @@
 package com.pinapia.vana.tenant
 
 import com.pinapia.vana.medications.MedicationStore
+import com.pinapia.vana.measurements.MeasurementStore
 import com.pinapia.vana.memory.MemoryStore
 import com.pinapia.vana.session.SessionStore
 import com.pinapia.vana.vision.AttachmentStore
@@ -12,12 +13,14 @@ data class TenantStores(
     val sessions: SessionStore,
     val memory: MemoryStore,
     val medications: MedicationStore,
+    val measurements: MeasurementStore,
     val attachments: AttachmentStore,
 ) {
     constructor(root: File) : this(
         sessions = SessionStore(parent = root),
         memory = MemoryStore(directory = root),
         medications = MedicationStore(directory = root),
+        measurements = MeasurementStore(directory = root),
         attachments = AttachmentStore(parent = root),
     )
 }

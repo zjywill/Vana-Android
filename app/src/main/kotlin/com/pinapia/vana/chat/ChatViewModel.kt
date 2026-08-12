@@ -24,6 +24,7 @@ import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationSnapshot
+import com.pinapia.vana.measurements.MeasurementSnapshot
 import com.pinapia.vana.memory.MemoryExtractor
 import com.pinapia.vana.memory.MemoryHarvest
 import com.pinapia.vana.memory.MemorySnapshot
@@ -70,6 +71,7 @@ class ChatViewModel(
     private val exerciseLibrary: ExerciseLibrary,
     private val memorySnapshotProvider: () -> MemorySnapshot,
     private val medicationSnapshotProvider: () -> MedicationSnapshot,
+    private val measurementSnapshotProvider: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
     private val tenantProvider: () -> Tenant = { TenantScope.current },
 ) : ViewModel() {
     private val _session = MutableStateFlow(ChatSession())
@@ -132,7 +134,7 @@ class ChatViewModel(
             _selectedTopic.value?.questions?.takeIf { it.isNotEmpty() }?.let { return it }
             _focusMedication.value?.openingQuestions?.let { return it }
             return _situationQuestions.value.ifEmpty {
-                listOf("昨晚睡得怎么样？", "今天走了多少步？", "最近静息心率有变化吗？")
+                NoHealthConnectQuestions
             }
         }
 
@@ -220,11 +222,7 @@ class ChatViewModel(
                 _situation.value = null
                 _quickSummary.value = null
                 _selectedTopic.value = null
-                _situationQuestions.value = listOf(
-                    "最近睡眠怎么样，我该注意什么？",
-                    "帮我看看这张化验单",
-                    "我在吃的药有什么要注意的？",
-                )
+                _situationQuestions.value = NoHealthConnectQuestions
                 return@launch
             }
             val interests = sessionStore.interests()
@@ -845,17 +843,20 @@ class ChatViewModel(
             includesHealthTools = useHealth,
             allowsMemoryWrites = !_session.value.isPrivate,
             allowsMedicationWrites = !_session.value.isPrivate,
+            allowsMeasurementWrites = !_session.value.isPrivate,
             allowsRecall = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
             asksUser = true,
             healthTools = if (useHealth) HealthTools(healthStore) else null,
             memoryStore = stores.memory,
             medicationStore = stores.medications,
+            measurementStore = stores.measurements,
             sessionStore = sessionStore,
             currentSessionId = _session.value.id,
             webSearch = webSearch,
             exerciseLibrary = exerciseLibrary,
             memoryEnabled = engineSettings.memoryEnabled,
             medicationsEnabled = engineSettings.medicationsEnabled,
+            measurementsEnabled = engineSettings.measurementsEnabled,
         )
         val location = if (locationProvider.isAuthorized) {
             locationProvider.snapshot
@@ -871,6 +872,11 @@ class ChatViewModel(
             tenant = tenant,
             memory = if (engineSettings.memoryEnabled) memorySnapshotProvider() else MemorySnapshot.empty,
             medications = if (engineSettings.medicationsEnabled) medicationSnapshotProvider() else MedicationSnapshot.empty,
+            measurements = if (engineSettings.measurementsEnabled) {
+                measurementSnapshotProvider()
+            } else {
+                MeasurementSnapshot.empty
+            },
             location = location,
             capabilityRegistry = registry,
             thinkingEnabled = engineSettings.thinkingEnabled,
@@ -1006,6 +1012,7 @@ class ChatViewModel(
         private val exerciseLibrary: ExerciseLibrary,
         private val memorySnapshotProvider: () -> MemorySnapshot,
         private val medicationSnapshotProvider: () -> MedicationSnapshot,
+        private val measurementSnapshotProvider: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -1018,7 +1025,17 @@ class ChatViewModel(
                 exerciseLibrary = exerciseLibrary,
                 memorySnapshotProvider = memorySnapshotProvider,
                 medicationSnapshotProvider = medicationSnapshotProvider,
+                measurementSnapshotProvider = measurementSnapshotProvider,
             ) as T
         }
+    }
+
+    companion object {
+        /** HC 关掉时的首屏「试着问」：拍照、口述症状、记测量，不碰本机健康数据。 */
+        private val NoHealthConnectQuestions = listOf(
+            "帮我看看这张化验单",
+            "最近总感觉不舒服是怎么回事？",
+            "帮我记下今天的体重",
+        )
     }
 }

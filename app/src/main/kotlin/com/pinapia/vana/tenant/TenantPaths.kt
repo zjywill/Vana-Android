@@ -4,7 +4,7 @@ import java.io.File
 import java.util.UUID
 
 /**
- * 每个成员一个目录:`filesDir/tenants/<uuid>/{sessions,attachments,memory.json,medications.json}`。
+ * 每个成员一个目录:`filesDir/tenants/<uuid>/{sessions,attachments,memory.json,medications.json,measurements.json}`。
  *
  * 目录隔离,不是给每条记录加 tenantId。这份清单就是「隔离」的定义。
  */
@@ -19,6 +19,7 @@ object TenantPaths {
         Item("attachments", isDirectory = true),
         Item("memory.json", isDirectory = false),
         Item("medications.json", isDirectory = false),
+        Item("measurements.json", isDirectory = false),
     )
 
     fun root(forId: UUID, parent: File): File =

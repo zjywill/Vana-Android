@@ -72,6 +72,7 @@ fun SettingsScreen(
     sessionStore: SessionStore,
     onBack: () -> Unit,
     onOpenMemory: () -> Unit,
+    onOpenMeasurements: () -> Unit = {},
     onOpenTenants: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenDeveloper: () -> Unit = {},
@@ -87,6 +88,7 @@ fun SettingsScreen(
     var thinking by remember { mutableStateOf(engineSettings.thinkingEnabled) }
     var memory by remember { mutableStateOf(engineSettings.memoryEnabled) }
     var medications by remember { mutableStateOf(engineSettings.medicationsEnabled) }
+    var measurements by remember { mutableStateOf(engineSettings.measurementsEnabled) }
     var checkIns by remember { mutableStateOf(engineSettings.checkInsEnabled) }
     var morningHour by remember { mutableStateOf(engineSettings.morningCheckInHour) }
     var eveningHour by remember { mutableStateOf(engineSettings.eveningCheckInHour) }
@@ -259,6 +261,10 @@ fun SettingsScreen(
                 medications = it
                 engineSettings.medicationsEnabled = it
             }
+            SettingSwitch("口述测量卡片", measurements) {
+                measurements = it
+                engineSettings.measurementsEnabled = it
+            }
             Text(
                 "只改语气和详略，不改数据口径——同样只引用工具返回的数字，同样不做诊断。",
                 style = MaterialTheme.typography.bodySmall,
@@ -269,6 +275,14 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onOpenMemory)
+                    .padding(vertical = 8.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "测量卡片",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenMeasurements)
                     .padding(vertical = 8.dp),
                 style = MaterialTheme.typography.bodyLarge,
             )

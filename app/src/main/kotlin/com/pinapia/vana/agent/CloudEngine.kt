@@ -16,6 +16,8 @@ import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.medications.MedicationTools
+import com.pinapia.vana.measurements.MeasurementSnapshot
+import com.pinapia.vana.measurements.MeasurementTools
 import com.pinapia.vana.memory.MemorySnapshot
 import com.pinapia.vana.recall.SessionRecallTools
 import com.pinapia.vana.search.WebSearchTools
@@ -35,6 +37,7 @@ class CloudEngine(
     private val tenant: Tenant,
     private val memory: MemorySnapshot = MemorySnapshot.empty,
     private val medications: MedicationSnapshot = MedicationSnapshot.empty,
+    private val measurements: MeasurementSnapshot = MeasurementSnapshot.empty,
     private val location: LocationSnapshot = LocationSnapshot.unknown,
     private val capabilityRegistry: CapabilityRegistry,
     private val thinkingEnabled: Boolean = true,
@@ -101,6 +104,7 @@ class CloudEngine(
         location.instructionBlock(canSearchWeb = canSearchWeb)?.let { instructions += "\n\n$it" }
         memory.instructionBlock?.let { instructions += "\n\n$it" }
         medications.instructionBlock?.let { instructions += "\n\n$it" }
+        measurements.instructionBlock?.let { instructions += "\n\n$it" }
         focusMedication?.focusInstruction?.let { instructions += "\n\n$it" }
         goal?.trim()?.takeIf { it.isNotEmpty() }?.let {
             instructions += "\n\n这条对话围绕他定下的长期目标「$it」。" +
@@ -118,11 +122,23 @@ class CloudEngine(
         if (capabilityRegistry.definition(named = MedicationTools.LOG) != null) {
             instructions += "\n\n用户说出他和某样药或补剂的关系时，调用 log_medication / update_medication 当场记下。"
         }
+        if (capabilityRegistry.definition(named = MeasurementTools.LOG) != null) {
+            instructions += "\n\n用户口述身高、体重、心率、血压，或任何他提到的身体/化验指标时，" +
+                "调用 log_measurement 记成测量卡片（自由名称 + 数值 + 观测时间）。" +
+                "每次都是追加，不要覆盖旧的；今天和明天的同名数值会留下两条。" +
+                "你不认识的指标名也照记，不要拒，也不要改写成别的名字硬套。" +
+                "观测时间说不清时先用 ask_user（今天/昨天/今早/具体哪天），不要默认成现在。" +
+                "这些数字不要用 remember。"
+        }
         if (capabilityRegistry.definition(named = "remember") != null) {
-            instructions += "\n\n用户明确说「记住…」这类话时，调用 remember。不要记 Health Connect 能查到的数字；用药与补剂走用药表工具。"
+            instructions += "\n\n用户明确说「记住…」这类话时，调用 remember。" +
+                "不要记 Health Connect 能查到的数字；用药与补剂走用药表工具；口述的测量数字走 log_measurement。"
         }
         if (capabilityRegistry.definition(named = "list_medications") != null) {
             instructions += "\n\n需要完整用药表（含停掉的）时调用 list_medications。"
+        }
+        if (capabilityRegistry.definition(named = MeasurementTools.LIST) != null) {
+            instructions += "\n\n需要某项指标的历史测量卡片，或系统提示里没有的旧记录时，调用 list_measurements。"
         }
         if (canSearchWeb) {
             instructions += "\n\n遇到你的知识里没有、或者很可能已经过时的东西" +
@@ -155,6 +171,7 @@ class CloudEngine(
             tenant: Tenant,
             memory: MemorySnapshot,
             medications: MedicationSnapshot,
+            measurements: MeasurementSnapshot = MeasurementSnapshot.empty,
             location: LocationSnapshot = LocationSnapshot.unknown,
             capabilityRegistry: CapabilityRegistry,
             thinkingEnabled: Boolean,
@@ -179,6 +196,7 @@ class CloudEngine(
                 tenant = tenant,
                 memory = memory,
                 medications = medications,
+                measurements = measurements,
                 location = location,
                 capabilityRegistry = capabilityRegistry,
                 thinkingEnabled = thinkingEnabled,

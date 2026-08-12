@@ -39,6 +39,10 @@ class EngineSettings(context: Context) {
         get() = if (prefs.contains(MEDICATIONS_KEY)) prefs.getBoolean(MEDICATIONS_KEY, true) else true
         set(value) = prefs.edit().putBoolean(MEDICATIONS_KEY, value).apply()
 
+    var measurementsEnabled: Boolean
+        get() = if (prefs.contains(MEASUREMENTS_KEY)) prefs.getBoolean(MEASUREMENTS_KEY, true) else true
+        set(value) = prefs.edit().putBoolean(MEASUREMENTS_KEY, value).apply()
+
     var checkInsEnabled: Boolean
         get() = prefs.getBoolean(CHECKINS_KEY, false)
         set(value) = prefs.edit().putBoolean(CHECKINS_KEY, value).apply()
@@ -72,6 +76,7 @@ class EngineSettings(context: Context) {
         const val THINKING_KEY = "thinkingEnabled"
         const val MEMORY_KEY = "memoryEnabled"
         const val MEDICATIONS_KEY = "medicationsEnabled"
+        const val MEASUREMENTS_KEY = "measurementsEnabled"
         const val CHECKINS_KEY = "checkInsEnabled"
         const val MORNING_HOUR_KEY = "morningCheckInHour"
         const val EVENING_HOUR_KEY = "eveningCheckInHour"

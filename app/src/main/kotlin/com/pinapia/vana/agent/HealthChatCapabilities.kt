@@ -9,6 +9,8 @@ import com.pinapia.vana.exercises.ExerciseTools
 import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.medications.MedicationStore
 import com.pinapia.vana.medications.MedicationTools
+import com.pinapia.vana.measurements.MeasurementStore
+import com.pinapia.vana.measurements.MeasurementTools
 import com.pinapia.vana.memory.MemoryStore
 import com.pinapia.vana.memory.MemoryTools
 import com.pinapia.vana.recall.SessionRecallTools
@@ -20,17 +22,20 @@ fun CapabilityRegistry.Companion.healthChat(
     includesHealthTools: Boolean = true,
     allowsMemoryWrites: Boolean = true,
     allowsMedicationWrites: Boolean = true,
+    allowsMeasurementWrites: Boolean = true,
     allowsRecall: Boolean = false,
     asksUser: Boolean = true,
     healthTools: HealthTools? = null,
     memoryStore: MemoryStore? = null,
     medicationStore: MedicationStore? = null,
+    measurementStore: MeasurementStore? = null,
     sessionStore: SessionStore? = null,
     currentSessionId: String? = null,
     webSearch: WebSearchClient? = null,
     exerciseLibrary: ExerciseLibrary? = null,
     memoryEnabled: Boolean = true,
     medicationsEnabled: Boolean = true,
+    measurementsEnabled: Boolean = true,
 ): CapabilityRegistry {
     val registries = mutableListOf<CapabilityRegistry>()
     if (includesHealthTools && healthTools != null) {
@@ -50,6 +55,12 @@ fun CapabilityRegistry.Companion.healthChat(
         registries += MedicationTools.registry(
             store = medicationStore,
             allowsWrites = allowsMedicationWrites,
+        )
+    }
+    if (measurementsEnabled && measurementStore != null) {
+        registries += MeasurementTools.registry(
+            store = measurementStore,
+            allowsWrites = allowsMeasurementWrites,
         )
     }
     if (memoryEnabled && allowsRecall && sessionStore != null) {
