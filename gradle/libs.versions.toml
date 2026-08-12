@@ -5,14 +5,10 @@ agp = "8.12.1"
 kotlin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 
-# compileSdk 36 = Android 16。
-# minSdk 34 是有意的,理由和 iOS 那边「iOS 26 only,不写旧版本可用性分支」同源:
-# Health Connect 从 Android 14(API 34)起是系统的一部分,34 以下要引导用户去装一个
-# 独立的 APK,还要判断装没装、版本够不够。把那整条分支砍掉换来的是——
-# 「读不到健康数据」在这个 app 里永远只有一个原因:用户没授权,或者没有 app 往里写数据。
-# 真要往下放的话,先想清楚多出来的那条安装引导路径由谁来写。
+# minSdk 28 = Health Connect 官方可用下限(Android 9)。HC 功能暂缓(Features.HEALTH_CONNECT),
+# 见 CLAUDE.md「Health Connect 暂缓」——大陆机普遍没有 HC。
 compileSdk = "36"
-minSdk = "34"
+minSdk = "28"
 targetSdk = "36"
 
 kotlinx-coroutines = "1.10.2"
@@ -34,6 +30,9 @@ health-connect = "1.1.0-rc02"
 
 # 化验单 / 药瓶 OCR。ML Kit 的中日韩识别模型顶 iOS 那边的 Vision,同样全在本机跑。
 mlkit-text-chinese = "16.0.1"
+
+# 动作示意图是 SVG（从 iOS xcassets 原样拷过来）。AndroidSVG 比整套 Coil 轻，只做本地渲染。
+androidsvg = "1.4"
 
 okhttp = "4.12.0"
 
@@ -66,6 +65,7 @@ androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version
 androidx-health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
 
 mlkit-text-recognition-chinese = { module = "com.google.mlkit:text-recognition-chinese", version.ref = "mlkit-text-chinese" }
+androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg" }
 
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

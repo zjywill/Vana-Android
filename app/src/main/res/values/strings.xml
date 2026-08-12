@@ -2,4 +2,12 @@
 <resources>
     <!-- 用户看到的名字是 Vana。工程名叫 Vana-Android,包名 com.pinapia.vana。 -->
     <string name="app_name">Vana</string>
+    <string name="shortcut_today_short">今天状态</string>
+    <string name="shortcut_today_long">看看今天状态</string>
+    <string name="shortcut_sleep_short">昨晚睡眠</string>
+    <string name="shortcut_sleep_long">昨晚睡得怎么样</string>
+    <string name="shortcut_workout_short">最近锻炼</string>
+    <string name="shortcut_workout_long">复盘最近一次训练</string>
+    <string name="shortcut_ask_short">问 Vana</string>
+    <string name="shortcut_ask_long">把问题带进 Vana</string>
 </resources>

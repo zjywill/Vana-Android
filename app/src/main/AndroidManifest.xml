@@ -6,6 +6,9 @@
 
     <!-- 早上那条 check-in 通知。Android 13 起是运行时权限,拒了就没有送达的路子。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:ignore="ExactAlarm" />
 
     <!--
       只要粗定位。城市决定气候、季节、时差、饮食和就医方式,而那几件正是要位置的全部理由;
@@ -37,9 +40,13 @@
     <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
+    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE" />
+    <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
+    <uses-permission android:name="android.permission.health.READ_BODY_TEMPERATURE" />
 
     <!--
       **这一条最容易漏,漏了整套「和最近常态比」都会静默地只剩 30 天**:
@@ -47,6 +54,17 @@
       体重趋势、几个月前的锻炼记录、跨季度的对比全部靠它。
     -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <!--
+      Android 11+ 包可见性:API 34 以下 Health Connect 是独立 APK,
+      不声明的话 getSdkStatus / 跳转安装页会静默失败。
+    -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".VanaApplication"
@@ -70,6 +88,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="vana" android:host="action" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!--
@@ -87,6 +114,17 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+
+        <receiver
+            android:name=".checkin.CheckInAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".checkin.CheckInBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

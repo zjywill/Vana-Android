@@ -1,0 +1,1000 @@
+package com.pinapia.vana.chat
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.pinapia.vana.Features
+import com.pinapia.vana.agent.AgentError
+import com.pinapia.vana.agent.CloudEngine
+import com.pinapia.vana.agent.FollowUpSuggestionHook
+import com.pinapia.vana.agent.QuestionSuggester
+import com.pinapia.vana.agent.healthChat
+import com.pinapia.vana.agentruntime.AgentHookDispatcher
+import com.pinapia.vana.agentruntime.AgentPendingInput
+import com.pinapia.vana.agentruntime.AgentTurnEvent
+import com.pinapia.vana.agentruntime.CapabilityRegistry
+import com.pinapia.vana.agentruntime.apply
+import com.pinapia.vana.ask.AskUserAnswer
+import com.pinapia.vana.exercises.ExerciseLibrary
+import com.pinapia.vana.health.HealthSituation
+import com.pinapia.vana.health.HealthStore
+import com.pinapia.vana.health.HealthTools
+import com.pinapia.vana.health.QuickSummaryWriter
+import com.pinapia.vana.location.LocationProvider
+import com.pinapia.vana.location.LocationSnapshot
+import com.pinapia.vana.medications.MedicationItem
+import com.pinapia.vana.medications.MedicationSnapshot
+import com.pinapia.vana.memory.MemoryExtractor
+import com.pinapia.vana.memory.MemoryHarvest
+import com.pinapia.vana.memory.MemorySnapshot
+import com.pinapia.vana.memory.apply
+import com.pinapia.vana.recall.SessionRecallTrigger
+import com.pinapia.vana.search.WebSearchClient
+import com.pinapia.vana.session.ChatMessage
+import com.pinapia.vana.session.ChatSession
+import com.pinapia.vana.session.GoalSummary
+import com.pinapia.vana.session.SessionStore
+import com.pinapia.vana.session.SessionSummary
+import com.pinapia.vana.session.SessionThread
+import com.pinapia.vana.settings.EngineSettings
+import com.pinapia.vana.settings.SecureKeyStore
+import com.pinapia.vana.tenant.Tenant
+import com.pinapia.vana.tenant.TenantOpening
+import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.vision.AttachmentImage
+import com.pinapia.vana.vision.ChatAttachment
+import com.pinapia.vana.vision.DraftAttachment
+import com.pinapia.vana.vision.TextRecognizer
+import android.graphics.Bitmap
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+
+class ChatViewModel(
+    private val sessionStore: SessionStore,
+    private val engineSettings: EngineSettings,
+    private val secureKeyStore: SecureKeyStore,
+    private val healthStore: HealthStore,
+    private val locationProvider: LocationProvider,
+    private val exerciseLibrary: ExerciseLibrary,
+    private val memorySnapshotProvider: () -> MemorySnapshot,
+    private val medicationSnapshotProvider: () -> MedicationSnapshot,
+    private val tenantProvider: () -> Tenant = { TenantScope.current },
+) : ViewModel() {
+    private val _session = MutableStateFlow(ChatSession())
+    val session: StateFlow<ChatSession> = _session.asStateFlow()
+
+    private val _summaries = MutableStateFlow<List<SessionSummary>>(emptyList())
+    val summaries: StateFlow<List<SessionSummary>> = _summaries.asStateFlow()
+
+    private val _goals = MutableStateFlow<List<GoalSummary>>(emptyList())
+    val goals: StateFlow<List<GoalSummary>> = _goals.asStateFlow()
+
+    private val _input = MutableStateFlow("")
+    val input: StateFlow<String> = _input.asStateFlow()
+
+    private val _isReplying = MutableStateFlow(false)
+    val isReplying: StateFlow<Boolean> = _isReplying.asStateFlow()
+
+    private val _engineGuidance = MutableStateFlow<String?>(null)
+    val engineGuidance: StateFlow<String?> = _engineGuidance.asStateFlow()
+
+    private val _retryNotice = MutableStateFlow<String?>(null)
+    val retryNotice: StateFlow<String?> = _retryNotice.asStateFlow()
+
+    private val _followUps = MutableStateFlow<List<String>>(emptyList())
+    val followUps: StateFlow<List<String>> = _followUps.asStateFlow()
+
+    private val _quickSummary = MutableStateFlow<String?>(null)
+    val quickSummary: StateFlow<String?> = _quickSummary.asStateFlow()
+
+    private val _situation = MutableStateFlow<HealthSituation?>(null)
+    val situation: StateFlow<HealthSituation?> = _situation.asStateFlow()
+
+    private val _situationQuestions = MutableStateFlow<List<String>>(emptyList())
+    val situationQuestions: StateFlow<List<String>> = _situationQuestions.asStateFlow()
+
+    private val _isWritingSummary = MutableStateFlow(false)
+    val isWritingSummary: StateFlow<Boolean> = _isWritingSummary.asStateFlow()
+
+    private val _draftAttachments = MutableStateFlow<List<DraftAttachment>>(emptyList())
+    val draftAttachments: StateFlow<List<DraftAttachment>> = _draftAttachments.asStateFlow()
+
+    private val _focusMedication = MutableStateFlow<MedicationItem?>(null)
+    val focusMedication: StateFlow<MedicationItem?> = _focusMedication.asStateFlow()
+
+    private val _selectedTopic = MutableStateFlow<ChatTopic?>(null)
+    val selectedTopic: StateFlow<ChatTopic?> = _selectedTopic.asStateFlow()
+
+    private var replyJob: Job? = null
+    private var summaryJob: Job? = null
+    private var replyingMessageId: String? = null
+    private var followUpHooks: AgentHookDispatcher? = null
+    private var followUpSessionId: String? = null
+    private var harvestJob: Job? = null
+    private var localQuickSummary: String? = null
+    /** 每次启动只生成一次首屏建议,不该每回到空会话就花一遍钱。 */
+    private var hasRequestedSuggestions = false
+
+    val suggestedQuestions: List<String>
+        get() {
+            _selectedTopic.value?.questions?.takeIf { it.isNotEmpty() }?.let { return it }
+            _focusMedication.value?.openingQuestions?.let { return it }
+            return _situationQuestions.value.ifEmpty {
+                listOf("昨晚睡得怎么样？", "今天走了多少步？", "最近静息心率有变化吗？")
+            }
+        }
+
+    val supportsVision: Boolean get() = engineSettings.modelSupportsVision()
+
+    init {
+        refreshSummaries()
+        refreshEngineAvailability()
+        refreshSituation()
+        viewModelScope.launch {
+            if (locationProvider.isAuthorized) {
+                locationProvider.refresh()
+            }
+        }
+    }
+
+    fun setInput(value: String) {
+        _input.value = value
+    }
+
+    fun applyCheckIn(question: String?) {
+        if (!question.isNullOrBlank()) {
+            _input.value = question
+        }
+    }
+
+    /** App Shortcut「问 Vana」:把问题带进新会话并自动发送。 */
+    fun applyAskAndSend(question: String?) {
+        val trimmed = question?.trim().orEmpty()
+        if (trimmed.isEmpty()) return
+        if (!_session.value.isEmpty || _isReplying.value) {
+            startNewSession()
+        }
+        send(trimmed)
+    }
+
+    fun applySpokenBrief(line: String?) {
+        if (!line.isNullOrBlank()) {
+            _quickSummary.value = line
+        }
+    }
+
+    fun refreshEngineAvailability() {
+        _engineGuidance.value = if (engineSettings.isConfigured(secureKeyStore)) {
+            null
+        } else {
+            "还没配置云端模型。请前往设置填写 API 密钥，并选择服务商和模型。"
+        }
+    }
+
+    fun refreshSummaries() {
+        viewModelScope.launch {
+            _summaries.value = sessionStore.listSummaries()
+            _goals.value = sessionStore.goals()
+            refreshFocusMedication()
+        }
+    }
+
+    private fun refreshFocusMedication() {
+        if (!engineSettings.medicationsEnabled) {
+            _focusMedication.value = null
+            return
+        }
+        val focusId = (_session.value.threadId)
+            ?.let { SessionThread.parse(it) }
+            ?.let { thread -> (thread as? SessionThread.Medication)?.medicationId }
+        _focusMedication.value = focusId?.let { id ->
+            medicationSnapshotProvider().items.firstOrNull { it.id == id }
+        }
+    }
+
+    fun refreshSituation() {
+        viewModelScope.launch {
+            val tenant = tenantProvider()
+            if (!tenant.isOwner) {
+                summaryJob?.cancel()
+                _situation.value = null
+                val meds = medicationSnapshotProvider()
+                _quickSummary.value = TenantOpening.quickSummary(tenant, meds)
+                _situationQuestions.value = TenantOpening.questions(tenant, meds)
+                return@launch
+            }
+            if (!Features.HEALTH_CONNECT) {
+                summaryJob?.cancel()
+                _situation.value = null
+                _quickSummary.value = null
+                _selectedTopic.value = null
+                _situationQuestions.value = listOf(
+                    "最近睡眠怎么样，我该注意什么？",
+                    "帮我看看这张化验单",
+                    "我在吃的药有什么要注意的？",
+                )
+                return@launch
+            }
+            val interests = sessionStore.interests()
+            val situation = HealthSituation.detect(healthStore, interests = interests)
+            if (_session.value.messages.isNotEmpty()) {
+                _situation.value = situation
+                return@launch
+            }
+            _situation.value = situation
+            localQuickSummary = situation.quickSummary
+            _quickSummary.value = situation.quickSummary
+            _situationQuestions.value = situation.questions
+
+            val key = secureKeyStore.apiKey?.trim().orEmpty()
+            val configured = key.isNotEmpty() && engineSettings.isConfigured(secureKeyStore)
+            if (!configured) {
+                writeQuickSummary(situation)
+                return@launch
+            }
+
+            // 并发:首屏建议和那段话互不相干,各自失败各自兜底。
+            if (!hasRequestedSuggestions) {
+                hasRequestedSuggestions = true
+                val suggester = QuestionSuggester(
+                    providerId = engineSettings.providerId,
+                    model = engineSettings.model,
+                    apiKey = key,
+                    situation = situation,
+                    healthTools = HealthTools(healthStore),
+                )
+                launch {
+                    val questions = runCatching { suggester.suggestions() }.getOrDefault(situation.questions)
+                    if (_session.value.messages.isEmpty() && _selectedTopic.value == null) {
+                        _situationQuestions.value = questions
+                    }
+                }
+            }
+            writeQuickSummary(situation)
+        }
+    }
+
+    /** 详情页刷新:重读数据,有 key 再写一遍。 */
+    fun regenerateQuickSummary() {
+        if (!Features.HEALTH_CONNECT) return
+        if (!tenantProvider().isOwner || _isWritingSummary.value) return
+        summaryJob?.cancel()
+        _isWritingSummary.value = true
+        summaryJob = viewModelScope.launch {
+            val interests = sessionStore.interests()
+            val situation = HealthSituation.detect(healthStore, interests = interests)
+            if (!isActive) {
+                _isWritingSummary.value = false
+                return@launch
+            }
+            _situation.value = situation
+            localQuickSummary = situation.quickSummary
+            _quickSummary.value = situation.quickSummary
+            _situationQuestions.value = situation.questions
+            if (!engineSettings.isConfigured(secureKeyStore)) {
+                _isWritingSummary.value = false
+                return@launch
+            }
+            writeQuickSummary(situation, alreadyWriting = true)
+        }
+    }
+
+    private fun writeQuickSummary(situation: HealthSituation, alreadyWriting: Boolean = false) {
+        summaryJob?.cancel()
+        if (!situation.hasSummaryFacts) {
+            if (alreadyWriting) _isWritingSummary.value = false
+            return
+        }
+        val key = secureKeyStore.apiKey?.trim().orEmpty()
+        if (key.isEmpty() || !engineSettings.isConfigured(secureKeyStore)) {
+            if (alreadyWriting) _isWritingSummary.value = false
+            return
+        }
+        if (!alreadyWriting) _isWritingSummary.value = true
+        summaryJob = viewModelScope.launch {
+            try {
+                val writer = QuickSummaryWriter(
+                    providerId = engineSettings.providerId,
+                    model = engineSettings.model,
+                    apiKey = key,
+                    situation = situation,
+                )
+                var latest = ""
+                writer.stream().collect { text ->
+                    if (_session.value.messages.isNotEmpty()) return@collect
+                    latest = text
+                    _quickSummary.value = QuickSummaryWriter.partial(text)
+                }
+                if (_session.value.messages.isNotEmpty()) return@launch
+                _quickSummary.value = QuickSummaryWriter.parse(latest) ?: localQuickSummary
+            } catch (_: Throwable) {
+                _quickSummary.value = localQuickSummary
+            } finally {
+                _isWritingSummary.value = false
+            }
+        }
+    }
+
+    fun send(text: String? = null) {
+        val trimmed = (text ?: _input.value).trim()
+        val drafts = _draftAttachments.value.filter { !it.isLoading && it.failure == null }
+        if (trimmed.isEmpty() && drafts.isEmpty()) {
+            if (!_isReplying.value && hasQueuedInput()) {
+                startReply()
+            }
+            return
+        }
+        _input.value = ""
+        _followUps.value = emptyList()
+        val persist = !_session.value.isPrivate
+        val store = TenantScope.currentStores.attachments
+        val attachments = drafts.map { draft ->
+            draft.toChatAttachment(persist = persist, store = store)
+        }
+        _draftAttachments.value = emptyList()
+        val user = ChatMessage(
+            role = ChatMessage.Role.USER,
+            text = trimmed,
+            attachments = attachments,
+            isQueued = true,
+        )
+        updateSession { copy(messages = messages + user) }
+        if (!_isReplying.value) {
+            startReply()
+        }
+    }
+
+    fun addPhoto(bitmap: Bitmap) {
+        if (_draftAttachments.value.size >= ChatAttachment.MAX_ATTACHMENTS) return
+        val id = UUID.randomUUID().toString()
+        val draft = DraftAttachment(
+            id = id,
+            preview = bitmap,
+            isLoading = false,
+            isRecognizing = true,
+            sendsImage = engineSettings.photoImagePolicy.sendsImageByDefault && supportsVision,
+            imageBytes = AttachmentImage.jpegData(bitmap),
+        )
+        _draftAttachments.update { it + draft }
+        viewModelScope.launch {
+            val recognized = runCatching { TextRecognizer.recognize(bitmap) }
+                .getOrElse {
+                    updateDraft(id) {
+                        copy(isRecognizing = false, failure = "这张照片读不出来，换一张试试。")
+                    }
+                    return@launch
+                }
+            updateDraft(id) {
+                val policy = engineSettings.photoImagePolicy
+                copy(
+                    text = recognized.text,
+                    droppedLines = recognized.droppedLines,
+                    isRecognizing = false,
+                    sendsImage = if (supportsVision && policy.sendsImageByDefault) {
+                        true
+                    } else {
+                        sendsImage
+                    },
+                )
+            }
+        }
+    }
+
+    fun addDocument(name: String, text: String, droppedLines: Int, failure: String?) {
+        if (_draftAttachments.value.size >= ChatAttachment.MAX_ATTACHMENTS) return
+        _draftAttachments.update {
+            it + DraftAttachment(
+                preview = null,
+                text = text,
+                droppedLines = droppedLines,
+                isLoading = false,
+                isRecognizing = false,
+                failure = failure,
+                sendsImage = false,
+                imageBytes = null,
+                documentName = name,
+            )
+        }
+    }
+
+    /**
+     * 从「文件」选进来的一份。PDF 会拆成多页照片走 OCR；Word / txt 直接取文本。
+     * 隐私会话里附件仍只进草稿，发送时不落盘（见 [DraftAttachment.toChatAttachment]）。
+     */
+    fun importFile(context: android.content.Context, uri: android.net.Uri) {
+        if (_draftAttachments.value.size >= ChatAttachment.MAX_ATTACHMENTS) return
+        val placeholderId = UUID.randomUUID().toString()
+        _draftAttachments.update {
+            it + DraftAttachment(id = placeholderId, isLoading = true, isRecognizing = false)
+        }
+        viewModelScope.launch {
+            val imported = withContext(Dispatchers.IO) {
+                runCatching { com.pinapia.vana.vision.AttachmentImporter.load(context, uri) }
+                    .getOrElse {
+                        listOf(
+                            com.pinapia.vana.vision.ImportedAttachment.Document(
+                                name = uri.lastPathSegment ?: "文件",
+                                text = "",
+                                droppedLines = 0,
+                                failure = "这个文件读不出来。",
+                            ),
+                        )
+                    }
+            }
+            _draftAttachments.update { list -> list.filterNot { it.id == placeholderId } }
+            for (item in imported) {
+                if (_draftAttachments.value.size >= ChatAttachment.MAX_ATTACHMENTS) break
+                when (item) {
+                    is com.pinapia.vana.vision.ImportedAttachment.Photo -> addPhoto(item.bitmap)
+                    is com.pinapia.vana.vision.ImportedAttachment.Document ->
+                        addDocument(item.name, item.text, item.droppedLines, item.failure)
+                }
+            }
+        }
+    }
+
+    fun voiceVocabulary(): List<String> =
+        com.pinapia.vana.voice.VoiceVocabulary.terms(
+            medications = medicationSnapshotProvider(),
+            memory = memorySnapshotProvider(),
+        )
+
+    fun appendVoiceTranscript(spoken: String) {
+        if (spoken.isBlank()) return
+        _input.value = com.pinapia.vana.voice.VoiceTranscript.merge(_input.value, spoken)
+    }
+
+    fun removeDraft(id: String) {
+        _draftAttachments.update { it.filterNot { draft -> draft.id == id } }
+    }
+
+    fun setDraftSendsImage(id: String, sends: Boolean) {
+        updateDraft(id) { copy(sendsImage = sends && canSendImage && supportsVision) }
+    }
+
+    fun acceptImageOffer() {
+        _draftAttachments.update { list ->
+            list.map { draft ->
+                if (draft.canSendImage && supportsVision && !draft.hasText) {
+                    draft.copy(sendsImage = true)
+                } else {
+                    draft
+                }
+            }
+        }
+    }
+
+    fun declineImageOffer() {
+        _draftAttachments.update { list -> list.map { it.copy(sendsImage = false) } }
+    }
+
+    private fun updateDraft(id: String, block: DraftAttachment.() -> DraftAttachment) {
+        _draftAttachments.update { list ->
+            list.map { if (it.id == id) it.block() else it }
+        }
+    }
+
+    fun answerAsk(messageId: String, callId: String, answer: AskUserAnswer) {
+        if (answer.isEmpty) return
+        val messages = _session.value.messages
+        val index = messages.indexOfFirst { it.id == messageId }
+        if (index < 0) return
+        val message = messages[index]
+        val callIndex = message.toolCalls.indexOfFirst { it.id == callId }
+        if (callIndex < 0) return
+        if (message.toolCalls[callIndex].askAnswer != null) return
+        val updatedCalls = message.toolCalls.toMutableList()
+        updatedCalls[callIndex] = updatedCalls[callIndex].copy(askAnswer = answer)
+        updateSession {
+            copy(
+                messages = messages.mapIndexed { i, m ->
+                    if (i == index) m.copy(toolCalls = updatedCalls) else m
+                },
+            )
+        }
+        send(answer.messageText)
+    }
+
+    fun stopReply() {
+        replyJob?.cancel()
+        replyJob = null
+        _isReplying.value = false
+        _retryNotice.value = null
+        val id = replyingMessageId ?: return
+        mutateMessage(id) { markStopped() }
+        saveSession()
+    }
+
+    fun retry(assistantId: String) {
+        if (_isReplying.value) return
+        val messages = _session.value.messages
+        val index = messages.indexOfFirst { it.id == assistantId }
+        if (index <= 0) return
+        val priorUser = messages.take(index).lastOrNull { it.role == ChatMessage.Role.USER } ?: return
+        updateSession {
+            copy(messages = messages.take(index).map {
+                if (it.id == priorUser.id) it.copy(isQueued = true) else it
+            })
+        }
+        startReply()
+    }
+
+    fun startNewSession(isPrivate: Boolean = false) {
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        _draftAttachments.value = emptyList()
+        _focusMedication.value = null
+        _selectedTopic.value = null
+        _session.value = ChatSession(isPrivate = isPrivate)
+        refreshEngineAvailability()
+        refreshSituation()
+    }
+
+    fun openSession(id: String) {
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        _draftAttachments.value = emptyList()
+        viewModelScope.launch {
+            val loaded = sessionStore.load(id) ?: return@launch
+            _session.value = loadImagePayloads(loaded)
+            _selectedTopic.value = ChatTopics.find(loaded.topicId)
+            refreshFocusMedication()
+            refreshEngineAvailability()
+        }
+    }
+
+    fun deleteSession(id: String) {
+        viewModelScope.launch {
+            sessionStore.delete(id)
+            if (_session.value.id == id) {
+                startNewSession()
+            }
+            refreshSummaries()
+        }
+    }
+
+    fun clearAllChats() {
+        if (_isReplying.value) return
+        stopReply()
+        viewModelScope.launch {
+            sessionStore.deleteAll()
+            _session.value = ChatSession()
+            _focusMedication.value = null
+            _selectedTopic.value = null
+            resetFollowUps()
+            _draftAttachments.value = emptyList()
+            refreshSummaries()
+            refreshSituation()
+        }
+    }
+
+    fun setPrivate(isPrivate: Boolean) {
+        if (!_session.value.isEmpty) return
+        updateSession { copy(isPrivate = isPrivate) }
+    }
+
+    fun selectTopic(topic: ChatTopic?) {
+        if (!_session.value.isEmpty || _isReplying.value) return
+        _selectedTopic.value = topic
+        updateSession { copy(topicId = topic?.id) }
+    }
+
+    fun openMedication(item: MedicationItem) {
+        if (_isReplying.value) return
+        val thread = SessionThread.medication(item.id)
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        _draftAttachments.value = emptyList()
+        viewModelScope.launch {
+            val continued = sessionStore.openThread(thread)
+            _session.value = continued?.let { loadImagePayloads(it) }
+                ?: ChatSession(threadId = thread.id, threadTitle = item.name)
+            _focusMedication.value = item
+            _selectedTopic.value = null
+            _situationQuestions.value = item.openingQuestions
+            refreshEngineAvailability()
+            refreshSummaries()
+        }
+    }
+
+    fun startGoal(named: String) {
+        if (_isReplying.value) return
+        val title = named.trim()
+        if (title.isEmpty()) return
+        val thread = SessionThread.goal()
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        _draftAttachments.value = emptyList()
+        _focusMedication.value = null
+        _selectedTopic.value = null
+        _session.value = ChatSession(threadId = thread.id, threadTitle = title)
+        refreshEngineAvailability()
+        refreshSituation()
+    }
+
+    fun openGoal(goal: GoalSummary) {
+        if (_isReplying.value) return
+        val thread = goal.thread ?: return
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        _draftAttachments.value = emptyList()
+        _focusMedication.value = null
+        viewModelScope.launch {
+            val continued = sessionStore.openThread(thread)
+            _session.value = continued?.let { loadImagePayloads(it) }
+                ?: ChatSession(threadId = thread.id, threadTitle = goal.title)
+            refreshEngineAvailability()
+            refreshSummaries()
+        }
+    }
+
+    fun renameGoal(goal: GoalSummary, title: String) {
+        val thread = goal.thread ?: return
+        viewModelScope.launch {
+            sessionStore.renameThread(thread, title)
+            if (_session.value.threadId == thread.id) {
+                updateSession { copy(threadTitle = title.trim()) }
+            }
+            refreshSummaries()
+        }
+    }
+
+    fun deleteGoal(goal: GoalSummary) {
+        val thread = goal.thread ?: return
+        viewModelScope.launch {
+            sessionStore.deleteThread(thread)
+            if (_session.value.threadId == thread.id) {
+                startNewSession()
+            }
+            refreshSummaries()
+        }
+    }
+
+    fun branch(fromMessageId: String) {
+        if (_isReplying.value) return
+        val messages = _session.value.messages
+        val index = messages.indexOfFirst { it.id == fromMessageId }
+        if (index < 0) return
+        stopReply()
+        harvestIfNeeded(_session.value)
+        resetFollowUps()
+        val source = _session.value
+        val branched = ChatSession(
+            messages = messages.take(index + 1).map { it.copy(isQueued = false) },
+            topicId = source.topicId,
+            isPrivate = source.isPrivate,
+            memoryHarvestedMessageCount = source.memoryHarvestedMessageCount
+                .coerceAtMost(index + 1),
+            // 分支不带走 thread——目标/用药线不能拆成两条
+        )
+        _session.value = branched
+        _focusMedication.value = null
+        _selectedTopic.value = ChatTopics.find(branched.topicId)
+        saveSession()
+        refreshSummaries()
+    }
+
+    private fun resetFollowUps() {
+        _followUps.value = emptyList()
+        followUpHooks = null
+        followUpSessionId = null
+    }
+
+    private fun startReply() {
+        if (_isReplying.value) return
+        replyJob = viewModelScope.launch {
+            _isReplying.value = true
+            try {
+                while (true) {
+                    dequeueAll()
+                    if (!hasQueuedInput() && _session.value.messages.none { it.role == ChatMessage.Role.USER }) break
+                    beginAssistantMessage()
+                    runTurn()
+                    if (!hasQueuedInput()) break
+                }
+            } catch (_: kotlinx.coroutines.CancellationException) {
+                // stopReply 已处理
+            } catch (error: Throwable) {
+                val message = (AgentError.wrapping(error) as? Throwable)?.message ?: error.message ?: "未知错误"
+                replyingMessageId?.let { id ->
+                    mutateMessage(id) { markFailed(message) }
+                }
+            } finally {
+                _isReplying.value = false
+                replyingMessageId = null
+                _retryNotice.value = null
+                saveSession()
+                refreshSummaries()
+            }
+        }
+    }
+
+    private suspend fun runTurn() {
+        locationProvider.refresh()
+        val engine = resolveEngine()
+        val history = _session.value.messages.filterNot { it.isQueued }
+        engine.reply(
+            history = history,
+            pendingInput = {
+                val queued = _session.value.messages.filter { it.isQueued && it.role == ChatMessage.Role.USER }
+                if (queued.isEmpty()) return@reply emptyList()
+                updateSession {
+                    copy(messages = messages.map { if (it.isQueued) it.copy(isQueued = false) else it })
+                }
+                queued.map { AgentPendingInput(id = it.uuid, text = it.text) }
+            },
+        ).collect { event -> applyEvent(event) }
+    }
+
+    private fun applyEvent(event: AgentTurnEvent) {
+        when (event) {
+            is AgentTurnEvent.HistoryCompacted -> {
+                mutateMessage(event.messageID.toString()) { applyCompaction(event.artifact) }
+            }
+            is AgentTurnEvent.RetryScheduled -> {
+                _retryNotice.value = "连接不稳定，正在重试（${event.notice.attempt}/${event.notice.maxAttempts}）"
+            }
+            is AgentTurnEvent.TextDelta -> {
+                _retryNotice.value = null
+                replyingMessageId?.let { id -> mutateMessage(id) { apply(event) } }
+            }
+            is AgentTurnEvent.PendingInputAccepted -> {
+                splitReplyAroundInterjection(event.inputs.map { it.id.toString() })
+                replyingMessageId?.let { id -> mutateMessage(id) { apply(event) } }
+            }
+            else -> {
+                replyingMessageId?.let { id -> mutateMessage(id) { apply(event) } }
+            }
+        }
+    }
+
+    private fun splitReplyAroundInterjection(acceptedIds: List<String>) {
+        val id = replyingMessageId ?: return
+        val messages = _session.value.messages.toMutableList()
+        val index = messages.indexOfFirst { it.id == id }
+        if (index < 0) return
+        val current = messages[index]
+        if (current.text.isBlank() && current.toolCalls.isEmpty()) {
+            return
+        }
+        val firstHalf = current.copy(
+            id = UUID.randomUUID().toString(),
+            storedTurn = current.storedTurn.copy(
+                inlinedMessageIDs = current.storedTurn.inlinedMessageIDs + current.id,
+            ),
+        )
+        val secondHalf = ChatMessage(role = ChatMessage.Role.ASSISTANT, text = "")
+        messages[index] = firstHalf
+        val insertAt = messages.indexOfLast { it.id in acceptedIds }.let { if (it >= 0) it + 1 else messages.size }
+        messages.add(insertAt.coerceAtMost(messages.size), secondHalf)
+        secondHalf.storedTurn = secondHalf.storedTurn.copy(
+            inlinedMessageIDs = listOf(firstHalf.id),
+        )
+        replyingMessageId = secondHalf.id
+        updateSession { copy(messages = messages.toList()) }
+    }
+
+    private fun beginAssistantMessage() {
+        val assistant = ChatMessage(role = ChatMessage.Role.ASSISTANT, text = "")
+        replyingMessageId = assistant.id
+        updateSession { copy(messages = messages + assistant) }
+    }
+
+    private fun dequeueAll() {
+        val messages = _session.value.messages
+        val firstQueuedIndex = messages.indexOfFirst { it.isQueued && it.role == ChatMessage.Role.USER }
+        if (firstQueuedIndex < 0) return
+        updateSession {
+            copy(
+                messages = messages.mapIndexed { index, message ->
+                    if (index <= firstQueuedIndex && message.isQueued) message.copy(isQueued = false) else message
+                },
+            )
+        }
+    }
+
+    private fun hasQueuedInput(): Boolean =
+        _session.value.messages.any { it.isQueued && it.role == ChatMessage.Role.USER }
+
+    private fun resolveEngine(): CloudEngine {
+        val tenant = tenantProvider()
+        val stores = TenantScope.currentStores
+        val webSearch = WebSearchClient.storedKey(secureKeyStore.serperApiKey)
+        val useHealth = Features.HEALTH_CONNECT && tenant.isOwner
+        val registry = CapabilityRegistry.healthChat(
+            includesHealthTools = useHealth,
+            allowsMemoryWrites = !_session.value.isPrivate,
+            allowsMedicationWrites = !_session.value.isPrivate,
+            allowsRecall = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
+            asksUser = true,
+            healthTools = if (useHealth) HealthTools(healthStore) else null,
+            memoryStore = stores.memory,
+            medicationStore = stores.medications,
+            sessionStore = sessionStore,
+            currentSessionId = _session.value.id,
+            webSearch = webSearch,
+            exerciseLibrary = exerciseLibrary,
+            memoryEnabled = engineSettings.memoryEnabled,
+            medicationsEnabled = engineSettings.medicationsEnabled,
+        )
+        val location = if (locationProvider.isAuthorized) {
+            locationProvider.snapshot
+        } else {
+            LocationSnapshot.unknown
+        }
+        val thread = SessionThread.parse(_session.value.threadId)
+        val goalTitle = if (thread?.isGoal == true) _session.value.threadTitle else null
+        return CloudEngine.create(
+            providerId = engineSettings.providerId,
+            model = engineSettings.model,
+            secureKeyStore = secureKeyStore,
+            tenant = tenant,
+            memory = if (engineSettings.memoryEnabled) memorySnapshotProvider() else MemorySnapshot.empty,
+            medications = if (engineSettings.medicationsEnabled) medicationSnapshotProvider() else MedicationSnapshot.empty,
+            location = location,
+            capabilityRegistry = registry,
+            thinkingEnabled = engineSettings.thinkingEnabled,
+            persona = engineSettings.persona,
+            hooks = followUpHooks(),
+            goal = goalTitle,
+            focusMedication = _focusMedication.value,
+            topic = _selectedTopic.value ?: ChatTopics.find(_session.value.topicId),
+        )
+    }
+
+    private fun followUpHooks(): AgentHookDispatcher {
+        val sessionId = _session.value.id
+        followUpHooks?.let { existing ->
+            if (followUpSessionId == sessionId) return existing
+        }
+        val key = secureKeyStore.apiKey?.trim().orEmpty()
+        val hook = FollowUpSuggestionHook(
+            providerId = engineSettings.providerId,
+            model = engineSettings.model,
+            apiKey = key,
+            onSuggestions = { suggestions ->
+                if (_session.value.id != sessionId || _isReplying.value) return@FollowUpSuggestionHook
+                _followUps.value = suggestions
+            },
+        )
+        val dispatcher = AgentHookDispatcher(listOf(hook))
+        followUpHooks = dispatcher
+        followUpSessionId = sessionId
+        return dispatcher
+    }
+
+    private fun loadImagePayloads(session: ChatSession): ChatSession {
+        if (!supportsVision) return session
+        val store = TenantScope.currentStores.attachments
+        val messages = session.messages.map { message ->
+            if (message.attachments.isEmpty()) return@map message
+            message.copy(
+                attachments = message.attachments.map { attachment ->
+                    if (!attachment.sendsImage || attachment.imagePayload != null) {
+                        attachment
+                    } else {
+                        val name = attachment.imageFileName ?: return@map attachment
+                        val bytes = store.data(named = name) ?: return@map attachment
+                        attachment.copy(
+                            imagePayload = android.util.Base64.encodeToString(
+                                bytes,
+                                android.util.Base64.NO_WRAP,
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+        return session.copy(messages = messages)
+    }
+
+    private fun harvestIfNeeded(session: ChatSession) {
+        if (!MemoryHarvest.shouldHarvest(session, engineSettings.memoryEnabled)) return
+        val key = secureKeyStore.apiKey?.trim().orEmpty()
+        if (key.isEmpty()) return
+        val snapshot = memorySnapshotProvider()
+        val messageCount = session.messages.size
+        val sessionId = session.id
+        harvestJob = viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val ops = MemoryExtractor(
+                    providerId = engineSettings.providerId,
+                    model = engineSettings.model,
+                    apiKey = key,
+                    snapshot = snapshot,
+                ).operations(from = session)
+                TenantScope.currentStores.memory.apply(ops)
+                withContext(Dispatchers.Main) {
+                    if (_session.value.id == sessionId) {
+                        updateSession { copy(memoryHarvestedMessageCount = messageCount) }
+                        saveSession()
+                    } else {
+                        sessionStore.load(sessionId)?.let { loaded ->
+                            sessionStore.save(loaded.copy(memoryHarvestedMessageCount = messageCount))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        harvestIfNeeded(_session.value)
+        super.onCleared()
+    }
+
+    private fun saveSession() {
+        val session = _session.value
+        if (session.isPrivate || session.isEmpty) return
+        val updated = session.copy(updatedAt = Clock.System.now())
+        _session.value = updated
+        sessionStore.save(updated)
+    }
+
+    private fun updateSession(transform: ChatSession.() -> ChatSession) {
+        _session.update { it.transform() }
+    }
+
+    private fun mutateMessage(id: String, block: ChatMessage.() -> Unit) {
+        updateSession {
+            copy(
+                messages = messages.map { message ->
+                    if (message.id == id) {
+                        message.also(block)
+                        message.copy(
+                            text = message.text,
+                            attachments = message.attachments.toList(),
+                            reasoning = message.reasoning,
+                            toolCalls = message.toolCalls.toList(),
+                            storedTurn = message.storedTurn,
+                            textIsPlaceholder = message.textIsPlaceholder,
+                            errorDescription = message.errorDescription,
+                            isQueued = message.isQueued,
+                        )
+                    } else {
+                        message
+                    }
+                },
+            )
+        }
+    }
+
+    class Factory(
+        private val sessionStore: SessionStore,
+        private val engineSettings: EngineSettings,
+        private val secureKeyStore: SecureKeyStore,
+        private val healthStore: HealthStore,
+        private val locationProvider: LocationProvider,
+        private val exerciseLibrary: ExerciseLibrary,
+        private val memorySnapshotProvider: () -> MemorySnapshot,
+        private val medicationSnapshotProvider: () -> MedicationSnapshot,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return ChatViewModel(
+                sessionStore = sessionStore,
+                engineSettings = engineSettings,
+                secureKeyStore = secureKeyStore,
+                healthStore = healthStore,
+                locationProvider = locationProvider,
+                exerciseLibrary = exerciseLibrary,
+                memorySnapshotProvider = memorySnapshotProvider,
+                medicationSnapshotProvider = medicationSnapshotProvider,
+            ) as T
+        }
+    }
+}

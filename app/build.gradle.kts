@@ -80,6 +80,8 @@ dependencies {
 
     // 化验单 / 药瓶 OCR,全在本机跑。
     implementation(libs.mlkit.text.recognition.chinese)
+    // 动作卡示意图（assets/exercises/*.svg）。
+    implementation(libs.androidsvg)
 
     implementation(libs.okhttp)
     implementation(libs.okhttp.sse)

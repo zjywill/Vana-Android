@@ -1,5 +1,6 @@
 package com.pinapia.vana.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -8,11 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * 默认跟着系统取色(Material You)。iOS 那边整套界面是系统原生观感,Android 上的对等选择就是
- * 让配色跟着用户自己的壁纸走,而不是硬写一套品牌色——一个每天都要打开的健康 app,长得像
- * 这台手机上的其它 app 比长得像我们的 logo 重要。
+ * Material You 动态色只在 API 31+ 有系统资源。再低的版本硬调 [dynamicLightColorScheme]
+ * 会直接 Resources$NotFoundException 崩掉——OnePlus 6 (API 30) 上就是这么挂的。
  *
- * 关掉 dynamic 时退回 [FallbackLightColors] / [FallbackDarkColors]。
+ * 关掉 dynamic / 系统不够时退回 [FallbackLightColors] / [FallbackDarkColors]。
  */
 @Composable
 fun VanaTheme(
@@ -21,9 +21,10 @@ fun VanaTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val useDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val colorScheme = when {
-        dynamicColor && darkTheme -> dynamicDarkColorScheme(context)
-        dynamicColor -> dynamicLightColorScheme(context)
+        useDynamic && darkTheme -> dynamicDarkColorScheme(context)
+        useDynamic -> dynamicLightColorScheme(context)
         darkTheme -> FallbackDarkColors
         else -> FallbackLightColors
     }
