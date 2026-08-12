@@ -14,19 +14,20 @@ import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.CloudCatalog
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -35,6 +36,15 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
+
+/** `JsonNull` 不是 Kotlin null，`?.jsonObject` 拦不住，会直接抛。 */
+private fun JsonElement?.asObjectOrNull(): JsonObject? = this as? JsonObject
+
+private fun JsonElement?.asArrayOrNull(): JsonArray? = this as? JsonArray
+
+private fun JsonElement?.asStringOrNull(): String? = (this as? JsonPrimitive)?.contentOrNull
+
+private fun JsonElement?.asIntOrNull(): Int? = (this as? JsonPrimitive)?.intOrNull
 
 /**
  * OpenAI Chat Completions SSE + Anthropic Messages SSE。
@@ -123,84 +133,85 @@ class OpenAICompatibleModelClient(
                 try {
                     when (wireProtocol) {
                         CloudCatalog.WireProtocol.OPENAI -> {
-                            val root = json.parseToJsonElement(data).jsonObject
-                            servedModelId = root["model"]?.jsonPrimitive?.contentOrNull ?: servedModelId
-                            root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull?.let {
+                            val root = json.parseToJsonElement(data).asObjectOrNull() ?: return
+                            servedModelId = root["model"].asStringOrNull() ?: servedModelId
+                            root["error"].asObjectOrNull()?.get("message").asStringOrNull()?.let {
                                 failure = it
-                            }
-                            root["usage"]?.jsonObject?.let { usage = parseUsage(it) }
-                            val choices = root["choices"]?.jsonArray ?: return
+                            } ?: root["error"].asStringOrNull()?.let { failure = it }
+                            root["usage"].asObjectOrNull()?.let { usage = parseUsage(it) }
+                            val choices = root["choices"].asArrayOrNull() ?: return
                             for (choice in choices) {
-                                val obj = choice.jsonObject
-                                obj["finish_reason"]?.jsonPrimitive?.contentOrNull?.let { finishReason = it }
-                                val delta = obj["delta"]?.jsonObject ?: continue
-                                delta["content"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
+                                val obj = choice.asObjectOrNull() ?: continue
+                                obj["finish_reason"].asStringOrNull()?.let { finishReason = it }
+                                val delta = obj["delta"].asObjectOrNull() ?: continue
+                                delta["content"].asStringOrNull()?.takeIf { it.isNotEmpty() }?.let {
                                     text.append(it)
                                     trySend(AgentModelStreamEvent.TextDelta(it))
                                 }
-                                delta["reasoning_content"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
+                                delta["reasoning_content"].asStringOrNull()?.takeIf { it.isNotEmpty() }?.let {
                                     reasoning.append(it)
                                     trySend(AgentModelStreamEvent.ReasoningDelta(it))
                                 }
-                                delta["tool_calls"]?.jsonArray?.forEach { element ->
-                                    val call = element.jsonObject
-                                    val index = call["index"]?.jsonPrimitive?.intOrNull ?: 0
+                                delta["tool_calls"].asArrayOrNull()?.forEach { element ->
+                                    val call = element.asObjectOrNull() ?: return@forEach
+                                    val index = call["index"].asIntOrNull() ?: 0
                                     val bucket = toolCalls.getOrPut(index) { MutableToolCall() }
-                                    call["id"]?.jsonPrimitive?.contentOrNull?.let { bucket.id = it }
-                                    call["function"]?.jsonObject?.let { fn ->
-                                        fn["name"]?.jsonPrimitive?.contentOrNull?.let { bucket.name += it }
-                                        fn["arguments"]?.jsonPrimitive?.contentOrNull?.let { bucket.arguments += it }
+                                    call["id"].asStringOrNull()?.let { bucket.id = it }
+                                    call["function"].asObjectOrNull()?.let { fn ->
+                                        fn["name"].asStringOrNull()?.let { bucket.name += it }
+                                        fn["arguments"].asStringOrNull()?.let { bucket.arguments += it }
                                     }
                                 }
                             }
                         }
                         CloudCatalog.WireProtocol.ANTHROPIC -> {
-                            val root = json.parseToJsonElement(data).jsonObject
-                            when (type ?: root["type"]?.jsonPrimitive?.contentOrNull) {
+                            val root = json.parseToJsonElement(data).asObjectOrNull() ?: return
+                            when (type ?: root["type"].asStringOrNull()) {
                                 "error" -> {
-                                    failure = root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+                                    failure = root["error"].asObjectOrNull()?.get("message").asStringOrNull()
+                                        ?: root["error"].asStringOrNull()
                                         ?: "anthropic error"
                                 }
                                 "content_block_delta" -> {
-                                    val delta = root["delta"]?.jsonObject
-                                    when (delta?.get("type")?.jsonPrimitive?.contentOrNull) {
-                                        "text_delta" -> delta["text"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
+                                    val delta = root["delta"].asObjectOrNull() ?: return
+                                    when (delta["type"].asStringOrNull()) {
+                                        "text_delta" -> delta["text"].asStringOrNull()?.takeIf { it.isNotEmpty() }?.let {
                                             text.append(it)
                                             trySend(AgentModelStreamEvent.TextDelta(it))
                                         }
                                         "input_json_delta" -> {
-                                            val index = root["index"]?.jsonPrimitive?.intOrNull ?: 0
+                                            val index = root["index"].asIntOrNull() ?: 0
                                             val bucket = toolCalls.getOrPut(index) { MutableToolCall() }
-                                            delta["partial_json"]?.jsonPrimitive?.contentOrNull?.let {
+                                            delta["partial_json"].asStringOrNull()?.let {
                                                 bucket.arguments += it
                                             }
                                         }
-                                        "thinking_delta" -> delta["thinking"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
+                                        "thinking_delta" -> delta["thinking"].asStringOrNull()?.takeIf { it.isNotEmpty() }?.let {
                                             reasoning.append(it)
                                             trySend(AgentModelStreamEvent.ReasoningDelta(it))
                                         }
                                     }
                                 }
                                 "content_block_start" -> {
-                                    val block = root["content_block"]?.jsonObject
-                                    if (block?.get("type")?.jsonPrimitive?.contentOrNull == "tool_use") {
-                                        val index = root["index"]?.jsonPrimitive?.intOrNull ?: 0
+                                    val block = root["content_block"].asObjectOrNull()
+                                    if (block != null && block["type"].asStringOrNull() == "tool_use") {
+                                        val index = root["index"].asIntOrNull() ?: 0
                                         val bucket = toolCalls.getOrPut(index) { MutableToolCall() }
-                                        bucket.id = block["id"]?.jsonPrimitive?.contentOrNull ?: bucket.id
-                                        bucket.name = block["name"]?.jsonPrimitive?.contentOrNull ?: bucket.name
+                                        bucket.id = block["id"].asStringOrNull() ?: bucket.id
+                                        bucket.name = block["name"].asStringOrNull() ?: bucket.name
                                     }
                                 }
                                 "message_delta" -> {
-                                    root["delta"]?.jsonObject?.get("stop_reason")?.jsonPrimitive?.contentOrNull?.let {
+                                    root["delta"].asObjectOrNull()?.get("stop_reason").asStringOrNull()?.let {
                                         finishReason = it
                                     }
-                                    root["usage"]?.jsonObject?.let { usage = parseAnthropicUsage(it, usage) }
+                                    root["usage"].asObjectOrNull()?.let { usage = parseAnthropicUsage(it, usage) }
                                 }
                                 "message_start" -> {
-                                    root["message"]?.jsonObject?.get("model")?.jsonPrimitive?.contentOrNull?.let {
+                                    root["message"].asObjectOrNull()?.get("model").asStringOrNull()?.let {
                                         servedModelId = it
                                     }
-                                    root["message"]?.jsonObject?.get("usage")?.jsonObject?.let {
+                                    root["message"].asObjectOrNull()?.get("usage").asObjectOrNull()?.let {
                                         usage = parseAnthropicUsage(it, usage)
                                     }
                                 }
@@ -273,7 +284,7 @@ class OpenAICompatibleModelClient(
 
         val eventSource = EventSources.createFactory(httpClient).newEventSource(builder.build(), listener)
         awaitClose { eventSource.cancel() }
-    }
+    }.buffer(Channel.UNLIMITED)
 
     private fun openaiBody(request: AgentModelRequest): String {
         val messages = buildJsonArray {
@@ -535,7 +546,13 @@ class OpenAICompatibleModelClient(
                         buildJsonObject {
                             put("name", capability.name)
                             capability.description?.let { put("description", it) }
-                            put("parameters", json.parseToJsonElement(capability.inputSchema.encodedString()))
+                            val parameters = runCatching {
+                                json.parseToJsonElement(capability.inputSchema.encodedString())
+                            }.getOrNull().asObjectOrNull() ?: buildJsonObject {
+                                put("type", "object")
+                                put("properties", buildJsonObject {})
+                            }
+                            put("parameters", parameters)
                         },
                     )
                 },
@@ -549,23 +566,29 @@ class OpenAICompatibleModelClient(
                 buildJsonObject {
                     put("name", capability.name)
                     capability.description?.let { put("description", it) }
-                    put("input_schema", json.parseToJsonElement(capability.inputSchema.encodedString()))
+                    val schema = runCatching {
+                        json.parseToJsonElement(capability.inputSchema.encodedString())
+                    }.getOrNull().asObjectOrNull() ?: buildJsonObject {
+                        put("type", "object")
+                        put("properties", buildJsonObject {})
+                    }
+                    put("input_schema", schema)
                 },
             )
         }
     }
 
     private fun parseUsage(obj: JsonObject): AgentUsage = AgentUsage(
-        inputTokens = AgentUsage.Input(total = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull),
-        outputTokens = AgentUsage.Output(total = obj["completion_tokens"]?.jsonPrimitive?.intOrNull),
+        inputTokens = AgentUsage.Input(total = obj["prompt_tokens"].asIntOrNull()),
+        outputTokens = AgentUsage.Output(total = obj["completion_tokens"].asIntOrNull()),
     )
 
     private fun parseAnthropicUsage(obj: JsonObject, previous: AgentUsage?): AgentUsage = AgentUsage(
         inputTokens = AgentUsage.Input(
-            total = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: previous?.inputTokens?.total,
+            total = obj["input_tokens"].asIntOrNull() ?: previous?.inputTokens?.total,
         ),
         outputTokens = AgentUsage.Output(
-            total = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: previous?.outputTokens?.total,
+            total = obj["output_tokens"].asIntOrNull() ?: previous?.outputTokens?.total,
         ),
     )
 
@@ -584,9 +607,10 @@ class OpenAICompatibleModelClient(
 
     private fun extractErrorMessage(body: String): String {
         return runCatching {
-            val root = json.parseToJsonElement(body).jsonObject
-            root["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-                ?: root["message"]?.jsonPrimitive?.contentOrNull
+            val root = json.parseToJsonElement(body).asObjectOrNull() ?: return@runCatching body.take(300)
+            root["error"].asObjectOrNull()?.get("message").asStringOrNull()
+                ?: root["error"].asStringOrNull()
+                ?: root["message"].asStringOrNull()
                 ?: body.take(300)
         }.getOrDefault(body.take(300))
     }

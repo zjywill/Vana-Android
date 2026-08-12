@@ -55,8 +55,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
+import kotlin.coroutines.resume
+import android.view.Choreographer
 import kotlinx.datetime.Clock
 
 class ChatViewModel(
@@ -740,13 +742,26 @@ class ChatViewModel(
             },
         ).collect { event ->
             applyEvent(event)
-            // SSE 的 delta 往往在同一次调度里连发几十上百个；若不主动让出主线程，
-            // Compose 读到的永远是最后一帧，看起来就像「整段蹦出来」。
+            // ViewModel 跑在 Main.immediate：单纯 yield() 不会等 Choreographer，
+            // Compose 来不及上屏，delta 被合成最后一帧 → 看起来像「整段蹦出」。
             when (event) {
                 is AgentTurnEvent.TextDelta,
                 is AgentTurnEvent.ReasoningDelta,
-                -> yield()
+                -> awaitComposeFrame()
                 else -> Unit
+            }
+        }
+    }
+
+    private suspend fun awaitComposeFrame() {
+        suspendCancellableCoroutine { cont ->
+            val choreographer = Choreographer.getInstance()
+            val callback = Choreographer.FrameCallback {
+                if (cont.isActive) cont.resume(Unit)
+            }
+            choreographer.postFrameCallback(callback)
+            cont.invokeOnCancellation {
+                choreographer.removeFrameCallback(callback)
             }
         }
     }
@@ -964,20 +979,18 @@ class ChatViewModel(
         updateSession {
             copy(
                 messages = messages.map { message ->
-                    if (message.id == id) {
-                        message.also(block)
-                        message.copy(
-                            text = message.text,
-                            attachments = message.attachments.toList(),
-                            reasoning = message.reasoning,
-                            toolCalls = message.toolCalls.toList(),
-                            storedTurn = message.storedTurn,
-                            textIsPlaceholder = message.textIsPlaceholder,
-                            errorDescription = message.errorDescription,
-                            isQueued = message.isQueued,
-                        )
-                    } else {
+                    if (message.id != id) {
                         message
+                    } else {
+                        // 必须先 copy 再改：ChatMessage/ChatSession 是 data class，
+                        // 若先原地改旧实例再 copy，StateFlow 会因 equals 相等而丢弃更新，
+                        // Compose 收不到中间态，SSE 看起来就像「整段蹦出来」。
+                        val next = message.copy(
+                            attachments = message.attachments.toList(),
+                            toolCalls = message.toolCalls.toList(),
+                        )
+                        next.block()
+                        next
                     }
                 },
             )

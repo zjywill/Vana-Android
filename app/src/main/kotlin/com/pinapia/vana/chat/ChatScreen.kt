@@ -62,6 +62,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -101,7 +106,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Person
@@ -114,9 +118,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.foundation.layout.navigationBarsPadding
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -198,9 +199,22 @@ fun ChatScreen(
         viewModel.refreshSituation()
     }
 
-    LaunchedEffect(session.messages.size, session.messages.lastOrNull()?.text) {
+    // 只在条数变化时做动画滚动。流式吐字时每个字都 animateScroll 会不断取消重开，
+    // 把重绘卡死，看起来就像 SSE「整段蹦出来」。
+    LaunchedEffect(session.messages.size) {
         if (session.messages.isNotEmpty()) {
             listState.animateScrollToItem(session.messages.lastIndex)
+        }
+    }
+    LaunchedEffect(isReplying) {
+        if (!isReplying) return@LaunchedEffect
+        snapshotFlow {
+            val last = session.messages.lastOrNull()
+            (last?.text?.length ?: 0) to (last?.reasoning?.length ?: 0)
+        }.collect {
+            if (session.messages.isNotEmpty()) {
+                listState.scrollToItem(session.messages.lastIndex)
+            }
         }
     }
 
@@ -338,6 +352,7 @@ fun ChatScreen(
                     items(session.messages, key = { it.id }) { message ->
                         MessageBubble(
                             message = message,
+                            isLiveReply = isReplying && message.id == lastAssistantId,
                             isAskLive = !isReplying && message.id == lastAssistantId,
                             isReplying = isReplying,
                             exerciseLibrary = exerciseLibrary,
@@ -741,6 +756,7 @@ private fun WelcomeCard(
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    isLiveReply: Boolean,
     isAskLive: Boolean,
     isReplying: Boolean,
     exerciseLibrary: ExerciseLibrary,
@@ -749,8 +765,9 @@ private fun MessageBubble(
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
 ) {
     val isUser = message.role == ChatMessage.Role.USER
-    var reasoningExpanded by remember(message.id) { mutableStateOf(false) }
+    var showReasoning by remember(message.id) { mutableStateOf(false) }
     var expandedToolId by remember(message.id) { mutableStateOf<String?>(null) }
+    val isThinking = isLiveReply && message.text.isBlank()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
@@ -765,27 +782,21 @@ private fun MessageBubble(
             if (isUser && message.attachments.isNotEmpty()) {
                 MessageAttachments(message.attachments)
             }
+            // 和 iOS 一样：列表里只留一颗 chip，思考正文进 sheet，绝不 inline 展开。
             if (!isUser && message.reasoning.isNotBlank()) {
                 SuggestionChip(
-                    onClick = { reasoningExpanded = !reasoningExpanded },
+                    onClick = { showReasoning = true },
                     label = {
-                        Text(
-                            if (isAskLive && isReplying && message.text.isBlank()) {
-                                "正在思考…"
-                            } else {
-                                "思考过程"
-                            },
-                        )
+                        Text(if (isThinking) "正在思考…" else "思考过程")
                     },
                 )
-                if (reasoningExpanded) {
-                    Text(
-                        message.reasoning,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                }
+            }
+            if (showReasoning && message.reasoning.isNotBlank()) {
+                ReasoningSheet(
+                    text = message.reasoning,
+                    isThinking = isThinking,
+                    onDismiss = { showReasoning = false },
+                )
             }
             if (!isUser) {
                 message.toolCalls.filter { it.showsChip }.forEach { call ->
@@ -894,6 +905,52 @@ private fun MessageBubble(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReasoningSheet(
+    text: String,
+    isThinking: Boolean,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scroll = rememberScrollState()
+    LaunchedEffect(text.length) {
+        if (isThinking) {
+            scroll.animateScrollTo(scroll.maxValue)
+        }
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+        ) {
+            Text(
+                if (isThinking) "正在思考" else "思考过程",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(scroll),
+            )
         }
     }
 }
