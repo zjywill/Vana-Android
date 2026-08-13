@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -72,6 +74,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -176,6 +182,29 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    // SSE 贴底：用户没滑开时跟着最后一条长高；一旦手势离开底部就停在用户位置。
+    val followOutput = remember { mutableStateOf(true) }
+    val followScroll = remember(listState) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.y > 0.5f) {
+                    followOutput.value = false
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (source == NestedScrollSource.UserInput && !listState.canScrollForward) {
+                    followOutput.value = true
+                }
+                return Offset.Zero
+            }
+        }
+    }
     val context = LocalContext.current
     var showHealthStatus by remember { mutableStateOf(false) }
     var reviewingId by remember { mutableStateOf<String?>(null) }
@@ -281,21 +310,23 @@ fun ChatScreen(
         viewModel.refreshEngineAvailability()
     }
 
-    // 只在条数变化时做动画滚动。流式吐字时每个字都 animateScroll 会不断取消重开，
-    // 把重绘卡死，看起来就像 SSE「整段蹦出来」。
-    LaunchedEffect(session.messages.size) {
+    // 新消息 / 换会话：回到底部并重新贴底。流式长高用 layout overflow 跟，
+    // 不要对每个 token animateScroll，否则动画互相取消，看起来像整段蹦出。
+    LaunchedEffect(session.id, session.messages.size) {
+        followOutput.value = true
         if (session.messages.isNotEmpty()) {
             listState.animateScrollToItem(session.messages.lastIndex)
         }
     }
-    LaunchedEffect(isReplying) {
-        if (!isReplying) return@LaunchedEffect
-        snapshotFlow {
-            val last = session.messages.lastOrNull()
-            (last?.text?.length ?: 0) to (last?.reasoning?.length ?: 0)
-        }.collect {
-            if (session.messages.isNotEmpty()) {
-                listState.scrollToItem(session.messages.lastIndex)
+    LaunchedEffect(isReplying, followOutput.value) {
+        if (!isReplying || !followOutput.value) return@LaunchedEffect
+        snapshotFlow { listState.bottomOverflowOrHidden() }.collect { overflow ->
+            if (!followOutput.value) return@collect
+            if (overflow == null) {
+                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                if (lastIndex >= 0) listState.scrollToItem(lastIndex)
+            } else if (overflow > 1) {
+                listState.scrollBy(overflow.toFloat())
             }
         }
     }
@@ -409,7 +440,8 @@ fun ChatScreen(
                     state = listState,
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .nestedScroll(followScroll),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -994,6 +1026,17 @@ private fun WelcomeCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/** 最后一条底部超出视口的像素；null 表示最后一条还不在视口里。 */
+private fun LazyListState.bottomOverflowOrHidden(): Int? {
+    val info = layoutInfo
+    val lastIndex = info.totalItemsCount - 1
+    if (lastIndex < 0) return 0
+    val last = info.visibleItemsInfo.lastOrNull() ?: return null
+    if (last.index != lastIndex) return null
+    val viewportBottom = info.viewportEndOffset - info.afterContentPadding
+    return (last.offset + last.size) - viewportBottom
 }
 
 @Composable
