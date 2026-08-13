@@ -37,6 +37,7 @@ data class ToolCallRecord(
     var textOffset: Int? = null,
     var reasoningOffset: Int? = null,
 ) {
+    /** 成功的 `ask_user` 只出问题卡，不出胶囊——胶囊会在正文里切一刀，而那张卡排在整条回复最后。 */
     val showsChip: Boolean get() = askQuestion == null
 
     fun toDTO(): ToolCallRecordDTO = ToolCallRecordDTO(
@@ -217,6 +218,27 @@ data class ChatMessage(
         storedTurn = storedTurn.copy(compaction = artifact)
     }
 
+    val hasRunningToolCall: Boolean
+        get() = toolCalls.any { it.output == null }
+
+    val hasVisibleTurnContent: Boolean
+        get() = text.isNotEmpty() || reasoning.isNotEmpty() || toolCalls.isNotEmpty()
+
+    /**
+     * 这一轮按**发生顺序**摊平:说了一段、查了一次、又说了一段。
+     *
+     * 气泡原来是写死的三段——思考 chip、**所有**工具 chip、**整段**正文——而模型这一轮实际
+     * 是交错的。两处代价:
+     *
+     * - **跳动**。每发起一次调用,一颗 chip 插进正文**上面**,底下已经写好的十几行整个往下挪。
+     * - **因果反了**。模型写完「现在查这三项：」才去查,而那三颗 chip 在这句话**上面**。
+     *
+     * 按顺序摊开之后,新东西永远追加在**末尾**,上面的一个像素都不动。
+     * 没有 [ToolCallRecord.textOffset] 的旧会话退回老排法,不去猜切点。
+     */
+    val turnSegments: List<TurnSegment>
+        get() = TurnSegmenter.segments(this)
+
     companion object {
         fun fromDTO(dto: AgentChatMessageDTO): ChatMessage = ChatMessage(
             id = dto.id,
@@ -232,6 +254,84 @@ data class ChatMessage(
             errorDescription = dto.errorDescription,
             createdAt = dto.createdAt ?: Clock.System.now(),
         )
+    }
+}
+
+sealed class TurnSegment {
+    abstract val stableId: String
+
+    data class Reasoning(val text: String, val index: Int) : TurnSegment() {
+        override val stableId: String get() = "reasoning-$index"
+    }
+
+    data class Text(val text: String, val index: Int) : TurnSegment() {
+        override val stableId: String get() = "text-$index"
+    }
+
+    data class Tool(val call: ToolCallRecord) : TurnSegment() {
+        override val stableId: String get() = call.id
+    }
+}
+
+/**
+ * 按字符位置把累积的思考/正文切成几段,和工具 chip 交错。
+ * 思考和正文是两条独立的流,各走一份 cursor。
+ */
+private object TurnSegmenter {
+    fun segments(message: ChatMessage): List<TurnSegment> {
+        val chips = message.toolCalls.filter { it.showsChip }
+        val segments = mutableListOf<TurnSegment>()
+        val text = Splitter(message.text) { chunk, index -> TurnSegment.Text(chunk, index) }
+        val think = Splitter(message.reasoning) { chunk, index -> TurnSegment.Reasoning(chunk, index) }
+
+        val anchored = chips.any { it.reasoningOffset != null }
+        if (!anchored) {
+            think.appendRest(to = segments)
+        }
+        segments += chips.filter { it.textOffset == null }.map { TurnSegment.Tool(it) }
+
+        for (call in chips) {
+            val textOffset = call.textOffset ?: continue
+            if (anchored) {
+                call.reasoningOffset?.let { think.append(upTo = it, to = segments) }
+            }
+            text.append(upTo = textOffset, to = segments)
+            segments += TurnSegment.Tool(call)
+        }
+
+        if (anchored) {
+            think.appendRest(to = segments)
+        }
+        text.appendRest(to = segments)
+        return segments
+    }
+
+    private class Splitter(
+        private val source: String,
+        private val kind: (String, Int) -> TurnSegment,
+    ) {
+        private var cursor = 0
+        private var placed = 0
+        private var index = 0
+
+        fun append(upTo: Int, to: MutableList<TurnSegment>) {
+            val clamped = upTo.coerceIn(placed, source.length)
+            placed = clamped
+            emit(through = clamped, to = to)
+        }
+
+        fun appendRest(to: MutableList<TurnSegment>) {
+            emit(through = source.length, to = to)
+        }
+
+        private fun emit(through: Int, to: MutableList<TurnSegment>) {
+            if (cursor >= through) return
+            val chunk = source.substring(cursor, through).trim { it == '\n' || it == '\r' }
+            cursor = through
+            if (chunk.isEmpty()) return
+            to += kind(chunk, index)
+            index += 1
+        }
     }
 }
 

@@ -60,6 +60,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -94,6 +95,7 @@ import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.GoalSummary
 import com.pinapia.vana.session.SessionSummary
+import com.pinapia.vana.session.TurnSegment
 import com.pinapia.vana.session.compactionSummary
 import com.pinapia.vana.session.foldedSpan
 import com.pinapia.vana.tenant.TenantScope
@@ -797,9 +799,13 @@ private fun MessageBubble(
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
 ) {
     val isUser = message.role == ChatMessage.Role.USER
-    var showReasoning by remember(message.id) { mutableStateOf(false) }
+    var openReasoningId by remember(message.id) { mutableStateOf<String?>(null) }
     var expandedToolId by remember(message.id) { mutableStateOf<String?>(null) }
-    val isThinking = isLiveReply && message.text.isBlank()
+    val segments = if (isUser) emptyList() else message.turnSegments
+    val lastSegmentId = segments.lastOrNull()?.stableId
+    // 动作卡 / 问题卡等这一轮写完再出。工具一返回卡上的数据就齐了,正文要等下一轮请求
+    // 才吐出来——卡先出来、回答插在卡上面,就是这段窗口。判据是整轮结束,不是「正文开口」。
+    val showsToolCards = !isLiveReply
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
@@ -814,55 +820,8 @@ private fun MessageBubble(
             if (isUser && message.attachments.isNotEmpty()) {
                 MessageAttachments(message.attachments)
             }
-            // 和 iOS 一样：列表里只留一颗 chip，思考正文进 sheet，绝不 inline 展开。
-            if (!isUser && message.reasoning.isNotBlank()) {
-                SuggestionChip(
-                    onClick = { showReasoning = true },
-                    label = {
-                        Text(if (isThinking) "正在思考…" else "思考过程")
-                    },
-                )
-            }
-            if (showReasoning && message.reasoning.isNotBlank()) {
-                ReasoningSheet(
-                    text = message.reasoning,
-                    isThinking = isThinking,
-                    onDismiss = { showReasoning = false },
-                )
-            }
-            if (!isUser) {
-                message.toolCalls.filter { it.showsChip }.forEach { call ->
-                    SuggestionChip(
-                        onClick = {
-                            if (call.output != null &&
-                                call.name != AskUserTools.ASK_TOOL_NAME &&
-                                call.name != "remember" &&
-                                call.exerciseIDs.isEmpty()
-                            ) {
-                                expandedToolId = if (expandedToolId == call.id) null else call.id
-                            }
-                        },
-                        label = {
-                            Text(toolCallLabel(call) + if (call.isError) "（失败）" else "")
-                        },
-                    )
-                    if (expandedToolId == call.id && !call.output.isNullOrBlank()) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                            ),
-                        ) {
-                            Text(
-                                call.output.orEmpty(),
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(12.dp),
-                            )
-                        }
-                    }
-                }
-            }
-            if (message.text.isNotBlank() || (!isUser && message.textIsPlaceholder)) {
-                if (isUser) {
+            if (isUser) {
+                if (message.text.isNotBlank()) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -873,12 +832,71 @@ private fun MessageBubble(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                         )
                     }
-                } else {
-                    // 助手侧不走气泡：和 iOS 一样直接铺正文，方便表格/列表阅读。
-                    MarkdownText(
-                        markdown = message.text.ifBlank { "…" },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                }
+            } else {
+                segments.forEach { segment ->
+                    key(segment.stableId) {
+                        when (segment) {
+                            is TurnSegment.Reasoning -> {
+                                val isThinking = isLiveReply && segment.stableId == lastSegmentId
+                                SuggestionChip(
+                                    onClick = { openReasoningId = segment.stableId },
+                                    label = {
+                                        Text(if (isThinking) "正在思考…" else "思考过程")
+                                    },
+                                )
+                                if (openReasoningId == segment.stableId) {
+                                    ReasoningSheet(
+                                        text = segment.text,
+                                        isThinking = isThinking,
+                                        onDismiss = { openReasoningId = null },
+                                    )
+                                }
+                            }
+                            is TurnSegment.Tool -> {
+                                val call = segment.call
+                                SuggestionChip(
+                                    onClick = {
+                                        if (call.output != null &&
+                                            call.name != AskUserTools.ASK_TOOL_NAME &&
+                                            call.name != "remember" &&
+                                            call.exerciseIDs.isEmpty()
+                                        ) {
+                                            expandedToolId =
+                                                if (expandedToolId == call.id) null else call.id
+                                        }
+                                    },
+                                    label = {
+                                        Text(toolCallLabel(call) + if (call.isError) "（失败）" else "")
+                                    },
+                                )
+                                if (expandedToolId == call.id && !call.output.isNullOrBlank()) {
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                        ),
+                                    ) {
+                                        Text(
+                                            call.output.orEmpty(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(12.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            is TurnSegment.Text -> {
+                                MarkdownText(
+                                    markdown = segment.text,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+                    }
+                }
+                if (!isLiveReply && !message.hasVisibleTurnContent) {
+                    MarkdownText(markdown = "…", modifier = Modifier.fillMaxWidth())
+                } else if (message.textIsPlaceholder && message.text.isNotBlank() && segments.none { it is TurnSegment.Text }) {
+                    MarkdownText(markdown = message.text, modifier = Modifier.fillMaxWidth())
                 }
             }
             message.foldedSpan?.let { count ->
@@ -898,11 +916,18 @@ private fun MessageBubble(
                     }
                 }
             }
-            if (!isUser) {
-                message.toolCalls.forEach { call ->
-                    if (call.exerciseIDs.isNotEmpty()) {
-                        ExerciseCards(moves = exerciseLibrary.moves(call.exerciseIDs))
+            if (!isUser && showsToolCards) {
+                val exerciseIds = remember(message.toolCalls) {
+                    val seen = linkedSetOf<String>()
+                    message.toolCalls.forEach { call ->
+                        call.exerciseIDs.forEach { seen.add(it) }
                     }
+                    seen.toList()
+                }
+                if (exerciseIds.isNotEmpty()) {
+                    ExerciseCards(moves = exerciseLibrary.moves(exerciseIds))
+                }
+                message.toolCalls.forEach { call ->
                     val question = call.askQuestion ?: return@forEach
                     AskUserCard(
                         question = question,
