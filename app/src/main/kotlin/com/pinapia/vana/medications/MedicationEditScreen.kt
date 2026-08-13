@@ -86,6 +86,29 @@ data class MedicationDraft(
     }
 
     companion object {
+        /**
+         * 拍药瓶 → 识别 → 落进用药表。只预填、不代填：名字猜错了他当场就能改。
+         */
+        fun fromRecognizedText(text: String): MedicationDraft = MedicationDraft(
+            status = MedicationItem.Status.ONGOING,
+            name = guessedName(from = text),
+            note = text,
+        )
+
+        /** 第一行、去掉列分隔之后的第一格。药瓶上字最大的那一行几乎总是商品名。 */
+        fun guessedName(from: String): String {
+            val firstLine = from.lineSequence()
+                .map { it.trim() }
+                .firstOrNull { it.isNotEmpty() }
+                .orEmpty()
+            val firstCell = firstLine
+                .split(com.pinapia.vana.vision.RecognizedTextLayout.COLUMN_SEPARATOR)
+                .firstOrNull()
+                ?.trim()
+                .orEmpty()
+            return firstCell.take(24)
+        }
+
         fun from(item: MedicationItem): MedicationDraft {
             val days = item.followUpAt?.let { due ->
                 val now = Clock.System.now()

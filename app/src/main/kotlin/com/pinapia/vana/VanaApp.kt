@@ -144,10 +144,7 @@ fun VanaApp(
                     viewModel = chatViewModel,
                     healthStore = app.healthStore,
                     exerciseLibrary = exerciseLibrary,
-                    onOpenSettings = {
-                        chatViewModel.refreshEngineAvailability()
-                        navController.navigate(Routes.SETTINGS)
-                    },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                     onOpenMedications = { navController.navigate(Routes.MEDICATIONS) },
                     onOpenMeasurements = { navController.navigate(Routes.MEASUREMENTS) },
                     onOpenTenants = { navController.navigate(Routes.TENANTS) },

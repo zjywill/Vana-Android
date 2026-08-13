@@ -110,7 +110,7 @@ data class DraftAttachment(
     val canSendImage: Boolean get() = imageBytes != null && failure == null && !isLoading && !isRecognizing
 
     fun suggestsImage(under: PhotoImagePolicy): Boolean =
-        canSendImage && under.sendsImageByDefault
+        canSendImage && under.offers(hasText)
 
     fun toChatAttachment(
         persist: Boolean,

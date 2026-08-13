@@ -42,10 +42,13 @@ import com.pinapia.vana.settings.SecureKeyStore
 import com.pinapia.vana.tenant.Tenant
 import com.pinapia.vana.tenant.TenantOpening
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.medications.MedicationBriefer
 import com.pinapia.vana.vision.AttachmentImage
 import com.pinapia.vana.vision.ChatAttachment
 import com.pinapia.vana.vision.DraftAttachment
+import com.pinapia.vana.vision.PhotoImagePolicy
 import com.pinapia.vana.vision.TextRecognizer
+import com.pinapia.vana.vision.toBase64
 import android.graphics.Bitmap
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +142,37 @@ class ChatViewModel(
         }
 
     val supportsVision: Boolean get() = engineSettings.modelSupportsVision()
+
+    val photoImagePolicy: PhotoImagePolicy get() = engineSettings.photoImagePolicy
+
+    val canAttachMore: Boolean
+        get() = _draftAttachments.value.size < ChatAttachment.MAX_ATTACHMENTS
+
+    val isRecognizingAttachments: Boolean
+        get() = _draftAttachments.value.any { it.isLoading || it.isRecognizing }
+
+    /**
+     * 他设过一档会发原图的默认，可这个模型看不了图——那一档在这条会话里静静地不生效。
+     * 只在真的对不上时才有这句话。
+     */
+    val visionUnavailableNote: String?
+        get() {
+            if (supportsVision) return null
+            val policy = photoImagePolicy
+            if (policy == PhotoImagePolicy.TEXT_ONLY) return null
+            return "你设的是「${policy.label}」，但当前模型看不了图——这一档暂时不生效。"
+        }
+
+    /**
+     * 输入框上方那一行要说哪几张。
+     * 模型看不了图时一句话都不说——那等于摆一个按不动的按钮。
+     */
+    val imageSendCandidates: List<DraftAttachment>
+        get() {
+            if (!supportsVision) return emptyList()
+            val policy = photoImagePolicy
+            return _draftAttachments.value.filter { it.suggestsImage(under = policy) }
+        }
 
     init {
         refreshSummaries()
@@ -327,8 +361,10 @@ class ChatViewModel(
 
     fun send(text: String? = null) {
         val trimmed = (text ?: _input.value).trim()
-        val drafts = _draftAttachments.value.filter { !it.isLoading && it.failure == null }
-        if (trimmed.isEmpty() && drafts.isEmpty()) {
+        val drafts = _draftAttachments.value
+        if (drafts.any { it.isLoading || it.isRecognizing }) return
+        val ready = drafts.filter { it.failure == null }
+        if (trimmed.isEmpty() && ready.isEmpty()) {
             if (!_isReplying.value && hasQueuedInput()) {
                 startReply()
             }
@@ -338,7 +374,7 @@ class ChatViewModel(
         _followUps.value = emptyList()
         val persist = !_session.value.isPrivate
         val store = TenantScope.currentStores.attachments
-        val attachments = drafts.map { draft ->
+        val attachments = ready.map { draft ->
             draft.toChatAttachment(persist = persist, store = store)
         }
         _draftAttachments.value = emptyList()
@@ -458,24 +494,44 @@ class ChatViewModel(
         _draftAttachments.update { it.filterNot { draft -> draft.id == id } }
     }
 
+    fun updateDraftText(id: String, text: String) {
+        updateDraft(id) { copy(text = text, droppedLines = 0) }
+    }
+
     fun setDraftSendsImage(id: String, sends: Boolean) {
         updateDraft(id) { copy(sendsImage = sends && canSendImage && supportsVision) }
     }
 
-    fun acceptImageOffer() {
+    /**
+     * 整排一起翻。只翻输入框上方那一行提到的那几张，不该顺手把化验单也翻过去。
+     */
+    fun setCandidateSendsImage(sends: Boolean) {
+        if (!supportsVision) return
+        val policy = photoImagePolicy
         _draftAttachments.update { list ->
             list.map { draft ->
-                if (draft.canSendImage && supportsVision && !draft.hasText) {
-                    draft.copy(sendsImage = true)
-                } else {
-                    draft
-                }
+                if (draft.suggestsImage(under = policy)) draft.copy(sendsImage = sends) else draft
             }
         }
     }
 
+    fun acceptImageOffer() {
+        setCandidateSendsImage(true)
+    }
+
     fun declineImageOffer() {
-        _draftAttachments.update { list -> list.map { it.copy(sendsImage = false) } }
+        setCandidateSendsImage(false)
+    }
+
+    fun saveMedicationFromDraft(item: MedicationItem, onSaved: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val store = TenantScope.currentStores.medications
+            val saved = store.add(item) ?: return@launch
+            if (saved.brief.isEmpty()) {
+                MedicationBriefer.fill(saved, store, engineSettings, secureKeyStore)
+            }
+            withContext(Dispatchers.Main) { onSaved(saved.name) }
+        }
     }
 
     private fun updateDraft(id: String, block: DraftAttachment.() -> DraftAttachment) {
@@ -909,24 +965,31 @@ class ChatViewModel(
         return dispatcher
     }
 
+    /**
+     * 发请求之前对一遍要发的那几张图。
+     *
+     * 模型换成看不了图的就把图摘掉——他可以在聊到一半时换模型，原样发过去是一个 400。
+     * 摘掉之后正文自动退回那句「看不了图像本身」。
+     */
     private fun loadImagePayloads(session: ChatSession): ChatSession {
-        if (!supportsVision) return session
+        if (session.messages.none { message -> message.attachments.any { it.sendsImage } }) {
+            return session
+        }
+        val vision = supportsVision
         val store = TenantScope.currentStores.attachments
         val messages = session.messages.map { message ->
-            if (message.attachments.isEmpty()) return@map message
+            if (message.attachments.none { it.sendsImage }) return@map message
             message.copy(
                 attachments = message.attachments.map { attachment ->
-                    if (!attachment.sendsImage || attachment.imagePayload != null) {
+                    if (!attachment.sendsImage) return@map attachment
+                    if (!vision) {
+                        attachment.copy(imagePayload = null)
+                    } else if (attachment.imagePayload != null) {
                         attachment
                     } else {
                         val name = attachment.imageFileName ?: return@map attachment
                         val bytes = store.data(named = name) ?: return@map attachment
-                        attachment.copy(
-                            imagePayload = android.util.Base64.encodeToString(
-                                bytes,
-                                android.util.Base64.NO_WRAP,
-                            ),
-                        )
+                        attachment.copy(imagePayload = bytes.toBase64())
                     }
                 },
             )

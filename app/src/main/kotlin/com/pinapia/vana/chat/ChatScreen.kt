@@ -78,6 +78,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import android.graphics.BitmapFactory
@@ -109,6 +111,7 @@ import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -116,9 +119,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
@@ -128,16 +134,22 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
+import com.pinapia.vana.vision.AttachmentReviewScreen
+import com.pinapia.vana.vision.CapturePhoto
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -166,6 +178,10 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val context = LocalContext.current
     var showHealthStatus by remember { mutableStateOf(false) }
+    var reviewingId by remember { mutableStateOf<String?>(null) }
+    var captureUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var cameraNotice by remember { mutableStateOf<String?>(null) }
+    val hasCamera = remember { CapturePhoto.isAvailable(context) }
     val voice = remember { VoiceDictation.shared(context) }
     val voiceAvailability by voice.availability.collectAsStateWithLifecycle()
     val voiceStatus by voice.status.collectAsStateWithLifecycle()
@@ -193,7 +209,47 @@ fun ChatScreen(
         contract = ActivityResultContracts.PickMultipleVisualMedia(6),
     ) { uris ->
         uris.forEach { uri ->
-            decodeBitmap(context, uri)?.let(viewModel::addPhoto)
+            CapturePhoto.decode(context, uri)?.let(viewModel::addPhoto)
+        }
+    }
+
+    val takePicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+    ) { success ->
+        val uri = captureUri
+        captureUri = null
+        if (uri == null) return@rememberLauncherForActivityResult
+        if (success) {
+            CapturePhoto.decode(context, uri)?.let(viewModel::addPhoto)
+        }
+        CapturePhoto.cleanup(context, uri)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            cameraNotice = null
+            val uri = CapturePhoto.createUri(context)
+            captureUri = uri
+            takePicture.launch(uri)
+        } else {
+            cameraNotice = "没有相机权限，没法拍照。可以到系统设置里打开，或从相册选取。"
+        }
+    }
+
+    fun launchCamera() {
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            cameraNotice = null
+            val uri = CapturePhoto.createUri(context)
+            captureUri = uri
+            takePicture.launch(uri)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -220,6 +276,11 @@ fun ChatScreen(
         viewModel.refreshSituation()
     }
 
+    // ChatViewModel 在返回栈上会活着，设置里填完密钥后必须重新读，不能沿用进设置前的 hint。
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshEngineAvailability()
+    }
+
     // 只在条数变化时做动画滚动。流式吐字时每个字都 animateScroll 会不断取消重开，
     // 把重绘卡死，看起来就像 SSE「整段蹦出来」。
     LaunchedEffect(session.messages.size) {
@@ -240,8 +301,11 @@ fun ChatScreen(
     }
 
     val lastAssistantId = session.messages.lastOrNull { it.role == ChatMessage.Role.ASSISTANT }?.id
-    val offerEmptyPhotos = drafts.any { it.canSendImage && !it.hasText && !it.sendsImage } &&
-        viewModel.supportsVision
+    val imageSendCandidates = viewModel.imageSendCandidates
+    val isRecognizingAttachments = drafts.any { it.isLoading || it.isRecognizing }
+    val canSend = (input.isNotBlank() || drafts.any { it.failure == null }) &&
+        !isRecognizingAttachments &&
+        drafts.none { it.isLoading }
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -419,27 +483,28 @@ fun ChatScreen(
                     )
                 }
 
-                if (offerEmptyPhotos) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "这张图没有文字，让 Vana 直接看图？",
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        TextButton(onClick = viewModel::acceptImageOffer) { Text("让 Vana 看图") }
-                        TextButton(onClick = viewModel::declineImageOffer) { Text("不用了") }
-                    }
-                }
-
                 if (drafts.isNotEmpty()) {
                     DraftStrip(
                         drafts = drafts,
+                        onOpen = { id -> reviewingId = id },
                         onRemove = viewModel::removeDraft,
+                    )
+                }
+
+                if (imageSendCandidates.isNotEmpty()) {
+                    ImageSendOffer(
+                        candidates = imageSendCandidates,
+                        onAccept = { viewModel.setCandidateSendsImage(true) },
+                        onDecline = { viewModel.setCandidateSendsImage(false) },
+                    )
+                }
+
+                cameraNotice?.let {
+                    Text(
+                        it,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
 
@@ -469,7 +534,10 @@ fun ChatScreen(
                 ComposerBar(
                     input = input,
                     isReplying = isReplying,
-                    canSend = input.isNotBlank() || drafts.any { !it.isLoading && it.failure == null },
+                    canSend = canSend,
+                    isRecognizing = isRecognizingAttachments,
+                    canAttachMore = drafts.size < ChatAttachment.MAX_ATTACHMENTS,
+                    hasCamera = hasCamera,
                     voiceEnabled = voiceAvailability != VoiceDictation.Availability.UNSUPPORTED_LOCALE &&
                         voiceAvailability != VoiceDictation.Availability.UNAVAILABLE,
                     isVoiceListening = isVoiceListening,
@@ -477,6 +545,7 @@ fun ChatScreen(
                     onInputChange = viewModel::setInput,
                     onSend = { viewModel.send() },
                     onStop = viewModel::stopReply,
+                    onAddCamera = { launchCamera() },
                     onAddPhoto = {
                         photoPicker.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -520,12 +589,94 @@ fun ChatScreen(
             onDismiss = { showHealthStatus = false },
         )
     }
+
+    val reviewing = drafts.firstOrNull { it.id == reviewingId && !it.isLoading }
+    LaunchedEffect(reviewingId, drafts) {
+        if (reviewingId != null && drafts.none { it.id == reviewingId }) {
+            reviewingId = null
+        }
+    }
+    if (reviewing != null) {
+        Dialog(
+            onDismissRequest = { reviewingId = null },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = true,
+            ),
+        ) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                AttachmentReviewScreen(
+                    draft = reviewing,
+                    supportsVision = viewModel.supportsVision,
+                    visionUnavailableNote = viewModel.visionUnavailableNote,
+                    onChangeText = { viewModel.updateDraftText(reviewing.id, it) },
+                    onChangeSendsImage = if (viewModel.supportsVision) {
+                        { sends -> viewModel.setDraftSendsImage(reviewing.id, sends) }
+                    } else {
+                        null
+                    },
+                    onRemove = {
+                        viewModel.removeDraft(reviewing.id)
+                        reviewingId = null
+                    },
+                    onSaveMedication = viewModel::saveMedicationFromDraft,
+                    onDismiss = { reviewingId = null },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
 }
 
-private fun decodeBitmap(context: android.content.Context, uri: Uri) =
-    runCatching {
-        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
-    }.getOrNull()
+@Composable
+private fun ImageSendOffer(
+    candidates: List<DraftAttachment>,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+) {
+    val sending = candidates.count { it.sendsImage }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            imageSendTitle(candidates, sending),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        if (sending > 0) {
+            TextButton(onClick = onDecline) { Text("撤销") }
+        } else {
+            TextButton(onClick = onAccept) { Text("好") }
+        }
+    }
+}
+
+private fun imageSendTitle(candidates: List<DraftAttachment>, sending: Int): String {
+    if (sending > 0) {
+        return if (sending == 1) "原图会随这句话发出去" else "$sending 张原图会随这句话发出去"
+    }
+    val allBlank = candidates.all { !it.hasText }
+    return when {
+        candidates.size == 1 && allBlank -> "这张图没有文字，让 Vana 直接看图？"
+        candidates.size == 1 -> "让 Vana 直接看这张图？"
+        allBlank -> "有 ${candidates.size} 张没有文字，让 Vana 直接看图？"
+        else -> "让 Vana 直接看这 ${candidates.size} 张图？"
+    }
+}
+
+private fun draftCaption(draft: DraftAttachment): String = when {
+    draft.isLoading -> "载入中…"
+    draft.isRecognizing -> "识别中…"
+    draft.failure != null -> "读不出来"
+    !draft.hasText -> if (draft.isDocument) "没有正文" else "没有文字"
+    else -> {
+        val lines = draft.text.split('\n').count { it.isNotBlank() }.coerceAtLeast(1)
+        if (draft.droppedLines > 0) "$lines 行·已截断" else "$lines 行"
+    }
+}
 
 @Composable
 private fun HealthConnectBanner(
@@ -561,6 +712,7 @@ private fun HealthConnectBanner(
 @Composable
 private fun DraftStrip(
     drafts: List<DraftAttachment>,
+    onOpen: (String) -> Unit,
     onRemove: (String) -> Unit,
 ) {
     Row(
@@ -571,42 +723,99 @@ private fun DraftStrip(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         drafts.forEach { draft ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                when {
-                    draft.preview != null -> {
-                        androidx.compose.foundation.Image(
-                            bitmap = draft.preview!!.asImageBitmap(),
-                            contentDescription = draft.documentName ?: "附件预览",
-                            modifier = Modifier.size(56.dp),
-                        )
+            Box {
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(enabled = !draft.isLoading) { onOpen(draft.id) }
+                        .padding(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(modifier = Modifier.size(68.dp)) {
+                        when {
+                            draft.preview != null -> {
+                                Image(
+                                    bitmap = draft.preview!!.asImageBitmap(),
+                                    contentDescription = draft.documentName ?: "附件预览",
+                                    modifier = Modifier
+                                        .size(68.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
+                            draft.isDocument -> {
+                                Icon(
+                                    Icons.Default.Description,
+                                    contentDescription = draft.documentName ?: "文件附件",
+                                    modifier = Modifier
+                                        .size(68.dp)
+                                        .padding(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            else -> {
+                                Box(
+                                    modifier = Modifier
+                                        .size(68.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                )
+                            }
+                        }
+                        if (draft.isLoading || draft.isRecognizing) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.Black.copy(alpha = 0.35f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(22.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White,
+                                )
+                            }
+                        }
+                        if (draft.sendsImage) {
+                            Icon(
+                                Icons.Default.Visibility,
+                                contentDescription = "原图会一起发出去",
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(4.dp)
+                                    .size(18.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.5f))
+                                    .padding(2.dp),
+                                tint = Color.White,
+                            )
+                        }
                     }
-                    draft.isDocument -> {
-                        Icon(
-                            Icons.Default.Description,
-                            contentDescription = draft.documentName ?: "文件附件",
-                            modifier = Modifier.size(56.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    draft.isLoading -> {
-                        Text("…", style = MaterialTheme.typography.labelSmall)
-                    }
+                    Text(
+                        draftCaption(draft),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (draft.failure != null) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 1,
+                        modifier = Modifier.width(68.dp),
+                    )
                 }
-                Text(
-                    when {
-                        draft.isLoading -> "读取中…"
-                        draft.isRecognizing -> "识别中…"
-                        draft.failure != null -> "失败"
-                        draft.isDocument && draft.hasText -> draft.documentName ?: "文件"
-                        draft.isDocument -> draft.documentName ?: "无文字"
-                        draft.hasText -> "已识别"
-                        else -> "无文字"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                )
-                IconButton(onClick = { onRemove(draft.id) }) {
-                    Icon(Icons.Default.Close, contentDescription = "不发这张")
+                IconButton(
+                    onClick = { onRemove(draft.id) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 8.dp, y = (-8).dp)
+                        .size(32.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "不发这张",
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
         }
@@ -1094,12 +1303,16 @@ private fun ComposerBar(
     input: String,
     isReplying: Boolean,
     canSend: Boolean,
+    isRecognizing: Boolean,
+    canAttachMore: Boolean,
+    hasCamera: Boolean,
     voiceEnabled: Boolean,
     isVoiceListening: Boolean,
     voiceCancelling: Boolean,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onStop: () -> Unit,
+    onAddCamera: () -> Unit,
     onAddPhoto: () -> Unit,
     onAddFile: () -> Unit,
     onVoicePress: () -> Unit,
@@ -1134,12 +1347,15 @@ private fun ComposerBar(
             ) {
                 IconButton(
                     onClick = { showAttachSheet = true },
+                    enabled = canAttachMore,
                     modifier = Modifier.size(44.dp),
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "添加附件",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        contentDescription = "添加照片或文件",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (canAttachMore) 1f else 0.38f,
+                        ),
                     )
                 }
                 BasicTextField(
@@ -1180,7 +1396,17 @@ private fun ComposerBar(
             }
         }
 
-        if (isReplying) {
+        if (isRecognizing) {
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        } else if (isReplying) {
             ComposerCircleButton(
                 onClick = onStop,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -1225,14 +1451,26 @@ private fun ComposerBar(
                     .padding(start = 8.dp, end = 8.dp, bottom = 28.dp),
             ) {
                 Text(
-                    "添加",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    "照片在本机识别成文字，文件直接取文字；原图默认不发，发送之前每一张都能单独决定",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
+                if (hasCamera) {
+                    AttachSheetRow(
+                        icon = Icons.Default.PhotoCamera,
+                        title = "拍照",
+                        subtitle = "化验单、药盒、报告",
+                        onClick = {
+                            showAttachSheet = false
+                            onAddCamera()
+                        },
+                    )
+                }
                 AttachSheetRow(
-                    icon = Icons.Default.Image,
-                    title = "添加照片",
-                    subtitle = "化验单、药盒、报告",
+                    icon = Icons.Default.PhotoLibrary,
+                    title = "从相册选取",
+                    subtitle = "已经拍过的那些",
                     onClick = {
                         showAttachSheet = false
                         onAddPhoto()

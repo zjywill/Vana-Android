@@ -20,6 +20,9 @@
 
     <!-- 拍化验单、药瓶、说明书。识别在本机跑(ML Kit),照片默认不出这台设备。 -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 没有摄像头的设备照样能装（模拟器、平板），相册那条入口还在。 -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <!-- 按住说话。识别在本机跑,录音不落盘。 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -63,6 +66,9 @@
         <package android:name="com.google.android.apps.healthdata" />
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
     </queries>
 
@@ -114,6 +120,16 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver
             android:name=".checkin.CheckInAlarmReceiver"
