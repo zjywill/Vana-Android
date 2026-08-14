@@ -57,6 +57,7 @@ import com.pinapia.vana.checkin.CheckInScheduler
 import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.session.SessionStore
+import com.pinapia.vana.update.CheckForUpdatesRow
 import com.pinapia.vana.vision.PhotoImagePolicy
 import com.pinapia.vana.voice.VoiceDictation
 import kotlinx.coroutines.launch
@@ -532,6 +533,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            CheckForUpdatesRow()
             if (BuildConfig.DEBUG) {
                 HorizontalDivider()
                 Text(

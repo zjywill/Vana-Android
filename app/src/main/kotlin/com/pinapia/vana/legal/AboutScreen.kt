@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
 import com.pinapia.vana.exercises.ExerciseLibrary
+import com.pinapia.vana.update.CheckForUpdatesRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +96,7 @@ fun AboutScreen(
             }
             HorizontalDivider()
             Text("版本 ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            CheckForUpdatesRow()
             Text(
                 "项目地址",
                 modifier = Modifier

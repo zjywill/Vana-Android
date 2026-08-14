@@ -2,4 +2,6 @@
 <paths>
     <!-- 拍照 OCR 的临时文件。识别完就删，不进相册。 -->
     <cache-path name="camera" path="camera/" />
+    <!-- GitHub Release 下下来的签名包，装完可清。 -->
+    <cache-path name="updates" path="updates/" />
 </paths>
