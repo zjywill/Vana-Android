@@ -1934,7 +1934,7 @@ private fun SessionListRow(
                 headlineContent = {
                     Text(
                         title,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 },
