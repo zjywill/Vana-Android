@@ -47,13 +47,17 @@ chmod 600 key/vana-release.keystore keystore.properties
    - `versionCode` 整数 **+1**（覆盖安装靠它）
    - `versionName` 跟 tag，例如 `1.0.1` → tag `v1.0.1`
 3. **commit + push `main`**。提交说明写这版用户能感知的变化，不要写「bump version」当唯一内容。
-4. **打签名包**（必须在升版本的 commit 之后，APK 里的 versionName 才对得上）：
+4. **打签名包**（必须在升版本的 commit 之后，产物里的 versionName 才对得上）。APK 和 AAB **分开打**：
 
 ```bash
-./gradlew :app:assembleRelease
+./scripts/build-apk.sh   # GitHub / 侧载
+./scripts/build-aab.sh   # Play Console
 ```
 
-产物：`app/build/outputs/apk/release/app-release.apk`。用 `apksigner verify --print-certs` 确认 signer DN 是 `CN=Vana, OU=Pinapia, O=Pinapia, C=CN`。
+- APK：`app/build/outputs/apk/release/app-release.apk`，副本 `/tmp/Vana-{versionName}.apk`
+- AAB：`app/build/outputs/bundle/release/app-release.aab`，副本 `/tmp/Vana-{versionName}.aab`
+
+用 `apksigner verify --print-certs` 确认 APK signer DN 是 `CN=Vana, OU=Pinapia, O=Pinapia, C=CN`。Play 只收 AAB，不要把 APK 传到 Play。
 
 5. **建 GitHub Release 并挂 APK**（文件名 `Vana-{versionName}.apk`）：
 

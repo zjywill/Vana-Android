@@ -1,0 +1,184 @@
+package com.pinapia.vana.agentruntime
+
+import java.util.UUID
+import kotlinx.coroutines.flow.collect
+
+/**
+ * 上下文什么时候压、压到什么程度、哪些绝对不能动。
+ *
+ * 三条规则各管一件事:
+ * - `compactionThreshold`:**没超之前**就开始压。等超了再压就晚了——那一轮已经要么被 provider
+ *   拒收,要么被迫连最近的几轮一起丢。
+ * - `preservedRecentTurns`:最近几轮永远保持原样。刚查完的数据被压成一句摘要,用户下一句
+ *   "那第三天呢"就答不上来了。压的必须是远处的。
+ * - `thresholdAfterModelSwitch`:换模型之后估算本来就不准(校准作废了),阈值再压低一档,
+ *   给自己留出余量。
+ * - `thresholdAfterOverflow`:provider 已经报过一次装不下了,说明我们的估算偏乐观。重跑那
+ *   一轮之前把水位线压到一半,宁可多压一点也不要再撞一次墙。
+ * - `maxToolOutputCharacters`:进模型的工具输出的硬上限。压缩是亡羊补牢,这道闸才是源头。
+ */
+data class ContextPolicy(
+    val compactionThreshold: Double = 0.8,
+    val preservedRecentTurns: Int = 2,
+    val thresholdAfterModelSwitch: Double = 0.6,
+    val thresholdAfterOverflow: Double = 0.5,
+    /** 一段少于这么多条消息就不值得单独叫模型总结一次。 */
+    val minimumSpanMessages: Int = 3,
+    /** 一次工具调用最多往上下文里塞多少字符。0 表示不限。 */
+    val maxToolOutputCharacters: Int = 6_000,
+    /** 截断提示。两个 `%d`:省略了多少字符、原本多少字符。 */
+    val toolOutputTruncationNotice: String = "…[truncated: %d of %d characters omitted]",
+) {
+    companion object {
+        val default = ContextPolicy()
+    }
+}
+
+/**
+ * 该被总结掉的那一段。
+ */
+data class SummarizationPlan(
+    /** artifact 挂在这条消息上。它是这一段的最后一条,位置正好是摘要该出现的地方。 */
+    val ownerMessageID: UUID,
+    /**
+     * 这一段覆盖了哪些消息。包含之前已经被压进来的——链子不能断,否则下一次压缩会把
+     * 已经折叠过的内容当成还在原样躺着。
+     */
+    val sourceMessageIDs: List<UUID>,
+    /**
+     * 摊平成纯文本的原文。
+     *
+     * 不直接把带 tool_use 的消息发去总结:那要求这次请求也声明同一批工具,而且各家
+     * provider 对孤立 tool 块的校验口径不一样。摊平成文本没有这些坑。
+     */
+    val spanText: String,
+    val messageCount: Int,
+    /**
+     * 上一版摘要。有值就是**增量更新**:`spanText` 里只有这版摘要之后的新对话。
+     *
+     * 不这么做的话,第二次压缩是在压第一份摘要——同一段话被有损两遍、三遍,最早那几轮
+     * 很快就只剩一句客套。给模型「老摘要 + 新原文」,它才有机会把新进展并进去而不是
+     * 把老内容再嚼一次。
+     */
+    val previousSummary: String? = null,
+)
+
+/**
+ * 把一段对话变成一份 artifact。
+ *
+ * 分成接口,是因为「谁来写这份摘要」是可换的:现在是再叫一次模型,以后也可以是端上小模型、
+ * 或者一份结构化的 memory object。loop 不关心。
+ */
+fun interface AgentSummarizer {
+    suspend fun summarize(plan: SummarizationPlan): CompactionArtifact
+}
+
+/**
+ * 叫模型自己写摘要。
+ *
+ * 一次调用同时要两份:给用户看的一句话,和给模型回放的详细摘要。分两次调用是白花一次钱,
+ * 而这两份的取舍本来就该在同一个上下文里做。
+ */
+class ModelSummarizer(
+    val client: AgentModelClient,
+    val instruction: String = DEFAULT_INSTRUCTION,
+    val updateInstruction: String = DEFAULT_UPDATE_INSTRUCTION,
+    val requestFormat: String = "Summarize the conversation below.\n\n%s",
+    val updateRequestFormat: String = """
+        <previous-summary>
+        %1${'$'}s
+        </previous-summary>
+
+        New conversation since that summary:
+
+        %2${'$'}s
+        """.trimIndent(),
+    val fallbackVisibleFormat: String = "Earlier conversation folded (%d messages).",
+) : AgentSummarizer {
+    override suspend fun summarize(plan: SummarizationPlan): CompactionArtifact {
+        val isUpdate = plan.previousSummary != null
+        val userMessage = plan.previousSummary?.let {
+            String.format(updateRequestFormat, it, plan.spanText)
+        } ?: String.format(requestFormat, plan.spanText)
+
+        val request = AgentModelRequest(
+            profile = client.profile,
+            prompt = AgentTranscript(
+                messages = listOf(
+                    AgentTranscript.Message.system(if (isUpdate) updateInstruction else instruction),
+                    AgentTranscript.Message.user(userMessage),
+                ),
+            ),
+            capabilities = emptyList(),
+        )
+
+        var text = ""
+        client.stream(request).collect { event ->
+            if (event is AgentModelStreamEvent.TextDelta) {
+                text += event.text
+            }
+        }
+
+        val visible = text.taggedSection("visible")
+        val replay = text.taggedSection("replay")
+        // 标签没解析出来也不能空手而归:整段文本至少还是个摘要,比退回原文省得多。
+        val replayText = replay ?: text.trim()
+        if (replayText.isEmpty()) {
+            throw AgentLoopError.IncompleteResponse
+        }
+
+        return CompactionArtifact(
+            kind = CompactionArtifact.Kind.MODEL_GENERATED,
+            visibleSummary = visible ?: String.format(fallbackVisibleFormat, plan.messageCount),
+            replaySummary = AgentTranscript.Message.assistantSummary(replayText, plan.sourceMessageIDs),
+            sourceMessageIDs = plan.sourceMessageIDs.map { it.toString() },
+            foldedToolCalls = 0,
+        )
+    }
+
+    companion object {
+        /** 固定分节比自由发挥可靠得多:说得笼统,模型只会写一段概述,把真正要留的数字丢掉。 */
+        private val REPLAY_SECTIONS = """
+## Goal
+## Constraints & Preferences
+## Findings (conclusions already reached, with the concrete numbers behind them)
+## Tool trace (which tool, which arguments, what it returned)
+## Open threads (what the user was about to ask next)
+        """.trimIndent()
+
+        val DEFAULT_INSTRUCTION = """
+You compress an agent conversation so it can continue in a smaller context window.
+Produce exactly two sections, each wrapped in tags:
+
+<visible>One sentence for the human, recapping what has been covered so far.</visible>
+<replay>A dense briefing for the assistant that will continue this conversation, using exactly these headings:
+$REPLAY_SECTIONS
+Keep numbers verbatim. Drop pleasantries, restated questions, and raw rows already summarised by a conclusion. Write notes, not prose. Write "(none)" under a heading that has nothing under it.</replay>
+
+Never invent facts that are not in the conversation.
+        """.trimIndent()
+
+        val DEFAULT_UPDATE_INSTRUCTION = """
+You maintain a running summary of an agent conversation so it can continue in a smaller context window. You are given the previous summary and the conversation that happened after it. Produce exactly two sections, each wrapped in tags:
+
+<visible>One sentence for the human, recapping everything covered so far.</visible>
+<replay>The updated briefing, using exactly these headings:
+$REPLAY_SECTIONS
+Carry every still-relevant fact from the previous summary forward — the original conversation is gone, so anything you drop is lost for good. Fold the new messages in: move finished work into Findings, update Open threads. Keep numbers verbatim. Write notes, not prose.</replay>
+
+Never invent facts that are in neither the previous summary nor the new messages.
+        """.trimIndent()
+    }
+}
+
+private fun String.taggedSection(tag: String): String? {
+    val startTag = "<$tag>"
+    val endTag = "</$tag>"
+    val start = indexOf(startTag)
+    if (start < 0) return null
+    val contentStart = start + startTag.length
+    val end = indexOf(endTag, contentStart)
+    if (end < 0) return null
+    val section = substring(contentStart, end).trim()
+    return section.ifEmpty { null }
+}

@@ -101,6 +101,13 @@ cd Vana-Android
 ./gradlew :app:installDebug
 ```
 
+签名发版（密钥不进仓库）：
+
+```bash
+./scripts/build-apk.sh   # GitHub / 侧载
+./scripts/build-aab.sh   # Play Console
+```
+
 装好后：设置里选 provider 和模型，填那家的 API key，回到聊天即可。默认目录来自 `app/src/main/assets/catalog/providers/`。
 
 ## 开发
