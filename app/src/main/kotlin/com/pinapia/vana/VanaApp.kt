@@ -1,8 +1,5 @@
 package com.pinapia.vana
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -65,17 +62,12 @@ fun VanaApp(
     var accepted by remember { mutableStateOf(app.engineSettings.hasAcceptedDataUseNotice) }
     var tenantId by remember { mutableStateOf(TenantScope.current.id) }
     var pendingMedication by remember { mutableStateOf<MedicationItem?>(null) }
-    var spokenBriefLine by remember { mutableStateOf<String?>(null) }
     val exerciseLibrary = remember { ExerciseLibrary.shared(app) }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
         CheckInScheduler.reschedule(app)
-        while (true) {
-            VanaLaunchRouter.consumeBrief()?.let { spokenBriefLine = it }
-            delay(400)
-        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -113,7 +105,6 @@ fun VanaApp(
                         sessionStore = TenantScope.currentStores.sessions,
                         engineSettings = app.engineSettings,
                         secureKeyStore = app.secureKeyStore,
-                        healthStore = app.healthStore,
                         locationProvider = app.locationProvider,
                         exerciseLibrary = exerciseLibrary,
                         memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
@@ -142,7 +133,6 @@ fun VanaApp(
                 }
                 ChatScreen(
                     viewModel = chatViewModel,
-                    healthStore = app.healthStore,
                     exerciseLibrary = exerciseLibrary,
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                     onOpenMedications = { navController.navigate(Routes.MEDICATIONS) },
@@ -155,7 +145,6 @@ fun VanaApp(
             SettingsScreen(
                 engineSettings = app.engineSettings,
                 secureKeyStore = app.secureKeyStore,
-                healthStore = app.healthStore,
                 locationProvider = app.locationProvider,
                 sessionStore = TenantScope.currentStores.sessions,
                 onBack = { navController.popBackStack() },
@@ -179,10 +168,7 @@ fun VanaApp(
         }
         if (BuildConfig.DEBUG) {
             composable(Routes.DEVELOPER) {
-                DeveloperScreen(
-                    healthStore = app.healthStore,
-                    onBack = { navController.popBackStack() },
-                )
+                DeveloperScreen(onBack = { navController.popBackStack() })
             }
         }
         composable(Routes.MEMORY) {
@@ -239,16 +225,4 @@ fun VanaApp(
         }
     }
 
-    spokenBriefLine?.let { line ->
-        AlertDialog(
-            onDismissRequest = { spokenBriefLine = null },
-            title = { Text("快捷问答") },
-            text = { Text(line) },
-            confirmButton = {
-                TextButton(onClick = { spokenBriefLine = null }) {
-                    Text("好")
-                }
-            },
-        )
-    }
 }

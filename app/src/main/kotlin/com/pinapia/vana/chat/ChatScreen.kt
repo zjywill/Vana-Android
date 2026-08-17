@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import com.pinapia.vana.Features
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -97,9 +96,6 @@ import com.pinapia.vana.ask.AskUserTools
 import com.pinapia.vana.exercises.ExerciseCards
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.exercises.ExerciseTools
-import com.pinapia.vana.health.HealthSituation
-import com.pinapia.vana.health.HealthStatusScreen
-import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.GoalSummary
 import com.pinapia.vana.session.SessionSummary
@@ -160,7 +156,6 @@ import com.pinapia.vana.vision.CapturePhoto
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel,
-    healthStore: HealthStore,
     exerciseLibrary: ExerciseLibrary,
     onOpenSettings: () -> Unit,
     onOpenMedications: () -> Unit,
@@ -175,9 +170,6 @@ fun ChatScreen(
     val engineGuidance by viewModel.engineGuidance.collectAsStateWithLifecycle()
     val retryNotice by viewModel.retryNotice.collectAsStateWithLifecycle()
     val followUps by viewModel.followUps.collectAsStateWithLifecycle()
-    val quickSummary by viewModel.quickSummary.collectAsStateWithLifecycle()
-    val situation by viewModel.situation.collectAsStateWithLifecycle()
-    val isWritingSummary by viewModel.isWritingSummary.collectAsStateWithLifecycle()
     val drafts by viewModel.draftAttachments.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -206,7 +198,6 @@ fun ChatScreen(
         }
     }
     val context = LocalContext.current
-    var showHealthStatus by remember { mutableStateOf(false) }
     var reviewingId by remember { mutableStateOf<String?>(null) }
     var captureUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var cameraNotice by remember { mutableStateOf<String?>(null) }
@@ -226,10 +217,6 @@ fun ChatScreen(
             currentOpenSettings()
         }
     }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = healthStore.permissionContract(),
-    ) { }
 
     val micPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -297,19 +284,6 @@ fun ChatScreen(
 
     LaunchedEffect(Unit) {
         voice.refresh()
-        if (Features.HEALTH_CONNECT && TenantScope.isOwnerActive) {
-            when (healthStore.sdkStatus()) {
-                HealthStore.SdkStatus.AVAILABLE -> {
-                    if (!healthStore.hasAllPermissions()) {
-                        permissionLauncher.launch(healthStore.permissions)
-                    }
-                }
-                HealthStore.SdkStatus.UPDATE_REQUIRED,
-                HealthStore.SdkStatus.UNAVAILABLE,
-                -> Unit
-            }
-        }
-        viewModel.refreshSituation()
     }
 
     // ChatViewModel 在返回栈上会活着，设置里填完密钥后必须重新读，不能沿用进设置前的 hint。
@@ -440,9 +414,6 @@ fun ChatScreen(
                     .consumeWindowInsets(insets)
                     .imePadding(),
             ) {
-                if (Features.HEALTH_CONNECT && TenantScope.current.isOwner) {
-                    HealthConnectBanner(healthStore = healthStore)
-                }
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -454,31 +425,10 @@ fun ChatScreen(
                 ) {
                     if (session.isEmpty) {
                         item {
-                            val selectedTopic by viewModel.selectedTopic.collectAsStateWithLifecycle()
                             WelcomeCard(
                                 isOwner = TenantScope.current.isOwner,
                                 isPrivate = session.isPrivate,
-                                healthConnectEnabled = Features.HEALTH_CONNECT,
-                                quickSummary = if (Features.HEALTH_CONNECT) {
-                                    quickSummary
-                                        ?: if (TenantScope.current.isOwner) {
-                                            healthStore.emptyDataHint().takeIf {
-                                                healthStore.sdkStatus() != HealthStore.SdkStatus.AVAILABLE
-                                            } ?: HealthSituation.CALM_SUMMARY
-                                        } else {
-                                            null
-                                        }
-                                } else {
-                                    null
-                                },
                                 onTogglePrivate = { viewModel.setPrivate(!session.isPrivate) },
-                                onOpenHealthStatus = {
-                                    if (Features.HEALTH_CONNECT && TenantScope.current.isOwner) {
-                                        showHealthStatus = true
-                                    }
-                                },
-                                selectedTopic = selectedTopic,
-                                onSelectTopic = viewModel::selectTopic,
                                 suggestions = viewModel.suggestedQuestions,
                                 onSuggestion = viewModel::send,
                                 setupGuidance = engineGuidance,
@@ -618,17 +568,6 @@ fun ChatScreen(
         }
     }
 
-    if (Features.HEALTH_CONNECT && showHealthStatus && TenantScope.current.isOwner) {
-        HealthStatusScreen(
-            summary = quickSummary ?: HealthSituation.CALM_SUMMARY,
-            situation = situation,
-            isWriting = isWritingSummary,
-            canGenerate = engineGuidance == null,
-            onRefresh = viewModel::regenerateQuickSummary,
-            onDismiss = { showHealthStatus = false },
-        )
-    }
-
     val reviewing = drafts.firstOrNull { it.id == reviewingId && !it.isLoading }
     LaunchedEffect(reviewingId, drafts) {
         if (reviewingId != null && drafts.none { it.id == reviewingId }) {
@@ -717,37 +656,6 @@ private fun draftCaption(draft: DraftAttachment): String = when {
     }
 }
 
-@Composable
-private fun HealthConnectBanner(
-    healthStore: HealthStore,
-    modifier: Modifier = Modifier,
-) {
-    val status = healthStore.sdkStatus()
-    if (status == HealthStore.SdkStatus.AVAILABLE) return
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                healthStore.emptyDataHint(),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            if (status == HealthStore.SdkStatus.UPDATE_REQUIRED) {
-                TextButton(onClick = { healthStore.openProviderInstall() }) {
-                    Text("去安装 Health Connect")
-                }
-            }
-        }
-    }
-}
 @Composable
 private fun DraftStrip(
     drafts: List<DraftAttachment>,
@@ -888,31 +796,19 @@ private fun FollowUpChips(
 private fun WelcomeCard(
     isOwner: Boolean,
     isPrivate: Boolean,
-    healthConnectEnabled: Boolean,
-    quickSummary: String?,
     onTogglePrivate: () -> Unit,
-    onOpenHealthStatus: () -> Unit = {},
-    selectedTopic: ChatTopic?,
-    onSelectTopic: (ChatTopic?) -> Unit,
     suggestions: List<String>,
     onSuggestion: (String) -> Unit,
     setupGuidance: String? = null,
     onOpenSettings: () -> Unit = {},
 ) {
-    val title = when {
-        !isOwner -> "从${TenantScope.current.displayName}的化验单和用药开始"
-        healthConnectEnabled -> "从你的健康数据开始"
-        else -> "你好，我是 Vana"
-    }
-    val body = when {
-        !isOwner ->
-            "拍一张${TenantScope.current.displayName}的化验单、报告或药盒，文字在本机识别后再帮你看。" +
-                "这位成员没有本机健康数据。"
-        healthConnectEnabled ->
-            "可以直接问步数、睡眠、心率、锻炼和体重。Vana 只读取你授权的 Health Connect 数据，不会修改记录。"
-        else ->
+    val title = if (isOwner) "你好，我是 Vana" else "从${TenantScope.current.displayName}的资料开始"
+    val body = if (isOwner) {
             "拍化验单或药盒、聊症状与用药习惯，或记下你想跟进的事。" +
                 "文字识别在本机完成；要回答问题时才会把必要内容发给你配置的模型。"
+    } else {
+        "拍一张${TenantScope.current.displayName}的化验单、报告或药盒，文字在本机识别后再帮你看；" +
+            "也可以记录用药、测量和需要跟进的事。"
     }
 
     Column(
@@ -946,21 +842,6 @@ private fun WelcomeCard(
             )
         }
 
-        if (healthConnectEnabled && !quickSummary.isNullOrBlank()) {
-            Text(
-                quickSummary,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = if (isOwner) {
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenHealthStatus)
-                        .padding(vertical = 4.dp)
-                } else {
-                    Modifier
-                },
-            )
-        }
-
         if (isPrivate) {
             Text(
                 "这条对话不会被保存。不进会话列表，不写进记忆。" +
@@ -982,32 +863,6 @@ private fun WelcomeCard(
                 }
             },
         )
-
-        // 话题格子指向健康工具;HC 关掉时摆着只会点出空结果。
-        if (isOwner && healthConnectEnabled) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("想聊什么", style = MaterialTheme.typography.titleSmall)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = selectedTopic == null,
-                        onClick = { onSelectTopic(null) },
-                        label = { Text("不限话题") },
-                    )
-                    ChatTopics.all.forEach { topic ->
-                        FilterChip(
-                            selected = selectedTopic?.id == topic.id,
-                            onClick = { onSelectTopic(topic) },
-                            label = { Text(topic.name) },
-                        )
-                    }
-                }
-            }
-        }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("试着问", style = MaterialTheme.typography.titleSmall)
@@ -1328,11 +1183,6 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
 }
 
 private fun toolCallLabel(call: com.pinapia.vana.session.ToolCallRecord): String = when (call.name) {
-    "daily_steps" -> "查询了活动量"
-    "sleep_summary" -> "查询了睡眠"
-    "heart_rate_summary" -> "查询了静息心率与 HRV"
-    "workouts" -> "查询了锻炼"
-    "body_metrics" -> "查询了体重"
     "remember" -> "记住了"
     "list_medications" -> "查看了用药表"
     "log_medication", "update_medication" -> "更新了用药表"

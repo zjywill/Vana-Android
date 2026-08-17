@@ -1,6 +1,5 @@
 package com.pinapia.vana.voice
 
-import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.memory.MemorySnapshot
@@ -17,8 +16,6 @@ import com.pinapia.vana.memory.MemorySnapshot
 object VoiceVocabulary {
     const val MAX_TERMS = 100
     const val MAX_TERM_CHARACTERS = 16
-    private const val MAX_DERIVED_CHARACTERS = 6
-
     fun terms(medications: MedicationSnapshot, memory: MemorySnapshot): List<String> {
         val result = mutableListOf<String>()
         for (status in MedicationItem.Status.entries) {
@@ -32,32 +29,14 @@ object VoiceVocabulary {
     }
 
     val metricTerms: List<String>
-        get() {
-            val terms = listOf(
-                "daily_steps",
-                "sleep_summary",
-                "heart_rate_summary",
-                "workouts",
-                "body_metrics",
-                "blood_pressure",
-                "vitals",
-                "correlations",
-                "health_records",
-            )
-                .flatMap { split(HealthTools.label(it)) }
-                .filter { it.length <= MAX_DERIVED_CHARACTERS }
-                .toMutableList()
-            terms += HealthTools.ACTIVITY_NAMES
-            terms += FINE_GRAINED_TERMS
-            return normalized(terms)
-        }
+        get() = normalized(FINE_GRAINED_TERMS)
 
     private val FINE_GRAINED_TERMS = listOf(
         "静息心率", "心率变异性", "HRV", "血氧", "血氧饱和度", "呼吸频率", "体温",
         "深睡", "核心睡眠", "快速眼动", "REM", "睡眠效率", "入睡时间", "睡眠分期",
         "体脂", "体脂率", "去脂体重", "BMI", "腰围",
         "收缩压", "舒张压", "高压", "低压",
-        "步数", "爬楼", "运动分钟", "活动能量", "静息能量", "配速", "最大摄氧量",
+        "身高", "体重", "心率", "血压", "血糖", "体温", "腰围",
         "化验单", "体检报告", "空腹血糖", "糖化血红蛋白", "血红蛋白", "白细胞", "血小板",
         "总胆固醇", "低密度脂蛋白", "高密度脂蛋白", "甘油三酯", "尿酸", "肌酐",
         "转氨酶", "促甲状腺激素", "维生素 D",
@@ -102,11 +81,6 @@ object VoiceVocabulary {
         }
         return found
     }
-
-    private fun split(label: String): List<String> =
-        label.split(*"与、和/（）()".toCharArray())
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
 
     fun normalized(terms: List<String>): List<String> {
         val seen = mutableSetOf<String>()

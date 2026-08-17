@@ -17,7 +17,7 @@ rg "REQUEST_INSTALL_PACKAGES|USE_EXACT_ALARM|SCHEDULE_EXACT_ALARM|permission.hea
   app/build/intermediates/merged_manifest/playRelease/processPlayReleaseMainManifest/AndroidManifest.xml
 ```
 
-上面的 `rg` 应该没有任何输出。当前版本没有启用 Health Connect，也不在 Play 包里声明健康权限；
+上面的 `rg` 应该没有任何输出。Android 版不接入设备健康数据，也不声明相关权限；
 GitHub APK 才包含从 Release 下载并安装更新的权限。
 
 ## 审核访问说明
@@ -44,7 +44,7 @@ credential below:
 
 Temporary review API key: <INSERT A WORKING KEY>
 
-The current Play build does not request or access Health Connect data. Photo OCR runs on device.
+The Android app does not request or access device health data. Photo OCR runs on device.
 Original photos are not uploaded unless the reviewer explicitly enables that choice for a photo.
 Vana is not a medical device and does not provide diagnoses, treatment plans, or dosage advice.
 ```
@@ -58,7 +58,7 @@ Vana is not a medical device and does not provide diagnoses, treatment plans, or
 - Privacy Policy URL 发布自 `app/src/main/assets/PrivacyPolicy.html`，线上和包内必须是同一份。
 - Data safety 要按真实传输填写：用户输入、附件 OCR 文字、用户主动选择的原图、城市名、
   记忆和用药内容会发送给用户选择的模型 Provider；API key 只用于鉴权，不发送给 Vana。
-- 当前没有 Health Connect 权限，不要在 Health apps declaration 里声称正在读取 Health Connect。
+- 不申请设备健康数据权限，不要在 Health apps declaration 里声称正在读取设备健康数据。
 
 ## 提交前真实路径
 

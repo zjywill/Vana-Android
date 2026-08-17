@@ -26,12 +26,6 @@ class SessionTitleTest {
     }
 
     @Test
-    fun topicNameWhenEmptyWithTopic() {
-        val session = ChatSession(topicId = "sleep")
-        assertEquals("睡眠", session.title)
-    }
-
-    @Test
     fun firstUserLineIsTitle() {
         val session = ChatSession(
             messages = listOf(

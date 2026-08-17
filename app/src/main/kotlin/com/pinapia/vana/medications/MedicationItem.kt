@@ -85,7 +85,7 @@ data class MedicationItem(
             reason.trim().takeIf { it.isNotEmpty() }?.let { append("他记的原因是「$it」。") }
             whenText.trim().takeIf { it.isNotEmpty() }?.let { append("他记的服用情况是「$it」。") }
             outcome.trim().takeIf { it.isNotEmpty() }?.let { append("他自己的评价是「$it」。") }
-            append("照常查健康数据回答，把变化和这件事挂上钩，")
+            append("结合对话、记忆和用户记录的测量回答，把变化和这件事挂上钩，")
             append("但不要建议他调整剂量、停药或换药——那要问开药的医生或药师。")
         }
 

@@ -6,7 +6,6 @@ import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.ask.AskUserTools
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.exercises.ExerciseTools
-import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.medications.MedicationStore
 import com.pinapia.vana.medications.MedicationTools
 import com.pinapia.vana.measurements.MeasurementStore
@@ -19,13 +18,11 @@ import com.pinapia.vana.search.WebSearchTools
 import com.pinapia.vana.session.SessionStore
 
 fun CapabilityRegistry.Companion.healthChat(
-    includesHealthTools: Boolean = true,
     allowsMemoryWrites: Boolean = true,
     allowsMedicationWrites: Boolean = true,
     allowsMeasurementWrites: Boolean = true,
     allowsRecall: Boolean = false,
     asksUser: Boolean = true,
-    healthTools: HealthTools? = null,
     memoryStore: MemoryStore? = null,
     medicationStore: MedicationStore? = null,
     measurementStore: MeasurementStore? = null,
@@ -38,10 +35,6 @@ fun CapabilityRegistry.Companion.healthChat(
     measurementsEnabled: Boolean = true,
 ): CapabilityRegistry {
     val registries = mutableListOf<CapabilityRegistry>()
-    if (includesHealthTools && healthTools != null) {
-        registries += healthTools.registry()
-    }
-    // 动作库不跟着 Health Connect 走：不读健康数据、不落盘、不联网。
     if (exerciseLibrary != null) {
         registries += ExerciseTools.registry(exerciseLibrary)
     }

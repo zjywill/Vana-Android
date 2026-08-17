@@ -52,9 +52,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
-import com.pinapia.vana.Features
 import com.pinapia.vana.checkin.CheckInScheduler
-import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.session.SessionStore
 import com.pinapia.vana.update.CheckForUpdatesRow
@@ -68,7 +66,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun SettingsScreen(
     engineSettings: EngineSettings,
     secureKeyStore: SecureKeyStore,
-    healthStore: HealthStore,
     locationProvider: LocationProvider,
     sessionStore: SessionStore,
     onBack: () -> Unit,
@@ -109,9 +106,6 @@ fun SettingsScreen(
     val voiceAvailability by voice.availability.collectAsStateWithLifecycle()
     val voiceLocale by voice.resolvedLocale.collectAsStateWithLifecycle()
     val voiceSupported by voice.supportedLocaleIdentifiers.collectAsStateWithLifecycle()
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = healthStore.permissionContract(),
-    ) {}
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -426,67 +420,11 @@ fun SettingsScreen(
                 )
             }
             Text(
-                if (Features.HEALTH_CONNECT) {
-                    "早上说昨晚的睡眠，晚上说今天的活动量，都基于本机算出来的数据；" +
-                        "点开通知会直接带着对应话题开一条新对话。"
-                } else {
-                    "早晚各一条本地通知；有到期的回访时优先提醒，否则只问一句通用的问题。" +
-                        "点开通知会直接开始对应对话。"
-                },
+                "早晚各一条本地通知；有到期的回访时优先提醒，否则只问一句通用的问题。" +
+                    "点开通知会直接开始对应对话。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-
-            HorizontalDivider()
-            Text("健康数据", style = MaterialTheme.typography.titleMedium)
-            if (!Features.HEALTH_CONNECT) {
-                Text(
-                    "当前版本没有接入 Health Connect，也不会申请健康数据权限。" +
-                        "可以拍照化验单，或直接聊症状、用药与想跟进的事。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else when (healthStore.sdkStatus()) {
-                HealthStore.SdkStatus.AVAILABLE -> {
-                    Button(
-                        onClick = { permissionLauncher.launch(healthStore.permissions) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("请求 Health Connect 权限")
-                    }
-                    TextButton(
-                        onClick = { healthStore.openHealthConnectSettings() },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("打开 Health Connect 设置")
-                    }
-                    Text(
-                        "如果读不到数据，请确认已安装会往 Health Connect 写入的应用（如 Google Fit、三星健康等）。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                HealthStore.SdkStatus.UPDATE_REQUIRED -> {
-                    Button(
-                        onClick = { healthStore.openProviderInstall() },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("安装 / 更新 Health Connect")
-                    }
-                    Text(
-                        healthStore.emptyDataHint(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                HealthStore.SdkStatus.UNAVAILABLE -> {
-                    Text(
-                        healthStore.emptyDataHint(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
 
             HorizontalDivider()
             Text("位置", style = MaterialTheme.typography.titleMedium)

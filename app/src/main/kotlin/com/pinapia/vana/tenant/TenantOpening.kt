@@ -10,7 +10,7 @@ object TenantOpening {
             return "这里是${name}的记录。拍一张${name}的化验单或报告，或者先把${name}在吃的药记下来。"
         }
         return "${name}的清单里记着 ${medications.items.size} 样东西。" +
-            "读不到${name}的健康数据，要看具体数值就拍一张化验单给我。"
+            "要看具体数值，可以拍一张${name}的化验单或报告。"
     }
 
     fun questions(tenant: Tenant, medications: MedicationSnapshot): List<String> {

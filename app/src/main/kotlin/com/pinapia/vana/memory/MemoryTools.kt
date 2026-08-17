@@ -14,7 +14,6 @@ object MemoryTools {
         val definition = CapabilityDefinition(
             name = REMEMBER,
             description = "当用户明确要求记住某件关于自己的长期情况、偏好或约定时调用。" +
-                "不要记 Health Connect 能查到的数字。" +
                 "用药与补剂请走用药表工具；口述的身高体重心率血压等测量请走 log_measurement，不要用 remember。",
             inputSchema = RuntimeJSONValue.ObjectValue(
                 mapOf(

@@ -1,7 +1,6 @@
 package com.pinapia.vana
 
 import android.app.Application
-import com.pinapia.vana.health.HealthStore
 import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.EngineSettings
@@ -17,8 +16,6 @@ class VanaApplication : Application() {
         private set
     lateinit var secureKeyStore: SecureKeyStore
         private set
-    lateinit var healthStore: HealthStore
-        private set
     lateinit var locationProvider: LocationProvider
         private set
     lateinit var tenantStore: TenantStore
@@ -28,7 +25,6 @@ class VanaApplication : Application() {
         super.onCreate()
         engineSettings = EngineSettings(this)
         secureKeyStore = SecureKeyStore(this)
-        healthStore = HealthStore(this)
         locationProvider = LocationProvider(this)
         tenantStore = TenantStore(filesDir)
         TenantScope.bootstrap(parent = filesDir, store = tenantStore)

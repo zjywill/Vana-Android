@@ -1,6 +1,5 @@
 package com.pinapia.vana.recall
 
-import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.memory.MemoryStore
 import com.pinapia.vana.session.GoalSummary
 import com.pinapia.vana.session.SessionStore
@@ -40,7 +39,6 @@ object GoalDigest {
         engineSettings: EngineSettings,
         secureKeyStore: SecureKeyStore,
         tenant: Tenant,
-        healthTools: HealthTools? = null,
     ): Boolean {
         val thread = goal.thread ?: return false
         return DerivedTurn.run(
@@ -53,7 +51,6 @@ object GoalDigest {
             engineSettings = engineSettings,
             secureKeyStore = secureKeyStore,
             tenant = tenant,
-            healthTools = healthTools,
         ) != null
     }
 
@@ -64,6 +61,6 @@ object GoalDigest {
 
     fun question(forGoal: GoalSummary): String =
         "关于「${forGoal.title}」这件事：先翻一下我们之前聊到哪儿、当时定的是什么，" +
-            "再查现在的数据，两三句话说清楚这段时间有没有进展、和上次比变了多少。" +
+            "再结合之后的对话、记忆、用药和用户记录的测量，两三句话说清楚这段时间有没有进展。" +
             "没有明显变化就直说没有，不用凑一个好消息出来。"
 }

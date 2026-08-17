@@ -1,6 +1,5 @@
 package com.pinapia.vana.session
 
-import com.pinapia.vana.memory.InterestProfile
 import java.io.File
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -29,7 +28,6 @@ class SessionStore(
                         title = SessionTitle.make(
                             threadId = session.threadId,
                             threadTitle = session.threadTitle,
-                            topicId = session.topicId,
                             firstUserText = firstUser?.text,
                             firstUserHasAttachments = firstUser?.attachments?.isNotEmpty() == true,
                             createdAt = session.createdAt,
@@ -39,24 +37,12 @@ class SessionStore(
                         threadId = session.threadId,
                         threadTitle = session.threadTitle,
                         isDerived = session.isDerived,
-                        topicId = session.topicId,
                         toolNames = tools,
                     )
                 }.getOrNull()
             }
             ?.sortedByDescending { it.updatedAt }
             .orEmpty()
-    }
-
-    /** 从会话里数他实际问过什么。最近的在前。 */
-    fun interests(): InterestProfile {
-        val entries = listEntries().map {
-            InterestProfile.Companion.Entry(
-                isDerived = it.isDerived,
-                toolNames = it.toolNames,
-            )
-        }
-        return InterestProfile.build(entries)
     }
 
     fun listSummaries(): List<SessionSummary> =

@@ -30,6 +30,6 @@ include(":app")
 
 // iOS 那边 `AgentRuntime` 是一个本地 SwiftPM 包,不 import 任何模型 SDK、也不认识 HealthKit。
 // 这里对应成一个纯 Kotlin/JVM 模块——**故意不是 Android library**:
-// 拿不到 android.* 就写不出「顺手在这里查一下 Health Connect」这种代码,
+// 拿不到 android.* 就不会把平台能力顺手塞进工具循环,
 // 那条边界由编译器守着,不靠自觉。
 include(":agent-runtime")

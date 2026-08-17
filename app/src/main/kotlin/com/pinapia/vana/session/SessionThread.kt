@@ -87,7 +87,6 @@ data class SessionIndexEntry(
     val threadId: String? = null,
     val threadTitle: String? = null,
     val isDerived: Boolean = false,
-    val topicId: String? = null,
     /** 这条会话里查过哪几个工具,去重且保序。 */
     val toolNames: List<String> = emptyList(),
 ) {

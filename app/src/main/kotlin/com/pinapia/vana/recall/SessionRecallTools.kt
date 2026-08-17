@@ -213,7 +213,7 @@ object SessionRecallTools {
     private fun searchDefinition() = CapabilityDefinition(
         name = SEARCH_TOOL_NAME,
         description = "搜索过往对话。只有用户自己提起过去（上次、之前说过、我们聊过、你还记得）时才调用。" +
-            "问眼前健康数据请走健康工具。先 search 再 read_session。",
+            "问测量趋势时请走测量卡片工具。先 search 再 read_session。",
         inputSchema = RuntimeJSONValue.ObjectValue(
             mapOf(
                 "type" to RuntimeJSONValue.StringValue("object"),
@@ -243,7 +243,7 @@ object SessionRecallTools {
 
     private fun readDefinition() = CapabilityDefinition(
         name = READ_TOOL_NAME,
-        description = "按 search_sessions 给出的短编号读取一次过往对话原文。里面的数值可能过时，要用就重新查健康工具。",
+        description = "按 search_sessions 给出的短编号读取一次过往对话原文。里面的数值可能过时，需要趋势时以测量卡片为准。",
         inputSchema = RuntimeJSONValue.ObjectValue(
             mapOf(
                 "type" to RuntimeJSONValue.StringValue("object"),

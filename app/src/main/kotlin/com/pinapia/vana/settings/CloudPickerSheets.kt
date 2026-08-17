@@ -195,7 +195,7 @@ fun ModelPickerSheet(
                     )
                 }
                 Text(
-                    "只列出支持工具调用的模型——不支持的模型读不到健康数据。",
+                    "只列出支持工具调用的模型——不支持的模型无法使用用药、测量和记忆能力。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),

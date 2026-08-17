@@ -5,8 +5,6 @@ agp = "8.12.1"
 kotlin = "2.2.10"
 ksp = "2.2.10-2.0.2"
 
-# minSdk 28 = Health Connect 官方可用下限(Android 9)。HC 功能暂缓(Features.HEALTH_CONNECT),
-# 见 CLAUDE.md「Health Connect 暂缓」——大陆机普遍没有 HC。
 compileSdk = "36"
 minSdk = "28"
 targetSdk = "36"
@@ -23,10 +21,6 @@ navigation = "2.9.3"
 datastore = "1.1.7"
 security-crypto = "1.1.0-alpha06"
 work = "2.10.2"
-
-# 健康数据。androidx.health.connect 是 HealthKit 在 Android 上的对等物:
-# 睡眠、步数、静息心率、HRV、锻炼、体重都有,读写按项授权,数据归本机这个用户所有。
-health-connect = "1.1.0-rc02"
 
 # 化验单 / 药瓶 OCR。ML Kit 的中日韩识别模型顶 iOS 那边的 Vision,同样全在本机跑。
 mlkit-text-chinese = "16.0.1"
@@ -61,8 +55,6 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
-
-androidx-health-connect-client = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
 
 mlkit-text-recognition-chinese = { module = "com.google.mlkit:text-recognition-chinese", version.ref = "mlkit-text-chinese" }
 androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg" }

@@ -112,9 +112,6 @@ dependencies {
     // 后台派生那几轮(抽记忆、待跟进、目标周报)对应 iOS 的 BackgroundDigest。
     implementation(libs.androidx.work.runtime.ktx)
 
-    // 健康数据。**只有这个模块碰它**,agent-runtime 那边一行都不许有。
-    implementation(libs.androidx.health.connect.client)
-
     // 化验单 / 药瓶 OCR,全在本机跑。
     implementation(libs.mlkit.text.recognition.chinese)
     // 动作卡示意图（assets/exercises/*.svg）。

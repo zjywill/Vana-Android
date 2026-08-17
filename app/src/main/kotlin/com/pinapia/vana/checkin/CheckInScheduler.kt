@@ -9,12 +9,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.pinapia.vana.Features
 import com.pinapia.vana.MainActivity
 import com.pinapia.vana.VanaApplication
-import com.pinapia.vana.health.DayPeriod
-import com.pinapia.vana.health.HealthSituation
-import com.pinapia.vana.health.HealthTrigger
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.tenant.TenantScope
 import java.util.Calendar
@@ -26,13 +22,25 @@ import kotlinx.coroutines.launch
 data class CheckInContent(
     val title: String,
     val body: String,
-    val topicId: String? = null,
     val question: String? = null,
     val followUpId: String? = null,
 )
 
+enum class DayPeriod {
+    MORNING,
+    AFTERNOON,
+    EVENING;
+
+    companion object {
+        fun now(calendar: Calendar = Calendar.getInstance()): DayPeriod = when (calendar.get(Calendar.HOUR_OF_DAY)) {
+            in 5..11 -> MORNING
+            in 12..17 -> AFTERNOON
+            else -> EVENING
+        }
+    }
+}
+
 object CheckInScheduler {
-    const val TOPIC_KEY = "topicId"
     const val QUESTION_KEY = "question"
     const val FOLLOW_UP_KEY = "followUpId"
     const val TENANT_KEY = "tenantId"
@@ -53,7 +61,7 @@ object CheckInScheduler {
             "每日 check-in",
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "早晚各一条，基于本机健康数据的简短提醒"
+            description = "早晚各一条，用于回访和记录近况的简短提醒"
         }
         manager.createNotificationChannel(channel)
     }
@@ -66,18 +74,6 @@ object CheckInScheduler {
             if (!settings.checkInsEnabled) return@launch
             ensureChannel(app)
 
-            // check-in 讲的是本机健康数据,永远是机主(同 iOS)。HC 暂缓时跳过 situation。
-            val situation = if (Features.HEALTH_CONNECT) {
-                runCatching {
-                    val health = (app as? VanaApplication)?.healthStore ?: return@runCatching null
-                    val interests = TenantScope.ownerStores.sessions.interests()
-                    health.withOwnerAccess {
-                        HealthSituation.detect(health, interests = interests)
-                    }
-                }.getOrNull()
-            } else {
-                null
-            }
             val dueFollowUps = if (settings.memoryEnabled) {
                 TenantScope.ownerStores.memory.snapshot().due()
             } else {
@@ -85,12 +81,10 @@ object CheckInScheduler {
             }
             val morning = content(
                 period = DayPeriod.MORNING,
-                situation = situation,
                 dueFollowUps = dueFollowUps,
             )
             val evening = content(
                 period = DayPeriod.EVENING,
-                situation = situation,
                 dueFollowUps = emptyList(),
             )
             schedule(app, MORNING_REQ, MORNING_ID, settings.morningCheckInHour, morning, "morning")
@@ -109,21 +103,8 @@ object CheckInScheduler {
     /** Debug:立刻发一条和真 check-in 同路径的通知。 */
     suspend fun sendTest(context: Context): String {
         ensureChannel(context)
-        val app = context.applicationContext
-        val situation = if (Features.HEALTH_CONNECT) {
-            runCatching {
-                val health = (app as? VanaApplication)?.healthStore ?: return@runCatching null
-                val interests = TenantScope.ownerStores.sessions.interests()
-                health.withOwnerAccess {
-                    HealthSituation.detect(health, interests = interests)
-                }
-            }.getOrNull()
-        } else {
-            null
-        }
         val payload = content(
             period = DayPeriod.now(),
-            situation = situation,
             dueFollowUps = emptyList(),
         )
         showNotification(
@@ -131,7 +112,6 @@ object CheckInScheduler {
             notificationId = 1099,
             title = "[测试] ${payload.title}",
             body = payload.body,
-            topicId = payload.topicId,
             question = payload.question,
             followUpId = payload.followUpId,
             tenantId = TenantScope.owner.id,
@@ -145,7 +125,6 @@ object CheckInScheduler {
      */
     suspend fun content(
         period: DayPeriod,
-        situation: HealthSituation?,
         dueFollowUps: List<com.pinapia.vana.memory.MemoryItem> = emptyList(),
     ): CheckInContent {
         if (period == DayPeriod.MORNING && dueFollowUps.isNotEmpty()) {
@@ -162,64 +141,16 @@ object CheckInScheduler {
             )
         }
 
-        val relevant = situation?.triggers?.firstOrNull { trigger ->
-            when (period) {
-                DayPeriod.MORNING -> when (trigger) {
-                    is HealthTrigger.ShortSleep,
-                    is HealthTrigger.MissingLastNight,
-                    is HealthTrigger.LongSleepStillLow,
-                    is HealthTrigger.ElevatedRestingHR,
-                    is HealthTrigger.SuppressedHRV,
-                    is HealthTrigger.LateBedtimeDrift,
-                    is HealthTrigger.WeeklyReview,
-                    -> true
-                    else -> false
-                }
-                DayPeriod.AFTERNOON, DayPeriod.EVENING -> when (trigger) {
-                    is HealthTrigger.JustTrained,
-                    is HealthTrigger.BigActivityDay,
-                    is HealthTrigger.SedentaryStreak,
-                    is HealthTrigger.NoStepsToday,
-                    is HealthTrigger.NoWorkouts,
-                    -> true
-                    else -> false
-                }
-            }
-        }
-
-        if (relevant != null) {
-            return CheckInContent(
-                title = if (period == DayPeriod.MORNING) "早上好" else "今天收个尾",
-                body = relevant.brief,
-                topicId = relevant.topicId,
-                question = relevant.question,
-            )
-        }
-
         return when (period) {
             DayPeriod.MORNING -> CheckInContent(
                 title = "早上好",
-                body = if (situation == null) {
-                    "今天有什么想关注的？"
-                } else {
-                    "昨晚的睡眠数据已经同步好了，要看看吗？"
-                },
-                topicId = if (situation == null) null else "sleep",
-                question = if (situation == null) "今天有什么想关注的？" else "昨晚睡得怎么样？",
+                body = "今天有什么想关注的？",
+                question = "今天有什么想关注的？",
             )
             DayPeriod.AFTERNOON, DayPeriod.EVENING -> CheckInContent(
                 title = "今天收个尾",
-                body = if (situation == null) {
-                    "今天有什么想记下，或者之后回头看的？"
-                } else {
-                    "今天的活动量已经记完了，要看看吗？"
-                },
-                topicId = if (situation == null) null else "activity",
-                question = if (situation == null) {
-                    "今天有什么想记下或跟进的？"
-                } else {
-                    "今天运动量够吗？"
-                },
+                body = "今天有什么想记下，或者之后回头看的？",
+                question = "今天有什么想记下或跟进的？",
             )
         }
     }
@@ -236,7 +167,6 @@ object CheckInScheduler {
             putExtra("notificationId", notificationId)
             putExtra("title", content.title)
             putExtra("body", content.body)
-            putExtra(TOPIC_KEY, content.topicId)
             putExtra(QUESTION_KEY, content.question)
             putExtra(FOLLOW_UP_KEY, content.followUpId)
             putExtra(TENANT_KEY, TenantScope.owner.id)
@@ -269,7 +199,6 @@ object CheckInScheduler {
         notificationId: Int,
         title: String,
         body: String,
-        topicId: String?,
         question: String?,
         followUpId: String?,
         tenantId: String?,
@@ -277,7 +206,6 @@ object CheckInScheduler {
         ensureChannel(context)
         val open = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(TOPIC_KEY, topicId)
             putExtra(QUESTION_KEY, question)
             putExtra(FOLLOW_UP_KEY, followUpId)
             putExtra(TENANT_KEY, tenantId)
@@ -309,7 +237,6 @@ class CheckInAlarmReceiver : BroadcastReceiver() {
             notificationId = intent.getIntExtra("notificationId", 0),
             title = intent.getStringExtra("title").orEmpty(),
             body = intent.getStringExtra("body").orEmpty(),
-            topicId = intent.getStringExtra(CheckInScheduler.TOPIC_KEY),
             question = intent.getStringExtra(CheckInScheduler.QUESTION_KEY),
             followUpId = intent.getStringExtra(CheckInScheduler.FOLLOW_UP_KEY),
             tenantId = intent.getStringExtra(CheckInScheduler.TENANT_KEY),

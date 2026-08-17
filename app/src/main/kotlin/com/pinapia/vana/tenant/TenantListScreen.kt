@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.pinapia.vana.Features
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,15 +104,8 @@ fun TenantListScreen(
             }
             item {
                 Text(
-                    if (Features.HEALTH_CONNECT) {
-                        "每位成员的会话、用药清单、记忆和照片各存一份，互相看不到。\n" +
-                            "Health Connect 数据只有本人有：家人这边读不到步数、睡眠、心率这些，" +
-                            "他的情况来自你记下的用药、拍给 Vana 的化验单，和你们聊过的内容。"
-                    } else {
-                        "每位成员的会话、用药清单、记忆和照片各存一份，互相看不到。" +
-                            "当前版本不读取设备健康数据，成员情况来自你记下的用药、" +
-                            "拍给 Vana 的化验单，和你们聊过的内容。"
-                    },
+                    "每位成员的会话、用药清单、记忆和照片各存一份，互相看不到。" +
+                        "成员情况来自你记下的用药、拍给 Vana 的化验单，和你们聊过的内容。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
@@ -182,13 +174,7 @@ private fun TenantRow(
             Text(
                 buildString {
                     tenant.ageBand?.let { append(it.label); append(" · ") }
-                    append(
-                        when {
-                            !tenant.isOwner -> "只有你记下的内容"
-                            Features.HEALTH_CONNECT -> "本人 · 有 Health Connect 数据"
-                            else -> "本人"
-                        },
-                    )
+                    append(if (tenant.isOwner) "本人" else "只有你记下的内容")
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

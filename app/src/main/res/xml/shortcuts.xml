@@ -1,49 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  App Shortcuts / Assistant 能力入口。对应 iOS 的四条 App Intent:
-  今天状态、昨晚睡眠、最近锻炼、问 Vana。前三条本地算 SpokenBrief,最后一条带问题进聊天。
+  App Shortcuts / Assistant 能力入口。Android 当前不读取设备健康数据，只保留「问 Vana」。
 -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <shortcut
-        android:shortcutId="today_status"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_today_short"
-        android:shortcutLongLabel="@string/shortcut_today_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="com.pinapia.vana"
-            android:targetClass="com.pinapia.vana.MainActivity"
-            android:data="vana://action/today" />
-        <categories android:name="android.shortcut.conversation" />
-    </shortcut>
-
-    <shortcut
-        android:shortcutId="last_night_sleep"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_sleep_short"
-        android:shortcutLongLabel="@string/shortcut_sleep_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="com.pinapia.vana"
-            android:targetClass="com.pinapia.vana.MainActivity"
-            android:data="vana://action/sleep" />
-    </shortcut>
-
-    <shortcut
-        android:shortcutId="last_workout"
-        android:enabled="true"
-        android:icon="@mipmap/ic_launcher"
-        android:shortcutShortLabel="@string/shortcut_workout_short"
-        android:shortcutLongLabel="@string/shortcut_workout_long">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="com.pinapia.vana"
-            android:targetClass="com.pinapia.vana.MainActivity"
-            android:data="vana://action/workout" />
-    </shortcut>
-
     <shortcut
         android:shortcutId="ask_vana"
         android:enabled="true"

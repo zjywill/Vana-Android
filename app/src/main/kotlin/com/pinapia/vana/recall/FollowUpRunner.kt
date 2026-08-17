@@ -1,6 +1,5 @@
 package com.pinapia.vana.recall
 
-import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.memory.MemoryItem
 import com.pinapia.vana.memory.MemoryStore
 import com.pinapia.vana.session.SessionStore
@@ -40,7 +39,6 @@ object FollowUpRunner {
         engineSettings: EngineSettings,
         secureKeyStore: SecureKeyStore,
         tenant: Tenant,
-        healthTools: HealthTools? = null,
     ): Boolean {
         return DerivedTurn.run(
             question = question(forFollowUp = followUp),
@@ -52,7 +50,6 @@ object FollowUpRunner {
             engineSettings = engineSettings,
             secureKeyStore = secureKeyStore,
             tenant = tenant,
-            healthTools = healthTools,
         ) != null
     }
 
@@ -61,5 +58,5 @@ object FollowUpRunner {
 
     fun question(forFollowUp: MemoryItem): String =
         "我们说好这时候回头看的：${DerivedTurn.naturalize(forFollowUp.text)}。现在怎么样了？" +
-            "查一下数据，两三句话说清楚现在是什么情况、和当初比有没有变化。"
+            "结合之后的对话、记忆和用户记录的测量，两三句话说清楚现在是什么情况、和当初比有没有变化。"
 }

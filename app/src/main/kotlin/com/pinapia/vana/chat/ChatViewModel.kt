@@ -3,11 +3,9 @@ package com.pinapia.vana.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.pinapia.vana.Features
 import com.pinapia.vana.agent.AgentError
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agent.FollowUpSuggestionHook
-import com.pinapia.vana.agent.QuestionSuggester
 import com.pinapia.vana.agent.UserFacingModelFailure
 import com.pinapia.vana.agent.healthChat
 import com.pinapia.vana.agentruntime.AgentHookDispatcher
@@ -17,10 +15,6 @@ import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.agentruntime.apply
 import com.pinapia.vana.ask.AskUserAnswer
 import com.pinapia.vana.exercises.ExerciseLibrary
-import com.pinapia.vana.health.HealthSituation
-import com.pinapia.vana.health.HealthStore
-import com.pinapia.vana.health.HealthTools
-import com.pinapia.vana.health.QuickSummaryWriter
 import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.medications.MedicationItem
@@ -60,7 +54,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -72,7 +65,6 @@ class ChatViewModel(
     private val sessionStore: SessionStore,
     private val engineSettings: EngineSettings,
     private val secureKeyStore: SecureKeyStore,
-    private val healthStore: HealthStore,
     private val locationProvider: LocationProvider,
     private val exerciseLibrary: ExerciseLibrary,
     private val memorySnapshotProvider: () -> MemorySnapshot,
@@ -107,44 +99,25 @@ class ChatViewModel(
     private val _followUps = MutableStateFlow<List<String>>(emptyList())
     val followUps: StateFlow<List<String>> = _followUps.asStateFlow()
 
-    private val _quickSummary = MutableStateFlow<String?>(null)
-    val quickSummary: StateFlow<String?> = _quickSummary.asStateFlow()
-
-    private val _situation = MutableStateFlow<HealthSituation?>(null)
-    val situation: StateFlow<HealthSituation?> = _situation.asStateFlow()
-
-    private val _situationQuestions = MutableStateFlow<List<String>>(emptyList())
-    val situationQuestions: StateFlow<List<String>> = _situationQuestions.asStateFlow()
-
-    private val _isWritingSummary = MutableStateFlow(false)
-    val isWritingSummary: StateFlow<Boolean> = _isWritingSummary.asStateFlow()
-
     private val _draftAttachments = MutableStateFlow<List<DraftAttachment>>(emptyList())
     val draftAttachments: StateFlow<List<DraftAttachment>> = _draftAttachments.asStateFlow()
 
     private val _focusMedication = MutableStateFlow<MedicationItem?>(null)
     val focusMedication: StateFlow<MedicationItem?> = _focusMedication.asStateFlow()
 
-    private val _selectedTopic = MutableStateFlow<ChatTopic?>(null)
-    val selectedTopic: StateFlow<ChatTopic?> = _selectedTopic.asStateFlow()
-
     private var replyJob: Job? = null
-    private var summaryJob: Job? = null
     private var replyingMessageId: String? = null
     private var followUpHooks: AgentHookDispatcher? = null
     private var followUpSessionId: String? = null
     private var harvestJob: Job? = null
-    private var localQuickSummary: String? = null
-    /** 每次启动只生成一次首屏建议,不该每回到空会话就花一遍钱。 */
-    private var hasRequestedSuggestions = false
-
     val suggestedQuestions: List<String>
         get() {
-            _selectedTopic.value?.questions?.takeIf { it.isNotEmpty() }?.let { return it }
             _focusMedication.value?.openingQuestions?.let { return it }
-            return _situationQuestions.value.ifEmpty {
-                NoHealthConnectQuestions
+            val tenant = tenantProvider()
+            if (!tenant.isOwner) {
+                return TenantOpening.questions(tenant, medicationSnapshotProvider())
             }
+            return DefaultQuestions
         }
 
     val supportsVision: Boolean get() = engineSettings.modelSupportsVision()
@@ -183,7 +156,6 @@ class ChatViewModel(
     init {
         refreshSummaries()
         refreshEngineAvailability()
-        refreshSituation()
         viewModelScope.launch {
             if (locationProvider.isAuthorized) {
                 locationProvider.refresh()
@@ -209,12 +181,6 @@ class ChatViewModel(
             startNewSession()
         }
         send(trimmed)
-    }
-
-    fun applySpokenBrief(line: String?) {
-        if (!line.isNullOrBlank()) {
-            _quickSummary.value = line
-        }
     }
 
     fun refreshEngineAvailability() {
@@ -243,125 +209,6 @@ class ChatViewModel(
             ?.let { thread -> (thread as? SessionThread.Medication)?.medicationId }
         _focusMedication.value = focusId?.let { id ->
             medicationSnapshotProvider().items.firstOrNull { it.id == id }
-        }
-    }
-
-    fun refreshSituation() {
-        viewModelScope.launch {
-            val tenant = tenantProvider()
-            if (!tenant.isOwner) {
-                summaryJob?.cancel()
-                _situation.value = null
-                val meds = medicationSnapshotProvider()
-                _quickSummary.value = TenantOpening.quickSummary(tenant, meds)
-                _situationQuestions.value = TenantOpening.questions(tenant, meds)
-                return@launch
-            }
-            if (!Features.HEALTH_CONNECT) {
-                summaryJob?.cancel()
-                _situation.value = null
-                _quickSummary.value = null
-                _selectedTopic.value = null
-                _situationQuestions.value = NoHealthConnectQuestions
-                return@launch
-            }
-            val interests = sessionStore.interests()
-            val situation = HealthSituation.detect(healthStore, interests = interests)
-            if (_session.value.messages.isNotEmpty()) {
-                _situation.value = situation
-                return@launch
-            }
-            _situation.value = situation
-            localQuickSummary = situation.quickSummary
-            _quickSummary.value = situation.quickSummary
-            _situationQuestions.value = situation.questions
-
-            val key = secureKeyStore.apiKey?.trim().orEmpty()
-            val configured = key.isNotEmpty() && engineSettings.isConfigured(secureKeyStore)
-            if (!configured) {
-                writeQuickSummary(situation)
-                return@launch
-            }
-
-            // 并发:首屏建议和那段话互不相干,各自失败各自兜底。
-            if (!hasRequestedSuggestions) {
-                hasRequestedSuggestions = true
-                val suggester = QuestionSuggester(
-                    providerId = engineSettings.providerId,
-                    model = engineSettings.model,
-                    apiKey = key,
-                    situation = situation,
-                    healthTools = HealthTools(healthStore),
-                )
-                launch {
-                    val questions = runCatching { suggester.suggestions() }.getOrDefault(situation.questions)
-                    if (_session.value.messages.isEmpty() && _selectedTopic.value == null) {
-                        _situationQuestions.value = questions
-                    }
-                }
-            }
-            writeQuickSummary(situation)
-        }
-    }
-
-    /** 详情页刷新:重读数据,有 key 再写一遍。 */
-    fun regenerateQuickSummary() {
-        if (!Features.HEALTH_CONNECT) return
-        if (!tenantProvider().isOwner || _isWritingSummary.value) return
-        summaryJob?.cancel()
-        _isWritingSummary.value = true
-        summaryJob = viewModelScope.launch {
-            val interests = sessionStore.interests()
-            val situation = HealthSituation.detect(healthStore, interests = interests)
-            if (!isActive) {
-                _isWritingSummary.value = false
-                return@launch
-            }
-            _situation.value = situation
-            localQuickSummary = situation.quickSummary
-            _quickSummary.value = situation.quickSummary
-            _situationQuestions.value = situation.questions
-            if (!engineSettings.isConfigured(secureKeyStore)) {
-                _isWritingSummary.value = false
-                return@launch
-            }
-            writeQuickSummary(situation, alreadyWriting = true)
-        }
-    }
-
-    private fun writeQuickSummary(situation: HealthSituation, alreadyWriting: Boolean = false) {
-        summaryJob?.cancel()
-        if (!situation.hasSummaryFacts) {
-            if (alreadyWriting) _isWritingSummary.value = false
-            return
-        }
-        val key = secureKeyStore.apiKey?.trim().orEmpty()
-        if (key.isEmpty() || !engineSettings.isConfigured(secureKeyStore)) {
-            if (alreadyWriting) _isWritingSummary.value = false
-            return
-        }
-        if (!alreadyWriting) _isWritingSummary.value = true
-        summaryJob = viewModelScope.launch {
-            try {
-                val writer = QuickSummaryWriter(
-                    providerId = engineSettings.providerId,
-                    model = engineSettings.model,
-                    apiKey = key,
-                    situation = situation,
-                )
-                var latest = ""
-                writer.stream().collect { text ->
-                    if (_session.value.messages.isNotEmpty()) return@collect
-                    latest = text
-                    _quickSummary.value = QuickSummaryWriter.partial(text)
-                }
-                if (_session.value.messages.isNotEmpty()) return@launch
-                _quickSummary.value = QuickSummaryWriter.parse(latest) ?: localQuickSummary
-            } catch (_: Throwable) {
-                _quickSummary.value = localQuickSummary
-            } finally {
-                _isWritingSummary.value = false
-            }
         }
     }
 
@@ -605,10 +452,8 @@ class ChatViewModel(
         resetFollowUps()
         _draftAttachments.value = emptyList()
         _focusMedication.value = null
-        _selectedTopic.value = null
         _session.value = ChatSession(isPrivate = isPrivate)
         refreshEngineAvailability()
-        refreshSituation()
     }
 
     fun openSession(id: String) {
@@ -619,7 +464,6 @@ class ChatViewModel(
         viewModelScope.launch {
             val loaded = sessionStore.load(id) ?: return@launch
             _session.value = loadImagePayloads(loaded)
-            _selectedTopic.value = ChatTopics.find(loaded.topicId)
             refreshFocusMedication()
             refreshEngineAvailability()
         }
@@ -642,23 +486,15 @@ class ChatViewModel(
             sessionStore.deleteAll()
             _session.value = ChatSession()
             _focusMedication.value = null
-            _selectedTopic.value = null
             resetFollowUps()
             _draftAttachments.value = emptyList()
             refreshSummaries()
-            refreshSituation()
         }
     }
 
     fun setPrivate(isPrivate: Boolean) {
         if (!_session.value.isEmpty) return
         updateSession { copy(isPrivate = isPrivate) }
-    }
-
-    fun selectTopic(topic: ChatTopic?) {
-        if (!_session.value.isEmpty || _isReplying.value) return
-        _selectedTopic.value = topic
-        updateSession { copy(topicId = topic?.id) }
     }
 
     fun openMedication(item: MedicationItem) {
@@ -673,8 +509,6 @@ class ChatViewModel(
             _session.value = continued?.let { loadImagePayloads(it) }
                 ?: ChatSession(threadId = thread.id, threadTitle = item.name)
             _focusMedication.value = item
-            _selectedTopic.value = null
-            _situationQuestions.value = item.openingQuestions
             refreshEngineAvailability()
             refreshSummaries()
         }
@@ -690,10 +524,8 @@ class ChatViewModel(
         resetFollowUps()
         _draftAttachments.value = emptyList()
         _focusMedication.value = null
-        _selectedTopic.value = null
         _session.value = ChatSession(threadId = thread.id, threadTitle = title)
         refreshEngineAvailability()
-        refreshSituation()
     }
 
     fun openGoal(goal: GoalSummary) {
@@ -746,7 +578,6 @@ class ChatViewModel(
         val source = _session.value
         val branched = ChatSession(
             messages = messages.take(index + 1).map { it.copy(isQueued = false) },
-            topicId = source.topicId,
             isPrivate = source.isPrivate,
             memoryHarvestedMessageCount = source.memoryHarvestedMessageCount
                 .coerceAtMost(index + 1),
@@ -754,7 +585,6 @@ class ChatViewModel(
         )
         _session.value = branched
         _focusMedication.value = null
-        _selectedTopic.value = ChatTopics.find(branched.topicId)
         saveSession()
         refreshSummaries()
     }
@@ -915,15 +745,12 @@ class ChatViewModel(
         val tenant = tenantProvider()
         val stores = TenantScope.currentStores
         val webSearch = WebSearchClient.storedKey(secureKeyStore.serperApiKey)
-        val useHealth = Features.HEALTH_CONNECT && tenant.isOwner
         val registry = CapabilityRegistry.healthChat(
-            includesHealthTools = useHealth,
             allowsMemoryWrites = !_session.value.isPrivate,
             allowsMedicationWrites = !_session.value.isPrivate,
             allowsMeasurementWrites = !_session.value.isPrivate,
             allowsRecall = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
             asksUser = true,
-            healthTools = if (useHealth) HealthTools(healthStore) else null,
             memoryStore = stores.memory,
             medicationStore = stores.medications,
             measurementStore = stores.measurements,
@@ -961,7 +788,6 @@ class ChatViewModel(
             hooks = followUpHooks(),
             goal = goalTitle,
             focusMedication = _focusMedication.value,
-            topic = _selectedTopic.value ?: ChatTopics.find(_session.value.topicId),
         )
     }
 
@@ -1091,7 +917,6 @@ class ChatViewModel(
         private val sessionStore: SessionStore,
         private val engineSettings: EngineSettings,
         private val secureKeyStore: SecureKeyStore,
-        private val healthStore: HealthStore,
         private val locationProvider: LocationProvider,
         private val exerciseLibrary: ExerciseLibrary,
         private val memorySnapshotProvider: () -> MemorySnapshot,
@@ -1104,7 +929,6 @@ class ChatViewModel(
                 sessionStore = sessionStore,
                 engineSettings = engineSettings,
                 secureKeyStore = secureKeyStore,
-                healthStore = healthStore,
                 locationProvider = locationProvider,
                 exerciseLibrary = exerciseLibrary,
                 memorySnapshotProvider = memorySnapshotProvider,
@@ -1115,8 +939,7 @@ class ChatViewModel(
     }
 
     companion object {
-        /** HC 关掉时的首屏「试着问」：拍照、口述症状、记测量，不碰本机健康数据。 */
-        private val NoHealthConnectQuestions = listOf(
+        private val DefaultQuestions = listOf(
             "帮我看看这张化验单",
             "最近总感觉不舒服是怎么回事？",
             "帮我记下今天的体重",

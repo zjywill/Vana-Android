@@ -99,7 +99,7 @@ data class MeasurementSnapshot(
             val latest = latestPerName(cards)
             val kept = trimmed(latest)
             val lines = mutableListOf(
-                "他自己报的测量卡片（口述记下的，不是设备/Health Connect 数据；每次都是新记录，旧的还在）：",
+                "他自己口述记下的测量卡片（不是设备自动同步；每次都是新记录，旧的还在）：",
             )
             for (card in kept) {
                 val note = card.note.takeIf { it.isNotBlank() }?.let { "；$it" }.orEmpty()

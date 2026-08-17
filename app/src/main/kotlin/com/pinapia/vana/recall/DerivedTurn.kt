@@ -1,12 +1,10 @@
 package com.pinapia.vana.recall
 
-import com.pinapia.vana.Features
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agent.healthChat
 import com.pinapia.vana.agentruntime.AgentTurnEvent
 import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.agentruntime.apply
-import com.pinapia.vana.health.HealthTools
 import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.memory.MemorySnapshot
@@ -37,7 +35,6 @@ object DerivedTurn {
         engineSettings: EngineSettings,
         secureKeyStore: SecureKeyStore,
         tenant: Tenant,
-        healthTools: HealthTools? = null,
     ): ChatSession? {
         val key = secureKeyStore.apiKey?.trim().orEmpty()
         if (key.isEmpty()) return null
@@ -63,12 +60,10 @@ object DerivedTurn {
             MemorySnapshot.empty
         }
         val registry = CapabilityRegistry.healthChat(
-            includesHealthTools = Features.HEALTH_CONNECT && tenant.isOwner && healthTools != null,
             allowsMemoryWrites = false,
             allowsMedicationWrites = false,
             allowsRecall = SessionRecallTrigger.mentionsPast(question),
             asksUser = false,
-            healthTools = healthTools,
             memoryStore = memoryStore,
             medicationStore = null,
             sessionStore = sessionStore,

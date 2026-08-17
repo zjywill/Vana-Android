@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
  * 过滤规则同 iOS [CloudCatalog]：
  * - 有已实现的 wire protocol（Android 目前：openai / anthropic）
  * - 有可连的托管 API（排除 localhost / 无 api）
- * - 模型列表只列 `tool_call == true`（健康工具是刚需）
+ * - 模型列表只列 `tool_call == true`（用药、测量、记忆等能力依赖工具调用）
  */
 object CloudCatalog {
     enum class WireProtocol(val adapter: String) {

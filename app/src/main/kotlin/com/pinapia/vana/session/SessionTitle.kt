@@ -1,6 +1,5 @@
 package com.pinapia.vana.session
 
-import com.pinapia.vana.chat.ChatTopics
 import kotlinx.datetime.Instant
 import java.util.Calendar
 
@@ -13,7 +12,6 @@ object SessionTitle {
     fun make(
         threadId: String?,
         threadTitle: String?,
-        topicId: String?,
         firstUserText: String?,
         firstUserHasAttachments: Boolean = false,
         createdAt: Instant,
@@ -28,7 +26,7 @@ object SessionTitle {
         val first = firstUserText?.trim().orEmpty()
         if (first.isEmpty()) {
             if (firstUserHasAttachments) return "照片"
-            return ChatTopics.find(topicId)?.name ?: "新对话"
+            return "新对话"
         }
         val firstLine = first.lineSequence().firstOrNull().orEmpty().ifEmpty { first }
         return if (firstLine.length <= 24) firstLine else firstLine.take(24) + "…"

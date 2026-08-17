@@ -253,7 +253,7 @@ fun MemoryListScreen(
         AlertDialog(
             onDismissRequest = { confirmClear = false },
             title = { Text("忘掉全部记忆？") },
-            text = { Text("包括你自己添加的那些，无法撤销。健康数据本身不受影响。") },
+            text = { Text("包括你自己添加的那些，无法撤销。对话、用药和测量记录不会被删除。") },
             confirmButton = {
                 TextButton(onClick = {
                     store.removeAll()

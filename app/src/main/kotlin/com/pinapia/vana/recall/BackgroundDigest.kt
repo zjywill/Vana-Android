@@ -1,7 +1,6 @@
 package com.pinapia.vana.recall
 
 import android.content.Context
-import com.pinapia.vana.Features
 import com.pinapia.vana.VanaApplication
 import com.pinapia.vana.checkin.CheckInScheduler
 import com.pinapia.vana.tenant.TenantScope
@@ -31,12 +30,6 @@ object BackgroundDigest {
         val memoryStore = TenantScope.ownerStores.memory
         val sessionStore = TenantScope.ownerStores.sessions
         val tenant = TenantScope.owner
-        val healthTools = if (Features.HEALTH_CONNECT && tenant.isOwner) {
-            app.healthStore.let { com.pinapia.vana.health.HealthTools(it) }
-        } else {
-            null
-        }
-
         val followUp = FollowUpRunner.pending(
             now = now,
             memoryStore = memoryStore,
@@ -52,7 +45,6 @@ object BackgroundDigest {
                 engineSettings = app.engineSettings,
                 secureKeyStore = app.secureKeyStore,
                 tenant = tenant,
-                healthTools = healthTools,
             )
         }
 
@@ -65,7 +57,6 @@ object BackgroundDigest {
             engineSettings = app.engineSettings,
             secureKeyStore = app.secureKeyStore,
             tenant = tenant,
-            healthTools = healthTools,
         )
     }
 }

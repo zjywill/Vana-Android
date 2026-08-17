@@ -339,7 +339,6 @@ private object TurnSegmenter {
 data class ChatSession(
     val id: String = UUID.randomUUID().toString(),
     var messages: List<ChatMessage> = emptyList(),
-    var topicId: String? = null,
     var threadId: String? = null,
     var isDerived: Boolean = false,
     var threadTitle: String? = null,
@@ -356,7 +355,6 @@ data class ChatSession(
             return SessionTitle.make(
                 threadId = threadId,
                 threadTitle = threadTitle,
-                topicId = topicId,
                 firstUserText = firstUser?.text,
                 firstUserHasAttachments = firstUser?.attachments?.isNotEmpty() == true,
                 createdAt = createdAt,
@@ -383,4 +381,3 @@ val ChatMessage.foldedSpan: Int?
 
 val ChatMessage.compactionSummary: String?
     get() = storedTurn.compaction?.visibleSummary?.takeIf { it.isNotBlank() }
-
