@@ -219,6 +219,13 @@ fun ChatScreen(
     var voiceCancelling by remember { mutableStateOf(false) }
     val isVoiceListening = voiceStatus == VoiceDictation.Status.LISTENING ||
         voiceStatus == VoiceDictation.Status.STARTING
+    val currentOpenSettings by rememberUpdatedState(onOpenSettings)
+
+    LaunchedEffect(viewModel) {
+        viewModel.cloudSetupRequests.collect {
+            currentOpenSettings()
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = healthStore.permissionContract(),

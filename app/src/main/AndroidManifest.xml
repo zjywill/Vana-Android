@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- 侧载更新：对照 GitHub Release 下签名 APK，再走系统安装器。 -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- 早上那条 check-in 通知。Android 13 起是运行时权限,拒了就没有送达的路子。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:ignore="ExactAlarm" />
 
     <!--
       只要粗定位。城市决定气候、季节、时差、饮食和就医方式,而那几件正是要位置的全部理由;
@@ -30,52 +24,9 @@
     <!-- 按住说话。识别在本机跑,录音不落盘。 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!--
-      ===== Health Connect =====
-      每一条声明都是用户在授权面板上会逐条读到的一行,所以这里只列这个 app 真的会读的项目。
-      多声明一项的代价不是「多一个字段」,是他在那一屏上多读到一句用不着的话,
-      而那一屏正是他决定要不要把健康数据交出来的地方——同 iOS 那边权限用途字符串
-      「必须和 app 实际做的事逐字对上」。
-
-      全部是 READ。这个 app 一次都不写健康数据(同 iOS「HealthKit 只读」)。
-    -->
-    <uses-permission android:name="android.permission.health.READ_SLEEP" />
-    <uses-permission android:name="android.permission.health.READ_STEPS" />
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
-    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
-    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
-    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
-    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
-    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
-    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
-    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
-    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE" />
-    <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
-    <uses-permission android:name="android.permission.health.READ_BODY_TEMPERATURE" />
-
-    <!--
-      **这一条最容易漏,漏了整套「和最近常态比」都会静默地只剩 30 天**:
-      不带它的话 Health Connect 只给最近 30 天的数据,更早的一条都读不到,而且不报错。
-      体重趋势、几个月前的锻炼记录、跨季度的对比全部靠它。
-    -->
-    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
-
-    <!--
-      Android 11+ 包可见性:API 34 以下 Health Connect 是独立 APK,
-      不声明的话 getSdkStatus / 跳转安装页会静默失败。
-    -->
     <queries>
-        <package android:name="com.google.android.apps.healthdata" />
-        <intent>
-            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-        </intent>
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:mimeType="application/vnd.android.package-archive" />
         </intent>
     </queries>
 
@@ -111,22 +62,6 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
-
-        <!--
-          Health Connect 的「为什么要这些数据」入口。用户在系统的健康权限页点那一下,
-          落到的就是这里。API 34 起走 activity-alias 这条路,不需要单独的 rationale activity。
-          没有它,授权页上那行说明是空的——而那正是他决定给不给的地方。
-        -->
-        <activity-alias
-            android:name="ViewPermissionUsageActivity"
-            android:exported="true"
-            android:targetActivity=".MainActivity"
-            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
-            </intent-filter>
-        </activity-alias>
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -60,8 +60,8 @@ class EngineSettings(context: Context) {
         set(value) = prefs.edit().putBoolean(DATA_USE_KEY, value).apply()
 
     fun isConfigured(secureKeyStore: SecureKeyStore): Boolean {
-        val key = secureKeyStore.apiKey
-        return !key.isNullOrBlank() && providerId.isNotBlank() && model.isNotBlank()
+        val key = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
+        return key.isValid && providerId.isNotBlank() && model.isNotBlank()
     }
 
     fun modelSupportsVision(): Boolean =
@@ -82,8 +82,8 @@ class EngineSettings(context: Context) {
         const val EVENING_HOUR_KEY = "eveningCheckInHour"
         const val DATA_USE_KEY = "hasAcceptedDataUseNotice"
 
-        const val DEFAULT_PROVIDER = "anthropic"
-        const val DEFAULT_MODEL = "claude-sonnet-4-5"
+        const val DEFAULT_PROVIDER = "deepseek"
+        const val DEFAULT_MODEL = "deepseek-chat"
         const val DEFAULT_MORNING_HOUR = 8
         const val DEFAULT_EVENING_HOUR = 21
     }

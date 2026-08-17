@@ -1,9 +1,7 @@
 package com.pinapia.vana.legal
 
 /**
- * 第一次打开时说清楚:健康数据会去哪儿。
- *
- * 设备级,不跟着成员走。Android 侧把钥匙串 / iCloud / Apple 健康换成对应说法。
+ * 第一次打开时说清楚:数据会去哪儿。
  */
 object DataUseNotice {
     const val ACCEPTED_KEY = "hasAcceptedDataUseNotice"
@@ -17,7 +15,6 @@ object DataUseNotice {
         title = "会发给你配置的模型服务",
         points = listOf(
             "你打的字，以及这条对话里的往来",
-            "从 Health Connect 读到的聚合数值，例如「8 月 6 日睡眠 6.2 小时」",
             "化验单、报告、药盒在本机识别出来的文字",
             "照片原图——默认不发；本机认不出文字的那些会问你一句，你点了才发",
             "你所在的城市（授权了位置的话）",
@@ -29,10 +26,17 @@ object DataUseNotice {
         title = "不会离开这台设备",
         points = listOf(
             "照片和文件原件——识别在本机做，发出去的默认只有文字；原图发不发在设置里定，每一张发送前还能单独改",
-            "按住说话的录音——识别在本机做，录音不保存，只留识别出来的文字",
             "经纬度坐标——只发城市名，坐标一个字都不发",
             "你的 API key——只在本机加密存储里",
             "对话记录、记忆、用药表——存在本机，没有云端副本，也不进设备备份",
+        ),
+    )
+
+    val systemServices = Group(
+        title = "由 Android 系统服务处理",
+        points = listOf(
+            "按住说话的录音——Vana 请求优先离线识别，也不保存录音；具体是否联网由手机上的语音识别服务决定",
+            "通知和相机权限只在你打开对应功能时使用，不经过 Vana 的服务器",
         ),
     )
 
@@ -45,7 +49,7 @@ object DataUseNotice {
         ),
     )
 
-    val groups = listOf(leaves, stays, noServer)
+    val groups = listOf(leaves, stays, systemServices, noServer)
 
     const val INTRO =
         "Vana 要靠一个模型来回答你的问题，而那个模型跑在你自己选的那家服务上。所以有些东西必须发出去，有些不用——这一屏说清是哪些。"

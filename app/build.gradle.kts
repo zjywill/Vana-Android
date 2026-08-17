@@ -19,6 +19,8 @@ android {
     namespace = "com.pinapia.vana"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
+    flavorDimensions += "distribution"
+
     defaultConfig {
         applicationId = "com.pinapia.vana"
         minSdk = libs.versions.minSdk.get().toInt()
@@ -27,6 +29,17 @@ android {
         versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    productFlavors {
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ALLOW_SELF_UPDATE", "true")
+        }
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ALLOW_SELF_UPDATE", "false")
+        }
     }
 
     signingConfigs {

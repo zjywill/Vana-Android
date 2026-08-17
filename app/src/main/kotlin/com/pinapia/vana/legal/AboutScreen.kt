@@ -96,7 +96,9 @@ fun AboutScreen(
             }
             HorizontalDivider()
             Text("版本 ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-            CheckForUpdatesRow()
+            if (BuildConfig.ALLOW_SELF_UPDATE) {
+                CheckForUpdatesRow()
+            }
             Text(
                 "项目地址",
                 modifier = Modifier

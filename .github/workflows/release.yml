@@ -46,5 +46,5 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           VERSION="${TAG#v}"
-          cp app/build/outputs/apk/release/app-release.apk "Vana-${VERSION}.apk"
+          cp app/build/outputs/apk/github/release/app-github-release.apk "Vana-${VERSION}.apk"
           gh release upload "$TAG" "Vana-${VERSION}.apk" --clobber

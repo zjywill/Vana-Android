@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Vana Android 支持</title>
+<style>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { margin: 0; padding: 28px 20px 64px; line-height: 1.65; }
+  main { max-width: 42rem; margin: 0 auto; }
+  h1, h2 { letter-spacing: 0; }
+  h1 { font-size: 1.8rem; }
+  h2 { margin-top: 2rem; font-size: 1.2rem; }
+  a { color: #c2185b; }
+  code { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Vana Android 支持</h1>
+  <p>Vana 没有账号，也没有订阅。模型请求直接发送给你在设置里选择的 Provider。</p>
+
+  <h2>第一次使用</h2>
+  <ol>
+    <li>打开“设置 › 云端模型”。</li>
+    <li>选择与你的 API 密钥对应的 Provider 和模型。</li>
+    <li>粘贴 API 密钥，点“测试连接”。</li>
+    <li>看到“连接正常”后返回聊天。</li>
+  </ol>
+
+  <h2>常见问题</h2>
+  <p><strong>提示 API 密钥没通过验证：</strong>确认密钥没有过期，并且 Provider 没选错。</p>
+  <p><strong>提示额度用完：</strong>到对应 Provider 的账户页面检查余额或限额。</p>
+  <p><strong>照片是否会上传：</strong>文字识别在设备上完成。原图默认不上传，发送前可以逐张决定。</p>
+  <p><strong>换手机后数据没有恢复：</strong>对话、记忆、用药表和附件被排除在系统备份与设备迁移之外。</p>
+
+  <h2>删除数据</h2>
+  <p>可以分别删除对话、记忆、用药条目和家庭成员。卸载 Vana 会删除应用私有目录里的全部数据。</p>
+
+  <h2>联系</h2>
+  <p>邮件：<a href="mailto:zjywill@gmail.com">zjywill@gmail.com</a></p>
+  <p>问题反馈：<a href="https://github.com/zjywill/Vana-Android/issues">GitHub Issues</a></p>
+</main>
+</body>
+</html>

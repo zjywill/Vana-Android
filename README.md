@@ -54,7 +54,7 @@
 
 **早晚 check-in。** 时间自己定；通知正文是当天数据里真有点意思的那件事。
 
-**按住说话。** 识别在本机，松手只填输入框，发不发你说了算。
+**按住说话。** 请求 Android 语音服务优先离线识别，Vana 不保存录音；松手只填输入框，发不发你说了算。
 
 **家庭成员。** 每人一套隔离的会话、记忆、用药表；健康数据归机主那一侧（见下「Health Connect」）。
 
@@ -83,7 +83,7 @@
 
 ## 隐私
 
-- **健康数据只读**（接回 HC 后也不会写回）。
+- **当前正式版不申请 Health Connect 权限**（以后接回时也只读）。
 - **API key 进加密存储**，不进普通 SharedPreferences、不进日志。
 - **照片默认本机 OCR**；是否上传原图由照片策略 / 视觉模型能力决定。
 - **没有自家后端**。除了你配的模型（和可选搜索），不连中间服务器，没有埋点 SDK。
@@ -98,7 +98,7 @@
 ```bash
 git clone https://github.com/zjywill/Vana-Android
 cd Vana-Android
-./gradlew :app:installDebug
+./gradlew :app:installGithubDebug
 ```
 
 签名发版（密钥不进仓库）：
@@ -113,10 +113,10 @@ cd Vana-Android
 ## 开发
 
 ```bash
-./gradlew :app:assembleDebug
+./gradlew :app:assembleGithubDebug
 ./gradlew :agent-runtime:test      # agent core，秒级，不需要设备
-./gradlew :app:testDebugUnitTest
-./gradlew :app:installDebug
+./gradlew :app:testGithubDebugUnitTest
+./gradlew :app:installGithubDebug
 ```
 
 | 模块 | 是什么 | iOS 对应 |

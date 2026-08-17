@@ -3,9 +3,9 @@
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/release-common.sh"
 
-./gradlew :app:assembleRelease
+./gradlew :app:assembleGithubRelease
 
-SRC="$ROOT/app/build/outputs/apk/release/app-release.apk"
+SRC="$ROOT/app/build/outputs/apk/github/release/app-github-release.apk"
 OUT="/tmp/Vana-${VERSION}.apk"
 cp "$SRC" "$OUT"
 

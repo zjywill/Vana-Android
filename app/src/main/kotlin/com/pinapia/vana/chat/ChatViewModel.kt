@@ -8,6 +8,7 @@ import com.pinapia.vana.agent.AgentError
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agent.FollowUpSuggestionHook
 import com.pinapia.vana.agent.QuestionSuggester
+import com.pinapia.vana.agent.UserFacingModelFailure
 import com.pinapia.vana.agent.healthChat
 import com.pinapia.vana.agentruntime.AgentHookDispatcher
 import com.pinapia.vana.agentruntime.AgentPendingInput
@@ -54,6 +55,8 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -94,6 +97,9 @@ class ChatViewModel(
 
     private val _engineGuidance = MutableStateFlow<String?>(null)
     val engineGuidance: StateFlow<String?> = _engineGuidance.asStateFlow()
+
+    private val _cloudSetupRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val cloudSetupRequests: SharedFlow<Unit> = _cloudSetupRequests
 
     private val _retryNotice = MutableStateFlow<String?>(null)
     val retryNotice: StateFlow<String?> = _retryNotice.asStateFlow()
@@ -368,6 +374,14 @@ class ChatViewModel(
             if (!_isReplying.value && hasQueuedInput()) {
                 startReply()
             }
+            return
+        }
+        refreshEngineAvailability()
+        if (_engineGuidance.value != null) {
+            if (text != null) {
+                _input.value = trimmed
+            }
+            _cloudSetupRequests.tryEmit(Unit)
             return
         }
         _input.value = ""
@@ -766,7 +780,14 @@ class ChatViewModel(
             } catch (_: kotlinx.coroutines.CancellationException) {
                 // stopReply 已处理
             } catch (error: Throwable) {
-                val message = (AgentError.wrapping(error) as? Throwable)?.message ?: error.message ?: "未知错误"
+                val wrapped = AgentError.wrapping(error)
+                val message = when (wrapped) {
+                    is AgentError.NeedsAPIKey,
+                    is AgentError.NeedsModelSelection,
+                    is AgentError.InvalidAPIKey,
+                    -> wrapped.message ?: "云端模型配置不完整。"
+                    else -> UserFacingModelFailure.message(wrapped)
+                }
                 replyingMessageId?.let { id ->
                     mutateMessage(id) { markFailed(message) }
                 }

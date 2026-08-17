@@ -101,6 +101,8 @@ fun SettingsScreen(
     var showMorningPicker by remember { mutableStateOf(false) }
     var showEveningPicker by remember { mutableStateOf(false) }
     var locationPlace by remember { mutableStateOf(locationProvider.snapshot.place) }
+    var isTestingConnection by remember { mutableStateOf(false) }
+    var connectionResult by remember { mutableStateOf<ConnectionTest.Result?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val voice = remember { VoiceDictation.shared(context) }
@@ -142,6 +144,9 @@ fun SettingsScreen(
             locationProvider.refresh()
             locationPlace = locationProvider.snapshot.place
         }
+    }
+    LaunchedEffect(apiKey, providerId, modelId) {
+        connectionResult = null
     }
 
     Scaffold(
@@ -216,6 +221,36 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            Button(
+                onClick = {
+                    isTestingConnection = true
+                    connectionResult = null
+                    scope.launch {
+                        connectionResult = ConnectionTest.run(providerId, modelId, apiKey)
+                        isTestingConnection = false
+                    }
+                },
+                enabled = !isTestingConnection &&
+                    ApiKeyNormalizer.normalize(apiKey).isValid &&
+                    providerId.isNotBlank() &&
+                    modelId.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (isTestingConnection) "正在测试连接…" else "测试连接")
+            }
+            when (val result = connectionResult) {
+                ConnectionTest.Result.Ok -> Text(
+                    "连接正常，可以开始问了。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                is ConnectionTest.Result.Failed -> Text(
+                    result.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                null -> Unit
             }
 
             HorizontalDivider()
@@ -533,7 +568,9 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            CheckForUpdatesRow()
+            if (BuildConfig.ALLOW_SELF_UPDATE) {
+                CheckForUpdatesRow()
+            }
             if (BuildConfig.DEBUG) {
                 HorizontalDivider()
                 Text(
