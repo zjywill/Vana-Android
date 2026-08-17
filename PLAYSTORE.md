@@ -25,7 +25,7 @@ GitHub APK 才包含从 Release 下载并安装更新的权限。
 - 不要填写测试账号：Vana 没有账号和登录。
 - 在 App access / 审核说明里提供一把新建的、额度足够的测试 API key。
 - 测试 key、默认 Provider 和默认模型必须配套。当前全新安装默认是：
-  `DeepSeek` / `deepseek-chat`。
+  `DeepSeek` / `deepseek-v4-flash`。
 - 上架通过后作废审核 key。
 
 可直接填写：
@@ -38,7 +38,7 @@ not operate a proxy server and does not sell API access. For review, use the tem
 credential below:
 
 1. Open Vana and tap Settings.
-2. Under Cloud model, keep Provider set to DeepSeek and model set to deepseek-chat.
+2. Under Cloud model, keep Provider set to DeepSeek and model set to deepseek-v4-flash.
 3. Paste the API key below and tap Test connection.
 4. Return to the chat and ask: “How should I understand a routine blood test?”
 

@@ -7,7 +7,7 @@ class EngineSettingsLogicTest {
     @Test
     fun defaultsMatchReviewConfiguration() {
         assertEquals("deepseek", EngineSettings.DEFAULT_PROVIDER)
-        assertEquals("deepseek-chat", EngineSettings.DEFAULT_MODEL)
+        assertEquals("deepseek-v4-flash", EngineSettings.DEFAULT_MODEL)
     }
 
     @Test

@@ -31,7 +31,7 @@ object ConnectionTest {
                     providerId = providerId,
                     modelId = modelId,
                     contextWindow = model?.contextWindow,
-                    maxOutputTokens = 8,
+                    maxOutputTokens = 4,
                 ),
                 apiKey = key.value,
                 baseUrl = provider.apiBaseUrl,

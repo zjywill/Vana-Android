@@ -219,6 +219,7 @@ class FailureHandlingTests {
     fun failureKindsSeparateUserActions() {
         assertEquals(ModelFailure.Kind.AUTHENTICATION, ModelFailure.kind("Error code: 401"))
         assertEquals(ModelFailure.Kind.QUOTA, ModelFailure.kind("insufficient quota"))
+        assertEquals(ModelFailure.Kind.QUOTA, ModelFailure.kind("429 quota"))
         assertEquals(ModelFailure.Kind.CONTEXT_OVERFLOW, ModelFailure.kind("prompt is too long"))
         assertEquals(ModelFailure.Kind.TRANSIENT, ModelFailure.kind("server overloaded"))
         assertEquals(ModelFailure.Kind.OTHER, ModelFailure.kind("unknown provider response"))

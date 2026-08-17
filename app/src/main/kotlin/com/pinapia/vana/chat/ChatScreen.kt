@@ -919,6 +919,24 @@ private fun WelcomeCard(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        if (!setupGuidance.isNullOrBlank()) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(setupGuidance, style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = onOpenSettings) {
+                        Text("去设置")
+                    }
+                }
+            }
+        }
+
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.headlineSmall)
             Text(
@@ -941,24 +959,6 @@ private fun WelcomeCard(
                     Modifier
                 },
             )
-        }
-
-        if (!setupGuidance.isNullOrBlank()) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(setupGuidance, style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = onOpenSettings) {
-                        Text("去设置")
-                    }
-                }
-            }
         }
 
         if (isPrivate) {

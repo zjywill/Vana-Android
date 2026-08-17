@@ -426,7 +426,13 @@ fun SettingsScreen(
                 )
             }
             Text(
-                "早上说昨晚的睡眠，晚上说今天的活动量，都基于本机算出来的数据；点开通知会直接带着对应话题开一条新对话。文案在每次打开 app 时刷新。",
+                if (Features.HEALTH_CONNECT) {
+                    "早上说昨晚的睡眠，晚上说今天的活动量，都基于本机算出来的数据；" +
+                        "点开通知会直接带着对应话题开一条新对话。"
+                } else {
+                    "早晚各一条本地通知；有到期的回访时优先提醒，否则只问一句通用的问题。" +
+                        "点开通知会直接开始对应对话。"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -435,8 +441,8 @@ fun SettingsScreen(
             Text("健康数据", style = MaterialTheme.typography.titleMedium)
             if (!Features.HEALTH_CONNECT) {
                 Text(
-                    "大陆机普遍没有 Health Connect，这项暂缓。可以拍照化验单，或直接聊症状与用药。" +
-                        "代码保留在 Features.HEALTH_CONNECT，以后接回改那一处即可。",
+                    "当前版本没有接入 Health Connect，也不会申请健康数据权限。" +
+                        "可以拍照化验单，或直接聊症状、用药与想跟进的事。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

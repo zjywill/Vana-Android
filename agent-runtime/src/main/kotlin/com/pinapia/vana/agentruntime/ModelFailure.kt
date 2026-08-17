@@ -115,7 +115,9 @@ object ModelFailure {
         if (authentication.any { text.contains(it) } || hasHttpCode(text, 401, 403)) {
             return Kind.AUTHENTICATION
         }
-        if (quota.any { text.contains(it) } || hasHttpCode(text, 402)) return Kind.QUOTA
+        if (quota.any { text.contains(it) } || text.contains("429 quota") || hasHttpCode(text, 402)) {
+            return Kind.QUOTA
+        }
         if (transient.any { text.contains(it) }) return Kind.TRANSIENT
         return Kind.OTHER
     }

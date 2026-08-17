@@ -199,15 +199,27 @@ object CheckInScheduler {
         return when (period) {
             DayPeriod.MORNING -> CheckInContent(
                 title = "早上好",
-                body = "昨晚的睡眠数据已经同步好了，要看看吗？",
-                topicId = "sleep",
-                question = "昨晚睡得怎么样？",
+                body = if (situation == null) {
+                    "今天有什么想关注的？"
+                } else {
+                    "昨晚的睡眠数据已经同步好了，要看看吗？"
+                },
+                topicId = if (situation == null) null else "sleep",
+                question = if (situation == null) "今天有什么想关注的？" else "昨晚睡得怎么样？",
             )
             DayPeriod.AFTERNOON, DayPeriod.EVENING -> CheckInContent(
                 title = "今天收个尾",
-                body = "今天的活动量已经记完了，要看看吗？",
-                topicId = "activity",
-                question = "今天运动量够吗？",
+                body = if (situation == null) {
+                    "今天有什么想记下，或者之后回头看的？"
+                } else {
+                    "今天的活动量已经记完了，要看看吗？"
+                },
+                topicId = if (situation == null) null else "activity",
+                question = if (situation == null) {
+                    "今天有什么想记下或跟进的？"
+                } else {
+                    "今天运动量够吗？"
+                },
             )
         }
     }

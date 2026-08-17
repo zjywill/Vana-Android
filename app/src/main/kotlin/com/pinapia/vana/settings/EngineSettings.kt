@@ -83,7 +83,7 @@ class EngineSettings(context: Context) {
         const val DATA_USE_KEY = "hasAcceptedDataUseNotice"
 
         const val DEFAULT_PROVIDER = "deepseek"
-        const val DEFAULT_MODEL = "deepseek-chat"
+        const val DEFAULT_MODEL = "deepseek-v4-flash"
         const val DEFAULT_MORNING_HOUR = 8
         const val DEFAULT_EVENING_HOUR = 21
     }
