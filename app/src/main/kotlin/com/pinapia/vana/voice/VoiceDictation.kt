@@ -8,6 +8,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.pinapia.vana.ui.L10n
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -84,19 +85,20 @@ class VoiceDictation private constructor(private val appContext: Context) {
             _resolvedLocale.value = null
             return
         }
-        val chinese = resolveChineseLocale()
+        val preferred = resolvePreferredLocale()
         _supportedLocaleIdentifiers.value = listOfNotNull(
-            chinese?.toLanguageTag(),
+            preferred?.toLanguageTag(),
+            Locale.ENGLISH.toLanguageTag(),
             Locale.SIMPLIFIED_CHINESE.toLanguageTag(),
             Locale.TRADITIONAL_CHINESE.toLanguageTag(),
         ).distinct()
-        if (chinese == null) {
+        if (preferred == null) {
             _availability.value = Availability.UNSUPPORTED_LOCALE
             _resolvedLocale.value = null
             return
         }
-        _resolvedLocale.value = chinese.toLanguageTag()
-        // 有识别服务且挑到了中文就算可用。离线模型是否已装要到按下那一刻才知道；
+        _resolvedLocale.value = preferred.toLanguageTag()
+        // 有识别服务且挑到了界面语言就算可用。离线模型是否已装要到按下那一刻才知道；
         // 没装时 onError 会落到提示「先用键盘」。
         _availability.value = Availability.READY
     }
@@ -117,11 +119,23 @@ class VoiceDictation private constructor(private val appContext: Context) {
         when (_availability.value) {
             Availability.READY -> Unit
             Availability.UNSUPPORTED_LOCALE, Availability.UNAVAILABLE, Availability.UNKNOWN ->
-                return abort(token, "这台设备还不支持中文语音识别，键盘上那颗麦克风可以用。")
+                return abort(
+                    token,
+                    L10n.text(
+                        "这台设备还不支持中文语音识别，键盘上那颗麦克风可以用。",
+                        "Speech recognition is unavailable for the current interface language. You can use the keyboard microphone.",
+                    ),
+                )
         }
 
         val localeTag = _resolvedLocale.value
-            ?: return abort(token, "这台设备还不支持中文语音识别，键盘上那颗麦克风可以用。")
+            ?: return abort(
+                token,
+                L10n.text(
+                    "这台设备还不支持中文语音识别，键盘上那颗麦克风可以用。",
+                    "Speech recognition is unavailable for the current interface language. You can use the keyboard microphone.",
+                ),
+            )
 
         return try {
             val speech = SpeechRecognizer.createSpeechRecognizer(appContext)
@@ -136,7 +150,13 @@ class VoiceDictation private constructor(private val appContext: Context) {
             true
         } catch (_: Exception) {
             teardown()
-            abort(token, "麦克风打不开，先用键盘吧。")
+            abort(
+                token,
+                L10n.text(
+                    "麦克风打不开，先用键盘吧。",
+                    "The microphone could not be opened. Use the keyboard instead.",
+                ),
+            )
         }
     }
 
@@ -196,15 +216,28 @@ class VoiceDictation private constructor(private val appContext: Context) {
             if (sessionToken != token) return
             val message = when (error) {
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
-                    "要用按住说话，得先在系统设置里允许录音。"
+                    L10n.text(
+                        "要用按住说话，得先在系统设置里允许录音。",
+                        "Allow microphone access in system settings to use hold-to-talk.",
+                    )
                 SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
                 SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
                 ->
-                    "本机中文语音模型还没准备好，先用键盘吧。"
+                    L10n.text(
+                        "本机语音模型还没准备好，先用键盘吧。",
+                        "The on-device speech model is not ready. Use the keyboard instead.",
+                    )
                 SpeechRecognizer.ERROR_NO_MATCH,
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
                 -> null
-                else -> if (_transcript.value.isBlank()) "没听清，再说一次或用键盘。" else null
+                else -> if (_transcript.value.isBlank()) {
+                    L10n.text(
+                        "没听清，再说一次或用键盘。",
+                        "Nothing was recognized. Try again or use the keyboard.",
+                    )
+                } else {
+                    null
+                }
             }
             if (message != null) show(message)
             // 已经有字的话交给 stop 去收；还在 starting 就收回 idle。
@@ -254,7 +287,7 @@ class VoiceDictation private constructor(private val appContext: Context) {
             // 本机优先；没装离线包时识别服务会报错，由 onError 提示用键盘。
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             // API 33+ 的上下文偏置。对中文是否生效因厂商而异；无效也照样带上。
-            if (vocabulary.isNotEmpty()) {
+            if (vocabulary.isNotEmpty() && localeTag.startsWith("zh", ignoreCase = true)) {
                 putStringArrayListExtra(
                     RecognizerIntent.EXTRA_BIASING_STRINGS,
                     ArrayList(vocabulary.take(VoiceVocabulary.MAX_TERMS)),
@@ -279,17 +312,12 @@ class VoiceDictation private constructor(private val appContext: Context) {
         mainHandler.postDelayed(clear, NOTICE_DURATION_MS)
     }
 
-    /**
-     * 只认中文。系统语言在这里不是判据——界面是中文的，词表也是中文的。
-     */
-    private fun resolveChineseLocale(): Locale? {
-        val preferred = Locale.getDefault().let { listOf(it) } +
-            listOf(Locale.SIMPLIFIED_CHINESE, Locale.TRADITIONAL_CHINESE, Locale.CHINA, Locale.TAIWAN)
-        for (candidate in preferred) {
-            if (candidate.language == "zh") return candidate
+    private fun resolvePreferredLocale(): Locale? =
+        if (L10n.replyLanguage() == "English") {
+            Locale.ENGLISH
+        } else {
+            Locale.getDefault().takeIf { it.language == "zh" } ?: Locale.SIMPLIFIED_CHINESE
         }
-        return Locale.SIMPLIFIED_CHINESE
-    }
 
     companion object {
         private const val NOTICE_DURATION_MS = 5_000L

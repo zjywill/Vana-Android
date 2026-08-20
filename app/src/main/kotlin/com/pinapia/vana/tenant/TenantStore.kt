@@ -1,5 +1,6 @@
 package com.pinapia.vana.tenant
 
+import com.pinapia.vana.ui.L10n
 import java.io.File
 import java.util.UUID
 import kotlinx.serialization.Serializable
@@ -32,7 +33,7 @@ class TenantStore(
     fun owner(): Tenant {
         val all = ensureBootstrapped()
         return all.firstOrNull { it.isOwner }
-            ?: throw IllegalStateException("成员名单里没有机主")
+            ?: throw IllegalStateException(L10n.text("成员名单里没有机主", "The owner profile is missing"))
     }
 
     fun all(): List<Tenant> = ensureBootstrapped()
@@ -40,7 +41,7 @@ class TenantStore(
     fun addManaged(name: String, ageBand: Tenant.AgeBand? = null): Tenant {
         val all = ensureBootstrapped().toMutableList()
         if (all.size >= MAX_TENANTS) {
-            throw IllegalStateException("最多只能添加 12 位成员")
+            throw IllegalStateException(L10n.text("最多只能添加 12 位成员", "You can add up to 12 family members"))
         }
         val tenant = Tenant(
             name = Tenant.normalized(name),
@@ -65,7 +66,7 @@ class TenantStore(
         val all = ensureBootstrapped().toMutableList()
         val target = all.firstOrNull { it.id == id } ?: return
         if (target.isOwner) {
-            throw IllegalStateException("本人这一条不能删除")
+            throw IllegalStateException(L10n.text("本人这一条不能删除", "The owner profile cannot be deleted"))
         }
         all.removeAll { it.id == id }
         save(all)

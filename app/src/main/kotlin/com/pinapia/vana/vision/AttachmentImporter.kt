@@ -9,6 +9,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import com.pinapia.vana.ui.L10n
 import java.io.File
 import java.nio.charset.Charset
 
@@ -47,7 +48,7 @@ object AttachmentImporter {
     )
 
     fun load(context: Context, uri: Uri): List<ImportedAttachment> {
-        val name = displayName(context, uri) ?: uri.lastPathSegment ?: "文件"
+        val name = displayName(context, uri) ?: uri.lastPathSegment ?: L10n.text("文件", "File")
         val mime = context.contentResolver.getType(uri).orEmpty()
         val extension = name.substringAfterLast('.', "").lowercase()
 
@@ -57,13 +58,13 @@ object AttachmentImporter {
             mime.contains("wordprocessingml") || extension == "docx" ->
                 listOf(document(name) {
                     val bytes = readBytes(context, uri)
-                        ?: error("这个文件读不出来。")
+                        ?: error(L10n.text("这个文件读不出来。", "This file could not be read."))
                     DocxText.text(bytes)
                 })
             mime.startsWith("text/") || extension in PLAIN_EXTENSIONS ->
                 listOf(document(name) {
                     val bytes = readBytes(context, uri)
-                        ?: error("这个文件读不出来。")
+                        ?: error(L10n.text("这个文件读不出来。", "This file could not be read."))
                     PlainTextFile.decode(bytes)
                 })
             mime.startsWith("image/") || extension in IMAGE_EXTENSIONS -> {
@@ -77,7 +78,10 @@ object AttachmentImporter {
                             name = name,
                             text = "",
                             droppedLines = 0,
-                            failure = "这个格式读不了，试试 PDF、Word、纯文本或者照片。",
+                            failure = L10n.text(
+                                "这个格式读不了，试试 PDF、Word、纯文本或者照片。",
+                                "This format is not supported. Try a PDF, Word document, plain-text file or photo.",
+                            ),
                         ),
                     )
                 }
@@ -87,7 +91,10 @@ object AttachmentImporter {
                     name = name,
                     text = "",
                     droppedLines = 0,
-                    failure = "这个格式读不了，试试 PDF、Word、纯文本或者照片。",
+                    failure = L10n.text(
+                        "这个格式读不了，试试 PDF、Word、纯文本或者照片。",
+                        "This format is not supported. Try a PDF, Word document, plain-text file or photo.",
+                    ),
                 ),
             )
         }
@@ -103,7 +110,7 @@ object AttachmentImporter {
                 name = name,
                 text = "",
                 droppedLines = 0,
-                failure = error.message ?: "这份文件读不出来。",
+                failure = error.message ?: L10n.text("这份文件读不出来。", "This file could not be read."),
             )
         }
 
