@@ -216,6 +216,16 @@ class FailureHandlingTests {
     }
 
     @Test
+    fun failureKindsSeparateUserActions() {
+        assertEquals(ModelFailure.Kind.AUTHENTICATION, ModelFailure.kind("Error code: 401"))
+        assertEquals(ModelFailure.Kind.QUOTA, ModelFailure.kind("insufficient quota"))
+        assertEquals(ModelFailure.Kind.QUOTA, ModelFailure.kind("429 quota"))
+        assertEquals(ModelFailure.Kind.CONTEXT_OVERFLOW, ModelFailure.kind("prompt is too long"))
+        assertEquals(ModelFailure.Kind.TRANSIENT, ModelFailure.kind("server overloaded"))
+        assertEquals(ModelFailure.Kind.OTHER, ModelFailure.kind("unknown provider response"))
+    }
+
+    @Test
     fun pendingInputLandsAfterToolResult() = runBlocking {
         val toolOutput = "最近 7 天睡眠\n08-01 | 7 小时 12 分"
         val interjection = AgentPendingInput(text = "顺便也看看心率")
