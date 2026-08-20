@@ -51,16 +51,22 @@ data class RetryPolicy(
  *    网关、代理转手之后,能稳定留下来的也只有它——错误码在这条链路上活不下来。
  */
 object ModelFailure {
-    /** 明确不该重试的:重试也还是这个结果,而且每试一次都在拖延用户看到真正的原因。 */
-    private val permanent = listOf(
-        // 额度、账单、订阅上限。这些是账户状态,不是拥塞。
+    private val quota = listOf(
         "insufficient quota", "quota exceeded", "out of budget", "billing",
         "usage limit", "credit balance", "payment required",
-        // 鉴权和请求本身就是错的。
+    )
+
+    private val authentication = listOf(
         "invalid api key", "invalid x api key", "incorrect api key", "api key not valid",
         "unauthorized", "authentication", "permission denied", "forbidden",
+    )
+
+    private val malformed = listOf(
         "invalid request error", "model not found", "does not exist",
     )
+
+    /** 明确不该重试的:重试也还是这个结果,而且每试一次都在拖延用户看到真正的原因。 */
+    private val permanent = quota + authentication + malformed
 
     /** 拥塞、限流、网络抖动、流被提前掐断——都是再试一次就可能好的。 */
     private val transient = listOf(
@@ -94,6 +100,32 @@ object ModelFailure {
             .lowercase()
             .replace('_', ' ')
             .replace('-', ' ')
+
+    enum class Kind {
+        AUTHENTICATION,
+        QUOTA,
+        CONTEXT_OVERFLOW,
+        TRANSIENT,
+        OTHER,
+    }
+
+    fun kind(description: String): Kind {
+        val text = normalized(description)
+        if (overflow.any { text.contains(it) }) return Kind.CONTEXT_OVERFLOW
+        if (authentication.any { text.contains(it) } || hasHttpCode(text, 401, 403)) {
+            return Kind.AUTHENTICATION
+        }
+        if (quota.any { text.contains(it) } || text.contains("429 quota") || hasHttpCode(text, 402)) {
+            return Kind.QUOTA
+        }
+        if (transient.any { text.contains(it) }) return Kind.TRANSIENT
+        return Kind.OTHER
+    }
+
+    private fun hasHttpCode(text: String, vararg codes: Int): Boolean =
+        codes.any { code ->
+            Regex("""(^|\D)$code(\D|$)""").containsMatchIn(text)
+        }
 
     fun isContextOverflow(description: String): Boolean {
         val text = normalized(description)
