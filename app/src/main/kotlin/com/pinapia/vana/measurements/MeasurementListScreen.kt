@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.settings.EngineSettings
+import com.pinapia.vana.ui.uiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,10 +70,10 @@ fun MeasurementListScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("测量卡片") },
+                title = { Text(uiText("测量卡片", "Measurement cards")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )
@@ -92,7 +93,7 @@ fun MeasurementListScreen(
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("让 Vana 看到这些测量", modifier = Modifier.weight(1f))
+                    Text(uiText("让 Vana 看到这些测量", "Share these measurements with Vana"), modifier = Modifier.weight(1f))
                     Switch(
                         checked = enabled,
                         onCheckedChange = {
@@ -102,8 +103,12 @@ fun MeasurementListScreen(
                     )
                 }
                 Text(
-                    "和 Vana 说身高、体重、心率或你拿到的化验项，会记成带时间的卡片。" +
-                        "同名旧记录不会被覆盖，方便看出变化。关掉只是先不发给模型，下面的内容还在。",
+                    uiText(
+                        "和 Vana 说身高、体重、心率或你拿到的化验项，会记成带时间的卡片。" +
+                            "同名旧记录不会被覆盖，方便看出变化。关掉只是先不发给模型，下面的内容还在。",
+                        "Tell Vana a height, weight, heart rate or lab result to save a time-stamped card. " +
+                            "Older entries remain available for comparison. Turning this off keeps the cards on this device.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -112,10 +117,13 @@ fun MeasurementListScreen(
 
             if (groups.isEmpty()) {
                 item {
-                    Text("还没有测量", style = MaterialTheme.typography.titleMedium)
+                    Text(uiText("还没有测量", "No measurements yet"), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "在对话里说「今天体重 68」或「静息心率 60」，Vana 会记下来。" +
-                            "时间说不清时它会先问你。",
+                        uiText(
+                            "在对话里说「今天体重 68」或「静息心率 60」，Vana 会记下来。" +
+                                "时间说不清时它会先问你。",
+                            "Say \"today's weight is 68\" or \"resting heart rate is 60\" in a conversation. Vana asks when the time is unclear.",
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
@@ -145,9 +153,14 @@ fun MeasurementListScreen(
     pendingDelete?.let { card ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("删除这条测量？") },
+            title = { Text(uiText("删除这条测量？", "Delete this measurement?")) },
             text = {
-                Text("「${card.name} ${card.displayValue}（${card.observedLabel}）」会被删掉。")
+                Text(
+                    uiText(
+                        "「${card.name} ${card.displayValue}（${card.observedLabel}）」会被删掉。",
+                        "\"${card.name} ${card.displayValue} (${card.observedLabel})\" will be deleted.",
+                    ),
+                )
             },
             confirmButton = {
                 TextButton(
@@ -156,10 +169,10 @@ fun MeasurementListScreen(
                         pendingDelete = null
                         reload()
                     },
-                ) { Text("删除") }
+                ) { Text(uiText("删除", "Delete")) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("取消") }
+                TextButton(onClick = { pendingDelete = null }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
@@ -196,7 +209,10 @@ private fun MeasurementHistoryRow(
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Default.Delete,
-                contentDescription = "删除 ${card.name} ${card.observedLabel}",
+                contentDescription = uiText(
+                    "删除 ${card.name} ${card.observedLabel}",
+                    "Delete ${card.name} ${card.observedLabel}",
+                ),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

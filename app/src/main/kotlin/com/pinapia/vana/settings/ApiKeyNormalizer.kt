@@ -1,5 +1,7 @@
 package com.pinapia.vana.settings
 
+import com.pinapia.vana.ui.L10n
+
 /**
  * API 密钥进 HTTP 头之前的规范化。
  *
@@ -17,7 +19,7 @@ object ApiKeyNormalizer {
     fun normalize(raw: String?): Result {
         var key = raw.orEmpty().trim()
         if (key.isEmpty()) {
-            return Result("", error = "需要先在设置里填写云端 API 密钥")
+            return Result("", error = L10n.text("需要先在设置里填写云端 API 密钥", "Enter a cloud API key in Settings first"))
         }
         // 有人会整段粘贴 `Bearer sk-…`
         if (key.startsWith("Bearer ", ignoreCase = true)) {
@@ -26,13 +28,16 @@ object ApiKeyNormalizer {
         // 去掉粘贴带来的空白/换行
         key = key.replace("\uFEFF", "").replace(Regex("\\s+"), "")
         if (key.isEmpty()) {
-            return Result("", error = "需要先在设置里填写云端 API 密钥")
+            return Result("", error = L10n.text("需要先在设置里填写云端 API 密钥", "Enter a cloud API key in Settings first"))
         }
         val badAt = key.indexOfFirst { it.code < 0x20 || it.code > 0x7e }
         if (badAt >= 0) {
             return Result(
                 value = "",
-                error = "API 密钥含有非法字符（位置 $badAt）。请重新粘贴服务商提供的密钥，不要带中文或空格。",
+                error = L10n.text(
+                    "API 密钥含有非法字符（位置 $badAt）。请重新粘贴服务商提供的密钥，不要带中文或空格。",
+                    "The API key contains an invalid character at position $badAt. Paste the provider's key again without spaces or non-ASCII characters.",
+                ),
             )
         }
         return Result(value = key)

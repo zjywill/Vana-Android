@@ -16,6 +16,7 @@ import com.pinapia.vana.ask.AskUserQuestion
 import com.pinapia.vana.ask.AskUserTools
 import com.pinapia.vana.exercises.ExerciseSelection
 import com.pinapia.vana.exercises.ExerciseTools
+import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.vision.ChatAttachment
 import java.util.UUID
 import kotlinx.datetime.Clock
@@ -199,7 +200,7 @@ data class ChatMessage(
 
     override fun markStopped() {
         if (text.isBlank()) {
-            text = "已停止回复"
+            text = L10n.text("已停止回复", "Response stopped")
             textIsPlaceholder = true
         }
         storedTurn = storedTurn.copy(state = StoredAgentTurn.State.STOPPED)
@@ -207,7 +208,7 @@ data class ChatMessage(
 
     override fun markFailed(description: String) {
         if (text.isBlank()) {
-            text = "无法回复：$description"
+            text = L10n.text("无法回复：$description", "Unable to respond: $description")
             textIsPlaceholder = true
         }
         errorDescription = description

@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.settings.SecureKeyStore
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,11 +63,11 @@ fun MedicationDetailScreen(
                 title = { Text(current.name) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
                 actions = {
-                    TextButton(onClick = onEdit) { Text("编辑") }
+                    TextButton(onClick = onEdit) { Text(uiText("编辑", "Edit")) }
                 },
             )
         },
@@ -79,7 +81,7 @@ fun MedicationDetailScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                "关系：${current.status.label}",
+                uiText("关系：${current.status.label}", "Status: ${current.status.label}"),
                 style = MaterialTheme.typography.titleMedium,
                 color = if (current.status == MedicationItem.Status.CANNOT_TAKE) {
                     MaterialTheme.colorScheme.error
@@ -88,13 +90,13 @@ fun MedicationDetailScreen(
                 },
             )
             if (current.whenText.isNotBlank()) {
-                Field("什么情况下吃", current.whenText)
+                Field(uiText("什么情况下吃", "When you take it"), current.whenText)
             }
             if (current.reason.isNotBlank()) {
-                Field("为什么吃", current.reason)
+                Field(uiText("为什么吃", "Why you take it"), current.reason)
             }
             current.startedAt?.let {
-                Field("开始时间", formatDate(it.toEpochMilliseconds()))
+                Field(uiText("开始时间", "Started"), formatDate(it.toEpochMilliseconds()))
             }
             Text(
                 "${current.originLabel} · ${relativeTime(current.updatedAt.toEpochMilliseconds())}",
@@ -102,10 +104,13 @@ fun MedicationDetailScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Text("你自己的评价", style = MaterialTheme.typography.titleSmall)
+            Text(uiText("你自己的评价", "Your assessment"), style = MaterialTheme.typography.titleSmall)
             Text(
                 current.outcome.ifBlank {
-                    "还没记。有没有用、有什么感觉，记一句，Vana 下次就不会再推荐一次你试过的东西。"
+                    uiText(
+                        "还没记。有没有用、有什么感觉，记一句，Vana 下次就不会再推荐一次你试过的东西。",
+                        "Nothing recorded yet. Add whether it helped and how it felt so Vana does not suggest it again unnecessarily.",
+                    )
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (current.outcome.isBlank()) {
@@ -117,7 +122,11 @@ fun MedicationDetailScreen(
             current.followUpAt?.let { due ->
                 val dueNow = due <= Clock.System.now()
                 Text(
-                    if (dueNow) "说好回头看的时间到了" else "${formatMonthDay(due.toEpochMilliseconds())} 回头问你一句",
+                    if (dueNow) {
+                        uiText("说好回头看的时间到了", "It is time to follow up")
+                    } else {
+                        uiText("${formatMonthDay(due.toEpochMilliseconds())} 回头问你一句", "Follow up on ${formatMonthDay(due.toEpochMilliseconds())}")
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (dueNow) {
                         MaterialTheme.colorScheme.tertiary
@@ -127,9 +136,9 @@ fun MedicationDetailScreen(
                 )
             }
 
-            Text("一般说明", style = MaterialTheme.typography.titleSmall)
+            Text(uiText("一般说明", "General information"), style = MaterialTheme.typography.titleSmall)
             Text(
-                current.brief.ifBlank { "还没有说明。" },
+                current.brief.ifBlank { uiText("还没有说明。", "No information yet.") },
                 style = MaterialTheme.typography.bodyMedium,
             )
             TextButton(
@@ -147,22 +156,31 @@ fun MedicationDetailScreen(
                         if (wrote) {
                             current = store.load().firstOrNull { it.id == current.id } ?: current
                         } else {
-                            briefError = "这次没写出来。检查一下网络，或者设置里的模型配置。"
+                            briefError = L10n.text(
+                                "这次没写出来。检查一下网络，或者设置里的模型配置。",
+                                "Vana could not generate this. Check the network and model settings.",
+                            )
                         }
                     }
                 },
                 enabled = !regenerating && !current.briefIsUserWritten,
             ) {
-                Text(if (regenerating) "正在写…" else "重新生成")
+                Text(if (regenerating) uiText("正在写…", "Generating…") else uiText("重新生成", "Regenerate"))
             }
             briefError?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             Text(
                 if (current.briefIsUserWritten) {
-                    "这一段你自己改过，不会被自动覆盖。要恢复自动生成，把它清空再保存。"
+                    uiText(
+                        "这一段你自己改过，不会被自动覆盖。要恢复自动生成，把它清空再保存。",
+                        "You edited this section, so it will not be overwritten. Clear and save it to restore automatic generation.",
+                    )
                 } else {
-                    "由 Vana 自动写的通用说明，不是给你的建议，也不含剂量和用法。"
+                    uiText(
+                        "由 Vana 自动写的通用说明，不是给你的建议，也不含剂量和用法。",
+                        "General information generated by Vana. It is not personal advice and includes no dose or directions.",
+                    )
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -171,9 +189,12 @@ fun MedicationDetailScreen(
             Button(
                 onClick = { onAsk(current) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("问问 Vana") }
+            ) { Text(uiText("问问 Vana", "Ask Vana")) }
             Text(
-                "会开一条围绕「${current.name}」的对话，下次从这里进来还接着上次那条聊。",
+                uiText(
+                    "会开一条围绕「${current.name}」的对话，下次从这里进来还接着上次那条聊。",
+                    "Starts a conversation about \"${current.name}\" and continues it when you return here.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -182,7 +203,7 @@ fun MedicationDetailScreen(
                 onClick = { confirmDelete = true },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("删掉这条", color = MaterialTheme.colorScheme.error)
+                Text(uiText("删掉这条", "Delete item"), color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -190,13 +211,19 @@ fun MedicationDetailScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("删掉「${current.name}」？") },
+            title = { Text(uiText("删掉「${current.name}」？", "Delete \"${current.name}\"?")) },
             text = {
                 Text(
                     if (current.status == MedicationItem.Status.CANNOT_TAKE) {
-                        "删掉之后 Vana 就不知道你不能吃它了，给建议时也不会再避开。"
+                        uiText(
+                            "删掉之后 Vana 就不知道你不能吃它了，给建议时也不会再避开。",
+                            "Vana will no longer know that you cannot take this item.",
+                        )
                     } else {
-                        "只删这条记录，不影响「健康」App 里的任何数据。"
+                        uiText(
+                            "只删除这条本地记录。",
+                            "Only this local record will be deleted.",
+                        )
                     },
                 )
             },
@@ -205,10 +232,10 @@ fun MedicationDetailScreen(
                     store.delete(current.id)
                     confirmDelete = false
                     onDeleted()
-                }) { Text("删掉这条") }
+                }) { Text(uiText("删掉这条", "Delete item")) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("取消") }
+                TextButton(onClick = { confirmDelete = false }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
@@ -223,18 +250,21 @@ private fun Field(label: String, value: String) {
 }
 
 private fun formatDate(millis: Long): String =
-    SimpleDateFormat("yyyy/M/d", Locale.CHINA).format(Date(millis))
+    SimpleDateFormat(
+        if (L10n.replyLanguage() == "English") "MMM d, yyyy" else "yyyy/M/d",
+        Locale.getDefault(),
+    ).format(Date(millis))
 
 private fun formatMonthDay(millis: Long): String =
-    SimpleDateFormat("M月d日", Locale.CHINA).format(Date(millis))
+    SimpleDateFormat(if (L10n.replyLanguage() == "English") "MMM d" else "M月d日", Locale.getDefault()).format(Date(millis))
 
 private fun relativeTime(millis: Long): String {
     val delta = System.currentTimeMillis() - millis
     val minutes = delta / 60_000
     return when {
-        minutes < 1 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        minutes < 24 * 60 -> "${minutes / 60}小时前"
-        else -> "${minutes / (24 * 60)}天前"
+        minutes < 1 -> L10n.text("刚刚", "Just now")
+        minutes < 60 -> L10n.text("${minutes}分钟前", "$minutes minutes ago")
+        minutes < 24 * 60 -> L10n.text("${minutes / 60}小时前", "${minutes / 60} hours ago")
+        else -> L10n.text("${minutes / (24 * 60)}天前", "${minutes / (24 * 60)} days ago")
     }
 }

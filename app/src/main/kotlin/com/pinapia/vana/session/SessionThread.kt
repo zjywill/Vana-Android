@@ -1,5 +1,6 @@
 package com.pinapia.vana.session
 
+import com.pinapia.vana.ui.L10n
 import java.util.UUID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -23,10 +24,10 @@ sealed class SessionThread {
 
     val title: String
         get() = when (this) {
-            CheckIn -> "每日 check-in"
-            is FollowUp -> "说好回头看的事"
-            is Goal -> "长期目标"
-            is Medication -> "药和补剂"
+            CheckIn -> L10n.text("每日 check-in", "Daily check-in")
+            is FollowUp -> L10n.text("说好回头看的事", "Scheduled follow-up")
+            is Goal -> L10n.text("长期目标", "Long-term goal")
+            is Medication -> L10n.text("药和补剂", "Medication or supplement")
         }
 
     val isGoal: Boolean get() = this is Goal

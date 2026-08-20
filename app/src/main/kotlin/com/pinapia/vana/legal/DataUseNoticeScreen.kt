@@ -39,9 +39,9 @@ fun DataUseNoticeScreen(
                     .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                Text(DataUseNotice.TITLE, style = MaterialTheme.typography.headlineLarge)
+                Text(DataUseNotice.title, style = MaterialTheme.typography.headlineLarge)
                 Text(
-                    DataUseNotice.INTRO,
+                    DataUseNotice.intro,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -58,11 +58,11 @@ fun DataUseNoticeScreen(
             ) {
                 if (onOpenPrivacy != null) {
                     TextButton(onClick = onOpenPrivacy, modifier = Modifier.fillMaxWidth()) {
-                        Text(DataUseNotice.PRIVACY_LINK)
+                        Text(DataUseNotice.privacyLink)
                     }
                 }
                 Button(onClick = onAccept, modifier = Modifier.fillMaxWidth()) {
-                    Text(DataUseNotice.CTA)
+                    Text(DataUseNotice.cta)
                 }
             }
         }

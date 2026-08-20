@@ -15,7 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -24,14 +27,16 @@ fun PrivacyPolicyScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val asset = L10n.text(context, "PrivacyPolicy.html", "PrivacyPolicy.en.html")
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("隐私说明") },
+                title = { Text(uiText("隐私说明", "Privacy policy")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )
@@ -45,7 +50,7 @@ fun PrivacyPolicyScreen(
                 WebView(context).apply {
                     webViewClient = WebViewClient()
                     settings.javaScriptEnabled = false
-                    loadUrl("file:///android_asset/PrivacyPolicy.html")
+                    loadUrl("file:///android_asset/$asset")
                 }
             },
         )

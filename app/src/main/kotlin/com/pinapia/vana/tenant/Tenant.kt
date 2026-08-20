@@ -1,5 +1,6 @@
 package com.pinapia.vana.tenant
 
+import com.pinapia.vana.ui.L10n
 import java.util.UUID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -30,10 +31,10 @@ data class Tenant(
 
         val label: String
             get() = when (this) {
-                CHILD -> "儿童"
-                TEEN -> "青少年"
-                ADULT -> "成年人"
-                SENIOR -> "老年人"
+                CHILD -> L10n.text("儿童", "Child")
+                TEEN -> L10n.text("青少年", "Teen")
+                ADULT -> L10n.text("成年人", "Adult")
+                SENIOR -> L10n.text("老年人", "Older adult")
             }
     }
 
@@ -43,7 +44,7 @@ data class Tenant(
         get() {
             val trimmed = name.trim()
             if (trimmed.isNotEmpty()) return trimmed
-            return if (isOwner) OWNER_DEFAULT_NAME else "家人"
+            return if (isOwner) L10n.text(OWNER_DEFAULT_NAME, "Me") else L10n.text("家人", "Family member")
         }
 
     /**

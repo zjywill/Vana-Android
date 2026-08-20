@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.update.CheckForUpdatesRow
+import com.pinapia.vana.ui.uiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,10 +40,10 @@ fun AboutScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("关于") },
+                title = { Text(uiText("关于", "About")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )
@@ -56,21 +57,21 @@ fun AboutScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("免责声明", style = MaterialTheme.typography.titleMedium)
+            Text(uiText("免责声明", "Disclaimer"), style = MaterialTheme.typography.titleMedium)
             Text(
                 DataUseNotice.medicalDisclaimer,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             HorizontalDivider()
-            Text("数据会发送到哪里", style = MaterialTheme.typography.titleMedium)
+            Text(uiText("数据会发送到哪里", "Where your data goes"), style = MaterialTheme.typography.titleMedium)
             Text(
-                "和你第一次打开 Vana 时看到的是同一份。",
+                uiText("和你第一次打开 Vana 时看到的是同一份。", "This is the same notice shown on first launch."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "数据会发送到哪里",
+                uiText("数据会发送到哪里", "Where your data goes"),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onOpenDataUse)
@@ -78,7 +79,7 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                "隐私说明",
+                uiText("隐私说明", "Privacy policy"),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onOpenPrivacy)
@@ -86,7 +87,7 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
             HorizontalDivider()
-            Text("图片出处", style = MaterialTheme.typography.titleMedium)
+            Text(uiText("图片出处", "Image credits"), style = MaterialTheme.typography.titleMedium)
             ExerciseLibrary.attributions.forEach { line ->
                 Text(
                     line,
@@ -95,12 +96,12 @@ fun AboutScreen(
                 )
             }
             HorizontalDivider()
-            Text("版本 ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            Text(uiText("版本", "Version") + " ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             if (BuildConfig.ALLOW_SELF_UPDATE) {
                 CheckForUpdatesRow()
             }
             Text(
-                "项目地址",
+                uiText("项目地址", "Project repository"),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {

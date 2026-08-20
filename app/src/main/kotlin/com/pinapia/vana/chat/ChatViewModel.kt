@@ -37,6 +37,7 @@ import com.pinapia.vana.settings.SecureKeyStore
 import com.pinapia.vana.tenant.Tenant
 import com.pinapia.vana.tenant.TenantOpening
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.medications.MedicationBriefer
 import com.pinapia.vana.vision.AttachmentImage
 import com.pinapia.vana.vision.ChatAttachment
@@ -139,7 +140,10 @@ class ChatViewModel(
             if (supportsVision) return null
             val policy = photoImagePolicy
             if (policy == PhotoImagePolicy.TEXT_ONLY) return null
-            return "你设的是「${policy.label}」，但当前模型看不了图——这一档暂时不生效。"
+            return L10n.text(
+                "你设的是「${policy.label}」，但当前模型看不了图——这一档暂时不生效。",
+                "You selected \"${policy.label}\", but the current model cannot view images, so this setting is temporarily inactive.",
+            )
         }
 
     /**
@@ -184,10 +188,34 @@ class ChatViewModel(
     }
 
     fun refreshEngineAvailability() {
-        _engineGuidance.value = if (engineSettings.isConfigured(secureKeyStore)) {
-            null
+        _engineGuidance.value = currentSetupGuidance()
+    }
+
+    private fun currentSetupGuidance(): String? {
+        val key = com.pinapia.vana.settings.ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
+        if (!key.isValid) {
+            return L10n.text(
+                "还没配置云端模型。请前往设置填写 API 密钥，并选择服务商和模型。",
+                "The cloud model is not configured. Open Settings, enter an API key, and choose a provider and model.",
+            )
+        }
+        if (engineSettings.providerId.isBlank() || engineSettings.model.isBlank()) {
+            return L10n.text(
+                "还没选好云端模型。请前往设置选择服务商和模型。",
+                "No cloud model is selected. Open Settings and choose a provider and model.",
+            )
+        }
+        return null
+    }
+
+    fun errorRecovery(assistantId: String): ErrorRecovery? {
+        val message = _session.value.messages.firstOrNull { it.id == assistantId } ?: return null
+        val failure = message.errorDescription ?: return null
+        if (currentSetupGuidance() != null) return ErrorRecovery.OPEN_SETTINGS
+        return if (UserFacingModelFailure.isAuthenticationMessage(failure)) {
+            ErrorRecovery.OPEN_SETTINGS
         } else {
-            "还没配置云端模型。请前往设置填写 API 密钥，并选择服务商和模型。"
+            ErrorRecovery.RETRY
         }
     }
 
@@ -267,7 +295,13 @@ class ChatViewModel(
             val recognized = runCatching { TextRecognizer.recognize(bitmap) }
                 .getOrElse {
                     updateDraft(id) {
-                        copy(isRecognizing = false, failure = "这张照片读不出来，换一张试试。")
+                        copy(
+                            isRecognizing = false,
+                            failure = L10n.text(
+                                "这张照片读不出来，换一张试试。",
+                                "This photo could not be read. Try another one.",
+                            ),
+                        )
                     }
                     return@launch
                 }
@@ -320,10 +354,10 @@ class ChatViewModel(
                     .getOrElse {
                         listOf(
                             com.pinapia.vana.vision.ImportedAttachment.Document(
-                                name = uri.lastPathSegment ?: "文件",
+                                name = uri.lastPathSegment ?: L10n.text("文件", "File"),
                                 text = "",
                                 droppedLines = 0,
-                                failure = "这个文件读不出来。",
+                                failure = L10n.text("这个文件读不出来。", "This file could not be read."),
                             ),
                         )
                     }
@@ -612,11 +646,21 @@ class ChatViewModel(
             } catch (error: Throwable) {
                 val wrapped = AgentError.wrapping(error)
                 val message = when (wrapped) {
-                    is AgentError.NeedsAPIKey,
-                    is AgentError.NeedsModelSelection,
-                    is AgentError.InvalidAPIKey,
-                    -> wrapped.message ?: "云端模型配置不完整。"
+                    is AgentError.NeedsAPIKey -> L10n.text(
+                        "需要先在设置里填写云端 API 密钥。",
+                        "Enter a cloud API key in Settings first.",
+                    )
+                    is AgentError.NeedsModelSelection -> L10n.text(
+                        "需要先在设置里选择云端模型。",
+                        "Choose a cloud model in Settings first.",
+                    )
+                    is AgentError.InvalidAPIKey -> UserFacingModelFailure.authenticationMessage
                     else -> UserFacingModelFailure.message(wrapped)
+                }.ifBlank {
+                    L10n.text(
+                        "云端模型配置不完整。",
+                        "The cloud model configuration is incomplete.",
+                    )
                 }
                 replyingMessageId?.let { id ->
                     mutateMessage(id) { markFailed(message) }
@@ -677,7 +721,10 @@ class ChatViewModel(
                 mutateMessage(event.messageID.toString()) { applyCompaction(event.artifact) }
             }
             is AgentTurnEvent.RetryScheduled -> {
-                _retryNotice.value = "连接不稳定，正在重试（${event.notice.attempt}/${event.notice.maxAttempts}）"
+                _retryNotice.value = L10n.text(
+                    "连接不稳定，正在重试（${event.notice.attempt}/${event.notice.maxAttempts}）",
+                    "Connection is unstable. Retrying (${event.notice.attempt}/${event.notice.maxAttempts})",
+                )
             }
             is AgentTurnEvent.TextDelta -> {
                 _retryNotice.value = null
@@ -939,10 +986,16 @@ class ChatViewModel(
     }
 
     companion object {
-        private val DefaultQuestions = listOf(
-            "帮我看看这张化验单",
-            "最近总感觉不舒服是怎么回事？",
-            "帮我记下今天的体重",
-        )
+        private val DefaultQuestions: List<String>
+            get() = listOf(
+                L10n.text("帮我看看这张化验单", "Help me understand this lab report"),
+                L10n.text("最近总感觉不舒服是怎么回事？", "Why have I been feeling unwell lately?"),
+                L10n.text("帮我记下今天的体重", "Record today's weight for me"),
+            )
     }
+}
+
+enum class ErrorRecovery {
+    RETRY,
+    OPEN_SETTINGS,
 }

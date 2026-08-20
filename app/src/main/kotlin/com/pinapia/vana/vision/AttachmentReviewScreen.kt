@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.pinapia.vana.medications.MedicationDraft
 import com.pinapia.vana.medications.MedicationEditScreen
 import com.pinapia.vana.medications.MedicationItem
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 
 /**
  * 发出去之前核对这一张。
@@ -92,14 +94,14 @@ fun AttachmentReviewScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("核对识别结果") },
+                title = { Text(uiText("核对识别结果", "Review recognized text")) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "完成")
+                        Icon(Icons.Default.Close, contentDescription = uiText("完成", "Done"))
                     }
                 },
                 actions = {
-                    TextButton(onClick = onDismiss) { Text("完成") }
+                    TextButton(onClick = onDismiss) { Text(uiText("完成", "Done")) }
                 },
             )
         },
@@ -116,7 +118,7 @@ fun AttachmentReviewScreen(
             if (draft.preview != null) {
                 Image(
                     bitmap = draft.preview!!.asImageBitmap(),
-                    contentDescription = draft.documentName ?: "照片预览",
+                    contentDescription = draft.documentName ?: uiText("照片预览", "Photo preview"),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 220.dp)
@@ -130,7 +132,7 @@ fun AttachmentReviewScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    draft.documentName ?: "文件",
+                    draft.documentName ?: uiText("文件", "File"),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -149,7 +151,7 @@ fun AttachmentReviewScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "让 Vana 直接看这张图",
+                        uiText("让 Vana 直接看这张图", "Let Vana view this photo"),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -160,18 +162,27 @@ fun AttachmentReviewScreen(
                 }
                 Text(
                     if (draft.hasText) {
-                        "文字已经识别出来了，上面那段就够回答问题。原图上还有姓名、就诊号、" +
-                            "医院和医生签名——真要发的话，它会一起发到你配置的模型服务上。"
+                        uiText(
+                            "文字已经识别出来了，上面那段就够回答问题。原图上还有姓名、就诊号、" +
+                                "医院和医生签名——真要发的话，它会一起发到你配置的模型服务上。",
+                            "The recognized text is usually enough to answer. The original photo may also contain names, record numbers, hospitals and signatures; enabling this sends the photo to your model provider.",
+                        )
                     } else {
-                        "本机一个字都没认出来。一顿饭、一处皮疹这类照片的信息本来就不是字，" +
-                            "让模型直接看图才答得上——但那意味着这张照片本身会发到你配置的模型服务上。"
+                        uiText(
+                            "本机一个字都没认出来。一顿饭、一处皮疹这类照片的信息本来就不是字，" +
+                                "让模型直接看图才答得上——但那意味着这张照片本身会发到你配置的模型服务上。",
+                            "No text was recognized. A model may need the original image to answer about a meal or visible symptom, which sends this photo to your model provider.",
+                        )
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else if (!supportsVision && !draft.isDocument) {
                 Text(
-                    "当前模型看不了图，发给它的只有下面这段文字。",
+                    uiText(
+                        "当前模型看不了图，发给它的只有下面这段文字。",
+                        "The current model cannot view images. Only the text below will be sent.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -187,7 +198,12 @@ fun AttachmentReviewScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 180.dp),
-                label = { Text(if (draft.isDocument) "文件里的文字" else "识别出的文字") },
+                label = {
+                    Text(
+                        if (draft.isDocument) uiText("文件里的文字", "Text from file")
+                        else uiText("识别出的文字", "Recognized text"),
+                    )
+                },
                 supportingText = { Text(reviewFooter(draft, canSendImage = onChangeSendsImage != null)) },
                 enabled = !draft.isRecognizing && !draft.isLoading,
             )
@@ -196,11 +212,11 @@ fun AttachmentReviewScreen(
                 onClick = { medicationDraft = MedicationDraft.fromRecognizedText(text) },
                 enabled = draft.hasText || text.isNotBlank(),
             ) {
-                Text("记入用药与补剂")
+                Text(uiText("记入用药与补剂", "Save to medications and supplements"))
             }
             savedMedication?.let { name ->
                 Text(
-                    "已记下「$name」。",
+                    uiText("已记下「$name」。", "Saved \"$name\"."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -212,18 +228,29 @@ fun AttachmentReviewScreen(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
             ) {
-                Text("不发这张")
+                Text(uiText("不发这张", "Remove attachment"))
             }
         }
     }
 }
 
 private fun footprint(draft: DraftAttachment, visionUnavailableNote: String?): String {
-    if (draft.isDocument) return "文件留在这台手机上，发给模型的只有下面这段文字。"
-    if (draft.sendsImage) {
-        return "这张照片本身会发到你配置的模型服务上。关掉下面那个开关，就只发识别出来的文字。"
+    if (draft.isDocument) {
+        return L10n.text(
+            "文件留在这台手机上，发给模型的只有下面这段文字。",
+            "The file stays on this device. Only the text below is sent to the model.",
+        )
     }
-    val base = "图片留在这台手机上，发给模型的只有下面这段文字。"
+    if (draft.sendsImage) {
+        return L10n.text(
+            "这张照片本身会发到你配置的模型服务上。关掉下面那个开关，就只发识别出来的文字。",
+            "This photo will be sent to your model provider. Turn off the switch below to send recognized text only.",
+        )
+    }
+    val base = L10n.text(
+        "图片留在这台手机上，发给模型的只有下面这段文字。",
+        "The image stays on this device. Only the text below is sent to the model.",
+    )
     return if (visionUnavailableNote.isNullOrBlank()) base else "$base$visionUnavailableNote"
 }
 
@@ -231,23 +258,44 @@ private fun reviewFooter(draft: DraftAttachment, canSendImage: Boolean): String 
     draft.failure?.let { return it }
     if (!draft.hasText) {
         return when {
-            draft.sendsImage -> "这张图里没认出文字，原图会随这句话一起发出去，让模型直接看。"
+            draft.sendsImage -> L10n.text(
+                "这张图里没认出文字，原图会随这句话一起发出去，让模型直接看。",
+                "No text was recognized. The original image will be sent with your message.",
+            )
             draft.isDocument ->
-                "这份文件里没取到正文。里面如果是扫描件（整页都是图），先导出成 PDF 或者直接拍一张。"
+                L10n.text(
+                    "这份文件里没取到正文。里面如果是扫描件（整页都是图），先导出成 PDF 或者直接拍一张。",
+                    "No text was extracted. If this is a scanned document, export it as a PDF or take a photo.",
+                )
             canSendImage ->
-                "这张图里没认出文字。Vana 现在只能读照片里的字——一顿饭、一处皮疹这类，" +
-                    "可以打开上面那个开关让它直接看图。"
+                L10n.text(
+                    "这张图里没认出文字。Vana 现在只能读照片里的字——一顿饭、一处皮疹这类，" +
+                        "可以打开上面那个开关让它直接看图。",
+                    "No text was recognized. Enable the switch above if you want the model to view the original image.",
+                )
             else ->
-                "这张图里没认出文字。当前模型看不了图，发给它的只有识别结果；" +
-                    "换一个支持看图的模型才能让它直接看。"
+                L10n.text(
+                    "这张图里没认出文字。当前模型看不了图，发给它的只有识别结果；" +
+                        "换一个支持看图的模型才能让它直接看。",
+                    "No text was recognized and the current model cannot view images. Choose a vision-capable model to send the original image.",
+                )
         }
     }
     if (draft.droppedLines > 0) {
-        return "太长了，后面 ${draft.droppedLines} 行没有带进来。删掉用不上的几段，再把要问的那几项留下。"
+        return L10n.text(
+            "太长了，后面 ${draft.droppedLines} 行没有带进来。删掉用不上的几段，再把要问的那几项留下。",
+            "The text was too long and ${draft.droppedLines} lines were omitted. Remove unneeded sections and keep the items you want to ask about.",
+        )
     }
     return if (draft.isDocument) {
-        "改成什么样，发出去的就是什么样。用不上的段落可以直接删掉。"
+        L10n.text(
+            "改成什么样，发出去的就是什么样。用不上的段落可以直接删掉。",
+            "Exactly this text will be sent. You can delete sections you do not need.",
+        )
     } else {
-        "改成什么样，发出去的就是什么样。数值和单位值得对一眼。"
+        L10n.text(
+            "改成什么样，发出去的就是什么样。数值和单位值得对一眼。",
+            "Exactly this text will be sent. Check numbers and units before continuing.",
+        )
     }
 }

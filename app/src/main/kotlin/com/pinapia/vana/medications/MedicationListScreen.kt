@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.settings.SecureKeyStore
+import com.pinapia.vana.ui.uiText
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,15 +106,15 @@ fun MedicationListScreen(
                 modifier = modifier.fillMaxSize(),
                 topBar = {
                     TopAppBar(
-                        title = { Text("用药与补剂") },
+                        title = { Text(uiText("用药与补剂", "Medications and supplements")) },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                             }
                         },
                         actions = {
                             IconButton(onClick = { editing = MedicationDraft() }) {
-                                Icon(Icons.Default.Add, contentDescription = "加一条")
+                                Icon(Icons.Default.Add, contentDescription = uiText("加一条", "Add item"))
                             }
                         },
                     )
@@ -133,7 +134,7 @@ fun MedicationListScreen(
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("让 Vana 看到这份清单", modifier = Modifier.weight(1f))
+                            Text(uiText("让 Vana 看到这份清单", "Share this list with Vana"), modifier = Modifier.weight(1f))
                             Switch(
                                 checked = enabled,
                                 onCheckedChange = {
@@ -143,7 +144,10 @@ fun MedicationListScreen(
                             )
                         }
                         Text(
-                            "开着时，这份清单会随每次提问一起发给你选的模型 provider，Vana 给建议之前会先看你不能吃什么、试过什么没用。关掉只是先不用，下面的内容还在。",
+                            uiText(
+                                "开着时，这份清单会随每次提问一起发给你选的模型 provider，Vana 给建议之前会先看你不能吃什么、试过什么没用。关掉只是先不用，下面的内容还在。",
+                                "When enabled, this list is sent with each question to your selected model provider. Vana checks what you cannot take and what did not work before responding. Turning it off keeps the list on this device.",
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -151,9 +155,12 @@ fun MedicationListScreen(
                     }
                     if (items.isEmpty()) {
                         item {
-                            Text("还没记下什么", style = MaterialTheme.typography.titleMedium)
+                            Text(uiText("还没记下什么", "Nothing recorded yet"), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "你吃过、在吃、不能吃的东西。这里不做用药提醒和打卡——那些在「健康」App 里管更合适。",
+                                uiText(
+                                    "你吃过、在吃、不能吃的东西。这里不做用药提醒和打卡。",
+                                    "Record medications and supplements you take, tried, or cannot take. Vana does not provide dose reminders or adherence tracking.",
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),

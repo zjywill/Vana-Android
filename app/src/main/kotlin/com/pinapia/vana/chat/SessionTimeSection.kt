@@ -1,17 +1,26 @@
 package com.pinapia.vana.chat
 
 import com.pinapia.vana.session.SessionSummary
+import com.pinapia.vana.ui.L10n
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-enum class SessionTimeBucket(val title: String) {
-    TODAY("今天"),
-    YESTERDAY("昨天"),
-    LAST_WEEK("最近 7 天"),
-    EARLIER("更早"),
+enum class SessionTimeBucket {
+    TODAY,
+    YESTERDAY,
+    LAST_WEEK,
+    EARLIER;
+
+    val title: String
+        get() = when (this) {
+            TODAY -> L10n.text("今天", "Today")
+            YESTERDAY -> L10n.text("昨天", "Yesterday")
+            LAST_WEEK -> L10n.text("最近 7 天", "Last 7 days")
+            EARLIER -> L10n.text("更早", "Earlier")
+        }
 }
 
 data class SessionTimeGroup(
@@ -35,17 +44,23 @@ object SessionTimeSection {
     fun rowTimeLabel(updatedAtMillis: Long, nowMillis: Long = System.currentTimeMillis()): String {
         val bucket = bucketFor(updatedAtMillis, nowMillis)
         val cal = Calendar.getInstance().apply { timeInMillis = updatedAtMillis }
-        val time = SimpleDateFormat("H:mm", Locale.CHINA).format(Date(updatedAtMillis))
+        val locale = Locale.getDefault()
+        val time = SimpleDateFormat(if (locale.language == "en") "h:mm a" else "H:mm", locale)
+            .format(Date(updatedAtMillis))
         return when (bucket) {
             SessionTimeBucket.TODAY, SessionTimeBucket.YESTERDAY -> time
             SessionTimeBucket.LAST_WEEK -> {
-                val weekday = SimpleDateFormat("E", Locale.CHINA).format(Date(updatedAtMillis))
+                val weekday = SimpleDateFormat("E", locale).format(Date(updatedAtMillis))
                 "$weekday $time"
             }
             SessionTimeBucket.EARLIER -> {
                 val now = Calendar.getInstance().apply { timeInMillis = nowMillis }
-                val pattern = if (cal.get(Calendar.YEAR) == now.get(Calendar.YEAR)) "M/d" else "y/M/d"
-                SimpleDateFormat(pattern, Locale.CHINA).format(Date(updatedAtMillis))
+                val pattern = if (locale.language == "en") {
+                    if (cal.get(Calendar.YEAR) == now.get(Calendar.YEAR)) "MMM d" else "MMM d, y"
+                } else {
+                    if (cal.get(Calendar.YEAR) == now.get(Calendar.YEAR)) "M/d" else "y/M/d"
+                }
+                SimpleDateFormat(pattern, locale).format(Date(updatedAtMillis))
             }
         }
     }

@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +76,7 @@ fun ProviderPickerSheet(
                 .padding(bottom = 16.dp),
         ) {
             Text(
-                "选择 Provider",
+                uiText("选择 Provider", "Choose provider"),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
@@ -84,7 +86,7 @@ fun ProviderPickerSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("搜索 provider") },
+                placeholder = { Text(uiText("搜索 provider", "Search providers")) },
                 singleLine = true,
             )
             LazyColumn(
@@ -98,7 +100,7 @@ fun ProviderPickerSheet(
                     val subtitle = if (count == 0) {
                         provider.id
                     } else {
-                        "${provider.id} · $count 个模型"
+                        uiText("${provider.id} · $count 个模型", "${provider.id} · $count models")
                     }
                     PickerRow(
                         title = provider.displayName,
@@ -112,7 +114,10 @@ fun ProviderPickerSheet(
                 }
                 item {
                     Text(
-                        "共 ${CloudCatalog.providers.count()} 个 provider，来自 AIKit 内置目录。",
+                        uiText(
+                            "共 ${CloudCatalog.providers.count()} 个 provider，来自 AIKit 内置目录。",
+                            "${CloudCatalog.providers.count()} providers from the built-in AIKit catalog.",
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -178,12 +183,12 @@ fun ModelPickerSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("搜索模型") },
+                placeholder = { Text(uiText("搜索模型", "Search models")) },
                 singleLine = true,
             )
 
             if (catalogMatches.isNotEmpty()) {
-                SectionLabel("内置目录")
+                SectionLabel(uiText("内置目录", "Built-in catalog"))
                 catalogMatches.forEach { model ->
                     ModelPickerRow(
                         model = model,
@@ -195,7 +200,10 @@ fun ModelPickerSheet(
                     )
                 }
                 Text(
-                    "只列出支持工具调用的模型——不支持的模型无法使用用药、测量和记忆能力。",
+                    uiText(
+                        "只列出支持工具调用的模型——不支持的模型无法使用用药、测量和记忆能力。",
+                        "Only models with tool calling are shown; other models cannot use medications, measurements or memory.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -203,7 +211,7 @@ fun ModelPickerSheet(
             }
 
             if (fetchedMatches.isNotEmpty()) {
-                SectionLabel("服务端返回")
+                SectionLabel(uiText("服务端返回", "Returned by provider"))
                 fetchedMatches.forEach { model ->
                     ModelPickerRow(
                         model = model,
@@ -228,9 +236,14 @@ fun ModelPickerSheet(
                                 CloudCatalog.fetchModels(providerId, apiKey)
                             }
                             fetched = list
-                            if (list.isEmpty()) fetchError = "服务端没有返回模型"
+                            if (list.isEmpty()) {
+                                fetchError = L10n.text("服务端没有返回模型", "The provider returned no models")
+                            }
                         } catch (error: Throwable) {
-                            fetchError = "获取失败：${error.message ?: error.javaClass.simpleName}"
+                            fetchError = L10n.text(
+                                "获取失败：${error.message ?: error.javaClass.simpleName}",
+                                "Fetch failed: ${error.message ?: error.javaClass.simpleName}",
+                            )
                         } finally {
                             isFetching = false
                         }
@@ -239,7 +252,10 @@ fun ModelPickerSheet(
                 enabled = !isFetching,
                 modifier = Modifier.padding(horizontal = 8.dp),
             ) {
-                Text(if (isFetching) "正在获取…" else "从服务端获取模型列表")
+                Text(
+                    if (isFetching) uiText("正在获取…", "Fetching…")
+                    else uiText("从服务端获取模型列表", "Fetch model list from provider"),
+                )
             }
             fetchError?.let {
                 Text(
@@ -251,16 +267,22 @@ fun ModelPickerSheet(
             }
             Text(
                 if (catalogMatches.isEmpty() && fetched.isEmpty()) {
-                    "该 provider 没有内置模型列表，请用已保存的 API key 获取，或直接填写模型 ID。"
+                    uiText(
+                        "该 provider 没有内置模型列表，请用已保存的 API key 获取，或直接填写模型 ID。",
+                        "This provider has no built-in model list. Fetch it with the saved API key or enter a model ID.",
+                    )
                 } else {
-                    "获取会用已保存的 API key 向该 provider 查询当前可用模型。"
+                    uiText(
+                        "获取会用已保存的 API key 向该 provider 查询当前可用模型。",
+                        "Fetching uses the saved API key to query currently available models.",
+                    )
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
 
-            SectionLabel("自定义模型 ID")
+            SectionLabel(uiText("自定义模型 ID", "Custom model ID"))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -272,7 +294,7 @@ fun ModelPickerSheet(
                     value = customId,
                     onValueChange = { customId = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("例如 llama3.1") },
+                    placeholder = { Text(uiText("例如 llama3.1", "For example, llama3.1")) },
                     singleLine = true,
                 )
                 TextButton(
@@ -284,7 +306,7 @@ fun ModelPickerSheet(
                         }
                     },
                     enabled = customId.trim().isNotEmpty(),
-                ) { Text("使用") }
+                ) { Text(uiText("使用", "Use")) }
             }
         }
     }
@@ -357,7 +379,7 @@ private fun PickerRow(
         if (selected) {
             Icon(
                 Icons.Default.Check,
-                contentDescription = "已选中",
+                contentDescription = uiText("已选中", "Selected"),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }

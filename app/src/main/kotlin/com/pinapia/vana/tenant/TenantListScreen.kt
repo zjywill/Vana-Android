@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.ui.uiText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,15 +55,15 @@ fun TenantListScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("家庭成员") },
+                title = { Text(uiText("家庭成员", "Family members")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showAdd = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "添加成员")
+                        Icon(Icons.Default.Add, contentDescription = uiText("添加成员", "Add family member"))
                     }
                 },
             )
@@ -104,8 +105,12 @@ fun TenantListScreen(
             }
             item {
                 Text(
-                    "每位成员的会话、用药清单、记忆和照片各存一份，互相看不到。" +
-                        "成员情况来自你记下的用药、拍给 Vana 的化验单，和你们聊过的内容。",
+                    uiText(
+                        "每位成员的会话、用药清单、记忆和照片各存一份，互相看不到。" +
+                            "成员情况来自你记下的用药、拍给 Vana 的化验单，和你们聊过的内容。",
+                        "Each family member has separate local conversations, medication lists, memories and photos. " +
+                            "Their context comes only from what you record, attach and discuss.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp),
@@ -121,7 +126,7 @@ fun TenantListScreen(
 
     if (showAdd) {
         TenantEditDialog(
-            title = "添加成员",
+            title = uiText("添加成员", "Add family member"),
             initial = null,
             onDismiss = { showAdd = false },
             onSave = { name, ageBand ->
@@ -140,7 +145,7 @@ fun TenantListScreen(
     }
     editing?.let { tenant ->
         TenantEditDialog(
-            title = "编辑成员",
+            title = uiText("编辑成员", "Edit family member"),
             initial = tenant,
             onDismiss = { editing = null },
             onSave = { name, ageBand ->
@@ -174,18 +179,24 @@ private fun TenantRow(
             Text(
                 buildString {
                     tenant.ageBand?.let { append(it.label); append(" · ") }
-                    append(if (tenant.isOwner) "本人" else "只有你记下的内容")
+                    append(
+                        if (tenant.isOwner) {
+                            uiText("本人", "You")
+                        } else {
+                            uiText("只有你记下的内容", "Only what you record")
+                        },
+                    )
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row {
-                TextButton(onClick = onEdit) { Text("编辑") }
-                onDelete?.let { TextButton(onClick = it) { Text("删除") } }
+                TextButton(onClick = onEdit) { Text(uiText("编辑", "Edit")) }
+                onDelete?.let { TextButton(onClick = it) { Text(uiText("删除", "Delete")) } }
             }
         }
         if (selected) {
-            Icon(Icons.Default.Check, contentDescription = "当前", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Check, contentDescription = uiText("当前", "Current"), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -209,17 +220,23 @@ private fun TenantEditDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(Tenant.MAX_NAME_LENGTH) },
-                    label = { Text("称呼，比如：妈妈、爸爸、女儿") },
+                    label = { Text(uiText("称呼，比如：妈妈、爸爸、女儿", "Label, for example Mom, Dad or daughter")) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    "只写称呼就行。Vana 不需要真实姓名、生日或证件信息，也不要填进来。",
+                    uiText(
+                        "只写称呼就行。Vana 不需要真实姓名、生日或证件信息，也不要填进来。",
+                        "A familiar label is enough. Do not enter a legal name, birth date or identity-document information.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "年龄段：${ageBand?.label ?: "不说"}",
+                    uiText(
+                        "年龄段：${ageBand?.label ?: "不说"}",
+                        "Age group: ${ageBand?.label ?: "Not specified"}",
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showAgePicker = !showAgePicker }
@@ -227,7 +244,7 @@ private fun TenantEditDialog(
                 )
                 if (showAgePicker) {
                     Text(
-                        "不说",
+                        uiText("不说", "Not specified"),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -255,7 +272,10 @@ private fun TenantEditDialog(
                     }
                 }
                 Text(
-                    "儿童的用量、老人的参考范围和风险判断都不一样，说一句能让回答准不少。具体用药和剂量仍然要问医生。",
+                    uiText(
+                        "儿童的用量、老人的参考范围和风险判断都不一样，说一句能让回答准不少。具体用药和剂量仍然要问医生。",
+                        "Age affects reference ranges and risk. Medication and dosage decisions still belong with a doctor.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -265,10 +285,10 @@ private fun TenantEditDialog(
             TextButton(
                 onClick = { onSave(name.trim(), ageBand) },
                 enabled = name.trim().isNotEmpty(),
-            ) { Text("保存") }
+            ) { Text(uiText("保存", "Save")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(uiText("取消", "Cancel")) }
         },
     )
 }

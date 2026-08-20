@@ -33,6 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 import java.io.File
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -88,11 +90,11 @@ fun CheckForUpdatesRow(
                 is AppUpdateStatus.Available -> UpdateUi.Available(status.release)
             }
         } catch (error: AppUpdateError) {
-            UpdateUi.Failed(error.message ?: "连不上 GitHub，过一会儿再试。")
+            UpdateUi.Failed(error.message ?: L10n.text("连不上 GitHub，过一会儿再试。", "Could not reach GitHub. Try again later."))
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error
         } catch (_: Exception) {
-            UpdateUi.Failed("连不上 GitHub，过一会儿再试。")
+            UpdateUi.Failed(L10n.text("连不上 GitHub，过一会儿再试。", "Could not reach GitHub. Try again later."))
         }
     }
 
@@ -101,13 +103,13 @@ fun CheckForUpdatesRow(
     }
 
     SettingsPickerRow(
-        label = "检查更新",
+        label = uiText("检查更新", "Check for updates"),
         value = when (val state = ui) {
             UpdateUi.Idle -> currentVersion
-            UpdateUi.Checking -> "正在检查…"
-            is UpdateUi.UpToDate -> "已是最新 ${state.latest}"
-            is UpdateUi.Available -> "有新版本 ${state.release.versionName}"
-            is UpdateUi.Failed -> "检查失败"
+            UpdateUi.Checking -> uiText("正在检查…", "Checking…")
+            is UpdateUi.UpToDate -> uiText("已是最新 ${state.latest}", "Up to date: ${state.latest}")
+            is UpdateUi.Available -> uiText("有新版本 ${state.release.versionName}", "New version: ${state.release.versionName}")
+            is UpdateUi.Failed -> uiText("检查失败", "Check failed")
         },
         onClick = {
             when (val state = ui) {
@@ -130,12 +132,18 @@ fun CheckForUpdatesRow(
             color = MaterialTheme.colorScheme.error,
         )
         is UpdateUi.Available -> Text(
-            "点这一行下载 GitHub Release 上的签名包。",
+            uiText(
+                "点这一行下载 GitHub Release 上的签名包。",
+                "Tap this row to download the signed package from GitHub Releases.",
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         else -> Text(
-            "对照 GitHub Release 检查是否有新的签名包。当前 $currentVersion。",
+            uiText(
+                "对照 GitHub Release 检查是否有新的签名包。当前 $currentVersion。",
+                "Checks GitHub Releases for a newer signed package. Current version: $currentVersion.",
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -179,7 +187,7 @@ fun CheckForUpdatesRow(
                     } catch (_: kotlinx.coroutines.CancellationException) {
                         // 用户关掉对话框
                     } catch (error: Exception) {
-                        ui = UpdateUi.Failed(error.message ?: "下载失败。")
+                        ui = UpdateUi.Failed(error.message ?: L10n.text("下载失败。", "Download failed."))
                         showDialog = false
                     } finally {
                         downloading = false
@@ -202,14 +210,16 @@ private fun UpdateAvailableDialog(
 ) {
     AlertDialog(
         onDismissRequest = { if (!downloading) onDismiss() },
-        title = { Text("发现新版本 ${release.versionName}") },
+        title = { Text(uiText("发现新版本 ${release.versionName}", "Version ${release.versionName} is available")) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    release.notes.ifBlank { "到 GitHub 下载签名安装包。" },
+                    release.notes.ifBlank {
+                        uiText("到 GitHub 下载签名安装包。", "Download the signed package from GitHub.")
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (downloading) {
@@ -222,7 +232,11 @@ private fun UpdateAvailableDialog(
                         )
                     }
                     Text(
-                        if (progress == null) "正在下载…" else "正在下载 ${(progress * 100).toInt()}%",
+                        if (progress == null) {
+                            uiText("正在下载…", "Downloading…")
+                        } else {
+                            uiText("正在下载 ${(progress * 100).toInt()}%", "Downloading ${(progress * 100).toInt()}%")
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -231,18 +245,21 @@ private fun UpdateAvailableDialog(
         },
         confirmButton = {
             TextButton(onClick = onDownload, enabled = !downloading) {
-                Text(if (release.apk == null) "打开 GitHub" else "下载安装")
+                Text(
+                    if (release.apk == null) uiText("打开 GitHub", "Open GitHub")
+                    else uiText("下载安装", "Download and install"),
+                )
             }
         },
         dismissButton = {
             Column {
                 if (release.apk != null) {
                     TextButton(onClick = onOpenGithub, enabled = !downloading) {
-                        Text("打开 GitHub")
+                        Text(uiText("打开 GitHub", "Open GitHub"))
                     }
                 }
                 TextButton(onClick = onDismiss, enabled = !downloading) {
-                    Text("稍后")
+                    Text(uiText("稍后", "Later"))
                 }
             }
         },
@@ -278,4 +295,3 @@ private fun SettingsPickerRow(
         )
     }
 }
-

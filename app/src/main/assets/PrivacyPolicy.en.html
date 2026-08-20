@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Vana Privacy Policy</title>
+<style>
+  :root { --bg:#fff; --fg:#1c1c1e; --dim:#6c6c70; --rule:#e5e5ea; --card:#f2f2f7; --accent:#d81b60; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#000; --fg:#f2f2f7; --dim:#98989f; --rule:#2c2c2e; --card:#1c1c1e; --accent:#ff6090; }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; padding:24px 20px 64px; background:var(--bg); color:var(--fg);
+    font-size:17px; line-height:1.65; font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    -webkit-text-size-adjust:100%; overflow-wrap:break-word;
+  }
+  main { max-width:40rem; margin:0 auto; }
+  h1 { font-size:1.6rem; line-height:1.3; margin:0 0 4px; letter-spacing:0; }
+  h2 { font-size:1.16rem; margin:2.2rem 0 .6rem; padding-top:1.4rem; border-top:1px solid var(--rule); letter-spacing:0; }
+  h2:first-of-type { border-top:none; padding-top:0; }
+  p { margin:.7rem 0; } ul { margin:.7rem 0; padding-left:1.3rem; } li { margin:.4rem 0; }
+  .meta { color:var(--dim); font-size:.92rem; margin-bottom:1.6rem; }
+  .lede { background:var(--card); border-radius:8px; padding:16px 18px; margin:1.2rem 0 .4rem; }
+  .lede p:first-child { margin-top:0; } .lede p:last-child { margin-bottom:0; }
+  strong { font-weight:600; } em { font-style:normal; color:var(--accent); font-weight:600; }
+  a { color:var(--accent); }
+  code { font-size:.9em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--card); padding:1px 5px; border-radius:5px; }
+  footer { margin-top:2.5rem; padding-top:1.2rem; border-top:1px solid var(--rule); color:var(--dim); font-size:.92rem; }
+</style>
+</head>
+<body>
+<main>
+<h1>Vana Privacy Policy</h1>
+<p class="meta">Effective date: August 20, 2026</p>
+
+<div class="lede">
+  <p><strong>Vana has no accounts and operates no server that carries conversations.</strong> The developer does not receive your conversations, photos, medication list or API key.</p>
+  <p>Your content normally goes to only two places: <em>it stays on this Android device</em>, or <em>it is sent to the model service you configure in Settings</em> to answer the question you just asked.</p>
+</div>
+
+<h2>Where data is stored</h2>
+<p>Conversation history, long-term memory, medication and supplement lists, manual measurement cards, and files or photos you choose are stored in Vana's private app directory on this device. Your API key is stored separately in encrypted storage protected by Android Keystore.</p>
+<p><strong>This data is excluded from cloud backup and device transfer.</strong> When you move to a new phone, it does not move automatically.</p>
+
+<h2>What leaves this device</h2>
+<p>You choose a model provider and enter your own API key. Vana sends requests directly to that provider. A request may include:</p>
+<ul>
+  <li>What you type and earlier messages in the current conversation</li>
+  <li>Text recognized on this device from lab reports, medical reports, medicine packaging and selected documents</li>
+  <li>An original photo only when you agree to send that specific photo, or choose a photo policy that allows it</li>
+  <li>Your city, if you allowed approximate location</li>
+  <li>Relevant long-term memory, medication-list and manual-measurement content, if those features are enabled</li>
+</ul>
+<p>If you add a serper.dev key, general search terms may be sent to that service. Search terms must not contain your personal situation or measurements. Each external service processes received content under its own privacy policy.</p>
+
+<h2>What does not leave this device</h2>
+<ul>
+  <li><strong>File originals and, by default, photo originals.</strong> Text recognition runs on this device. You can review every photo before sending.</li>
+  <li><strong>Latitude and longitude.</strong> Vana requests approximate location only and may send only the city name.</li>
+  <li><strong>Your API key.</strong> It is used only to authenticate requests to the provider you selected.</li>
+  <li><strong>Device health data.</strong> The Android app does not connect to a phone, watch or third-party health platform and requests no device-health permissions.</li>
+</ul>
+
+<h2>Microphone and voice input</h2>
+<p>The microphone is used only while you hold the talk button. Vana requests offline recognition and never saves the recording. The speech-recognition service installed on your device controls whether it uses a network under its own privacy policy. Recognized text stays in the input box until you choose to send it.</p>
+
+<h2>Camera and photos</h2>
+<p>Camera and photo access is used only for a capture or selection you start. Recognition runs on this device. An original photo is sent to your model provider only when you agree, and can be reviewed individually before sending.</p>
+
+<h2>Notifications</h2>
+<p>Morning and evening check-ins are local notifications scheduled on this device. They do not pass through a push server.</p>
+
+<h2>Conversations that are not saved</h2>
+<p>A private conversation is not written to disk, does not appear in the conversation list, does not update memory, and keeps photos in memory only. The question still has to be sent to the model provider you configured in order to receive an answer.</p>
+
+<h2>Deleting data</h2>
+<ul>
+  <li>Delete one conversation from the conversation list.</li>
+  <li>Clear all conversations from Settings.</li>
+  <li>Delete memory, medications, supplements and measurements from their respective lists.</li>
+  <li>Delete a family member to delete that member's isolated local directory.</li>
+  <li>Delete the app to delete all remaining app data.</li>
+</ul>
+<p>There is no account to close, and the developer holds no server copy that requires a deletion request.</p>
+
+<h2>Children</h2>
+<p>Vana is not directed at children under 13 and does not knowingly collect their information.</p>
+
+<h2>Changes</h2>
+<p>When this policy changes, the effective date is updated and the new policy ships with an app update.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions, use <a href="https://github.com/zjywill/Vana-Android/issues">GitHub Issues</a> or email <a href="mailto:zjywill@gmail.com">zjywill@gmail.com</a>.</p>
+
+<footer>
+  <p><strong>Vana is not a medical device.</strong> Its output is for reference only and is not a diagnosis, treatment plan, medication advice or dosage recommendation. In an emergency, seek care or call your local emergency number immediately.</p>
+</footer>
+</main>
+</body>
+</html>

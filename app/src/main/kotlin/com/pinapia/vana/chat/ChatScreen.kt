@@ -121,6 +121,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -132,6 +133,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -152,6 +154,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import com.pinapia.vana.vision.AttachmentReviewScreen
 import com.pinapia.vana.vision.CapturePhoto
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -257,7 +261,10 @@ fun ChatScreen(
             captureUri = uri
             takePicture.launch(uri)
         } else {
-            cameraNotice = "没有相机权限，没法拍照。可以到系统设置里打开，或从相册选取。"
+            cameraNotice = L10n.text(
+                "没有相机权限，没法拍照。可以到系统设置里打开，或从相册选取。",
+                "Camera permission is off. Enable it in system settings or choose a photo from the library.",
+            )
         }
     }
 
@@ -377,7 +384,7 @@ fun ChatScreen(
                             Text("Vana")
                             val subtitle = buildList {
                                 if (!TenantScope.current.isOwner) add(TenantScope.current.displayName)
-                                if (session.isPrivate) add("隐私对话 · 不保存")
+                                if (session.isPrivate) add(uiText("隐私对话 · 不保存", "Private · not saved"))
                             }.joinToString(" · ")
                             if (subtitle.isNotEmpty()) {
                                 Text(
@@ -390,30 +397,31 @@ fun ChatScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "会话列表")
+                            Icon(Icons.Default.Menu, contentDescription = uiText("会话列表", "Conversations"))
                         }
                     },
                     actions = {
                         IconButton(onClick = onOpenMeasurements) {
-                            Icon(Icons.Default.MonitorHeart, contentDescription = "测量卡片")
+                            Icon(Icons.Default.MonitorHeart, contentDescription = uiText("测量卡片", "Measurements"))
                         }
                         IconButton(onClick = onOpenMedications) {
-                            Icon(Icons.Default.Medication, contentDescription = "用药与补剂")
+                            Icon(Icons.Default.Medication, contentDescription = uiText("用药与补剂", "Medications and supplements"))
                         }
                         IconButton(onClick = onOpenSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "设置")
+                            Icon(Icons.Default.Settings, contentDescription = uiText("设置", "Settings"))
                         }
                     },
                 )
             },
         ) { insets ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(insets)
                     .consumeWindowInsets(insets)
                     .imePadding(),
             ) {
+                Column(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -443,7 +451,9 @@ fun ChatScreen(
                             isAskLive = !isReplying && message.id == lastAssistantId,
                             isReplying = isReplying,
                             exerciseLibrary = exerciseLibrary,
+                            recovery = viewModel.errorRecovery(message.id),
                             onRetry = { viewModel.retry(message.id) },
+                            onOpenSettings = onOpenSettings,
                             onBranch = { viewModel.branch(message.id) },
                             onAnswerAsk = { callId, answer ->
                                 viewModel.answerAsk(message.id, callId, answer)
@@ -564,6 +574,28 @@ fun ChatScreen(
                     },
                     onVoiceCancellingChange = { voiceCancelling = it },
                 )
+                }
+
+                if (!session.isEmpty && !followOutput.value) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            scope.launch {
+                                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                if (lastIndex >= 0) {
+                                    listState.animateScrollToItem(lastIndex)
+                                    followOutput.value = true
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 76.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = uiText("回到最新消息", "Jump to latest message"))
+                    }
+                }
             }
         }
     }
@@ -625,34 +657,42 @@ private fun ImageSendOffer(
             style = MaterialTheme.typography.bodySmall,
         )
         if (sending > 0) {
-            TextButton(onClick = onDecline) { Text("撤销") }
+            TextButton(onClick = onDecline) { Text(uiText("撤销", "Undo")) }
         } else {
-            TextButton(onClick = onAccept) { Text("好") }
+            TextButton(onClick = onAccept) { Text(uiText("好", "Allow")) }
         }
     }
 }
 
 private fun imageSendTitle(candidates: List<DraftAttachment>, sending: Int): String {
     if (sending > 0) {
-        return if (sending == 1) "原图会随这句话发出去" else "$sending 张原图会随这句话发出去"
+        return if (sending == 1) {
+            L10n.text("原图会随这句话发出去", "The original photo will be sent with this message")
+        } else {
+            L10n.text("$sending 张原图会随这句话发出去", "$sending original photos will be sent with this message")
+        }
     }
     val allBlank = candidates.all { !it.hasText }
     return when {
-        candidates.size == 1 && allBlank -> "这张图没有文字，让 Vana 直接看图？"
-        candidates.size == 1 -> "让 Vana 直接看这张图？"
-        allBlank -> "有 ${candidates.size} 张没有文字，让 Vana 直接看图？"
-        else -> "让 Vana 直接看这 ${candidates.size} 张图？"
+        candidates.size == 1 && allBlank -> L10n.text("这张图没有文字，让 Vana 直接看图？", "No text was found. Let Vana view the photo?")
+        candidates.size == 1 -> L10n.text("让 Vana 直接看这张图？", "Let Vana view this photo?")
+        allBlank -> L10n.text("有 ${candidates.size} 张没有文字，让 Vana 直接看图？", "No text was found in ${candidates.size} photos. Let Vana view them?")
+        else -> L10n.text("让 Vana 直接看这 ${candidates.size} 张图？", "Let Vana view these ${candidates.size} photos?")
     }
 }
 
 private fun draftCaption(draft: DraftAttachment): String = when {
-    draft.isLoading -> "载入中…"
-    draft.isRecognizing -> "识别中…"
-    draft.failure != null -> "读不出来"
-    !draft.hasText -> if (draft.isDocument) "没有正文" else "没有文字"
+    draft.isLoading -> L10n.text("载入中…", "Loading…")
+    draft.isRecognizing -> L10n.text("识别中…", "Recognizing…")
+    draft.failure != null -> L10n.text("读不出来", "Could not read")
+    !draft.hasText -> if (draft.isDocument) L10n.text("没有正文", "No text") else L10n.text("没有文字", "No text")
     else -> {
         val lines = draft.text.split('\n').count { it.isNotBlank() }.coerceAtLeast(1)
-        if (draft.droppedLines > 0) "$lines 行·已截断" else "$lines 行"
+        if (draft.droppedLines > 0) {
+            L10n.text("$lines 行·已截断", "$lines lines · truncated")
+        } else {
+            L10n.text("$lines 行", "$lines lines")
+        }
     }
 }
 
@@ -683,7 +723,7 @@ private fun DraftStrip(
                             draft.preview != null -> {
                                 Image(
                                     bitmap = draft.preview!!.asImageBitmap(),
-                                    contentDescription = draft.documentName ?: "附件预览",
+                                    contentDescription = draft.documentName ?: uiText("附件预览", "Attachment preview"),
                                     modifier = Modifier
                                         .size(68.dp)
                                         .clip(RoundedCornerShape(12.dp)),
@@ -693,7 +733,7 @@ private fun DraftStrip(
                             draft.isDocument -> {
                                 Icon(
                                     Icons.Default.Description,
-                                    contentDescription = draft.documentName ?: "文件附件",
+                                    contentDescription = draft.documentName ?: uiText("文件附件", "File attachment"),
                                     modifier = Modifier
                                         .size(68.dp)
                                         .padding(16.dp),
@@ -727,7 +767,7 @@ private fun DraftStrip(
                         if (draft.sendsImage) {
                             Icon(
                                 Icons.Default.Visibility,
-                                contentDescription = "原图会一起发出去",
+                                contentDescription = uiText("原图会一起发出去", "Original photo will be sent"),
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(4.dp)
@@ -760,7 +800,7 @@ private fun DraftStrip(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "不发这张",
+                        contentDescription = uiText("不发这张", "Remove this attachment"),
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -802,14 +842,38 @@ private fun WelcomeCard(
     setupGuidance: String? = null,
     onOpenSettings: () -> Unit = {},
 ) {
-    val title = if (isOwner) "你好，我是 Vana" else "从${TenantScope.current.displayName}的资料开始"
-    val body = if (isOwner) {
-            "拍化验单或药盒、聊症状与用药习惯，或记下你想跟进的事。" +
-                "文字识别在本机完成；要回答问题时才会把必要内容发给你配置的模型。"
+    val title = if (isOwner) {
+        uiText("你好，我是 Vana", "Hi, I'm Vana")
     } else {
-        "拍一张${TenantScope.current.displayName}的化验单、报告或药盒，文字在本机识别后再帮你看；" +
-            "也可以记录用药、测量和需要跟进的事。"
+        uiText(
+            "从${TenantScope.current.displayName}的资料开始",
+            "Start with ${TenantScope.current.displayName}'s information",
+        )
     }
+    val body = if (isOwner) {
+        uiText(
+            "拍化验单或药盒、聊症状与用药习惯，或记下你想跟进的事。" +
+                "文字识别在本机完成；要回答问题时才会把必要内容发给你配置的模型。",
+            "Photograph a lab report or medicine package, discuss symptoms and medication habits, " +
+                "or record something to follow up. Text recognition runs on-device; only the content " +
+                "needed to answer is sent to the model you configure.",
+        )
+    } else {
+        uiText(
+            "拍一张${TenantScope.current.displayName}的化验单、报告或药盒，文字在本机识别后再帮你看；" +
+                "也可以记录用药、测量和需要跟进的事。",
+            "Photograph a report or medicine package for ${TenantScope.current.displayName}; " +
+                "Vana recognizes the text on-device. You can also record medications, measurements and follow-ups.",
+        )
+    }
+    val privateConversationDescription = uiText(
+        "当前为隐私对话，不会保存。点按切换为普通对话",
+        "Private conversation, not saved. Tap to switch to a regular conversation.",
+    )
+    val regularConversationDescription = uiText(
+        "当前为普通对话。点按切换为隐私对话，不会保存",
+        "Regular conversation. Tap to switch to a private conversation that is not saved.",
+    )
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -827,7 +891,7 @@ private fun WelcomeCard(
                 ) {
                     Text(setupGuidance, style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = onOpenSettings) {
-                        Text("去设置")
+                        Text(uiText("去设置", "Open Settings"))
                     }
                 }
             }
@@ -844,8 +908,12 @@ private fun WelcomeCard(
 
         if (isPrivate) {
             Text(
-                "这条对话不会被保存。不进会话列表，不写进记忆。" +
-                    "问题仍要发给你配置的模型才能回答。",
+                uiText(
+                    "这条对话不会被保存。不进会话列表，不写进记忆。" +
+                        "问题仍要发给你配置的模型才能回答。",
+                    "This conversation will not be saved or added to memory. " +
+                        "Your question still has to be sent to the model you configure.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -854,18 +922,26 @@ private fun WelcomeCard(
         FilterChip(
             selected = isPrivate,
             onClick = onTogglePrivate,
-            label = { Text(if (isPrivate) "隐私对话（不保存）" else "普通对话") },
+            label = {
+                Text(
+                    if (isPrivate) {
+                        uiText("隐私对话（不保存）", "Private conversation (not saved)")
+                    } else {
+                        uiText("普通对话", "Regular conversation")
+                    },
+                )
+            },
             modifier = Modifier.semantics {
                 contentDescription = if (isPrivate) {
-                    "当前为隐私对话，不会保存。点按切换为普通对话"
+                    privateConversationDescription
                 } else {
-                    "当前为普通对话。点按切换为隐私对话，不会保存"
+                    regularConversationDescription
                 }
             },
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("试着问", style = MaterialTheme.typography.titleSmall)
+            Text(uiText("试着问", "Try asking"), style = MaterialTheme.typography.titleSmall)
             suggestions.forEach { question ->
                 Surface(
                     onClick = { onSuggestion(question) },
@@ -883,7 +959,10 @@ private fun WelcomeCard(
         }
 
         Text(
-            "健康分析仅供参考，不能替代专业医疗建议。",
+            uiText(
+                "健康分析仅供参考，不能替代专业医疗建议。",
+                "Health information is for reference only and cannot replace professional medical advice.",
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -908,7 +987,9 @@ private fun MessageBubble(
     isAskLive: Boolean,
     isReplying: Boolean,
     exerciseLibrary: ExerciseLibrary,
+    recovery: ErrorRecovery?,
     onRetry: () -> Unit,
+    onOpenSettings: () -> Unit,
     onBranch: () -> Unit,
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
 ) {
@@ -956,7 +1037,13 @@ private fun MessageBubble(
                                 SuggestionChip(
                                     onClick = { openReasoningId = segment.stableId },
                                     label = {
-                                        Text(if (isThinking) "正在思考…" else "思考过程")
+                                        Text(
+                                            if (isThinking) {
+                                                uiText("正在思考…", "Thinking…")
+                                            } else {
+                                                uiText("思考过程", "Reasoning")
+                                            },
+                                        )
                                     },
                                 )
                                 if (openReasoningId == segment.stableId) {
@@ -981,7 +1068,10 @@ private fun MessageBubble(
                                         }
                                     },
                                     label = {
-                                        Text(toolCallLabel(call) + if (call.isError) "（失败）" else "")
+                                        Text(
+                                            toolCallLabel(call) +
+                                                if (call.isError) uiText("（失败）", " (failed)") else "",
+                                        )
                                     },
                                 )
                                 if (expandedToolId == call.id && !call.output.isNullOrBlank()) {
@@ -1017,7 +1107,7 @@ private fun MessageBubble(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        "以上 $count 条已折叠",
+                        uiText("以上 $count 条已折叠", "$count earlier messages collapsed"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1053,25 +1143,39 @@ private fun MessageBubble(
             }
             if (message.isQueued) {
                 Text(
-                    text = "Vana 还没看到",
+                    text = uiText("Vana 还没看到", "Vana has not seen this yet"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (!isUser && message.errorDescription != null) {
-                TextButton(onClick = onRetry) { Text("重试") }
+            if (!isUser && message.errorDescription != null && recovery != null) {
+                TextButton(
+                    onClick = if (recovery == ErrorRecovery.OPEN_SETTINGS) onOpenSettings else onRetry,
+                ) {
+                    Text(
+                        if (recovery == ErrorRecovery.OPEN_SETTINGS) {
+                            uiText("去设置", "Open Settings")
+                        } else {
+                            uiText("重试", "Retry")
+                        },
+                    )
+                }
             }
             if (!isUser && !message.textIsPlaceholder && message.text.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick = onBranch, enabled = !isReplying) {
-                        Text("在新对话里分支")
+                        Text(uiText("在新对话里分支", "Branch into a new conversation"))
                     }
                     TextButton(onClick = onRetry, enabled = !isReplying) {
-                        Text("重新回答")
+                        Text(uiText("重新回答", "Answer again"))
                     }
                 }
                 Text(
-                    text = "以上由 AI 生成，可能有误。不构成诊断或用药建议，关键数值请对照原始记录核对。",
+                    text = uiText(
+                        "以上由 AI 生成，可能有误。不构成诊断或用药建议，关键数值请对照原始记录核对。",
+                        "AI-generated content may be wrong. It is not a diagnosis or medication advice. " +
+                            "Check important values against the original record.",
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1109,7 +1213,7 @@ private fun ReasoningSheet(
                 .padding(bottom = 28.dp),
         ) {
             Text(
-                if (isThinking) "正在思考" else "思考过程",
+                if (isThinking) uiText("正在思考", "Thinking") else uiText("思考过程", "Reasoning"),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
@@ -1129,6 +1233,10 @@ private fun ReasoningSheet(
 @Composable
 private fun MessageAttachments(attachments: List<ChatAttachment>) {
     var showText by remember { mutableStateOf(false) }
+    val fileAttachmentDescription = uiText(
+        "文件附件，点按查看识别文字",
+        "File attachment. Tap to review extracted text.",
+    )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         attachments.forEach { attachment ->
             val bytes = attachment.imagePayload?.let {
@@ -1138,7 +1246,10 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "附件预览，点按查看识别文字",
+                    contentDescription = uiText(
+                        "附件预览，点按查看识别文字",
+                        "Attachment preview. Tap to review recognized text.",
+                    ),
                     modifier = Modifier
                         .size(76.dp)
                         .clickable { showText = !showText },
@@ -1147,7 +1258,9 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
                 Card(
                     modifier = Modifier
                         .size(76.dp)
-                        .semantics { contentDescription = "文件附件，点按查看识别文字" }
+                        .semantics {
+                            contentDescription = fileAttachmentDescription
+                        }
                         .clickable { showText = !showText },
                 ) {
                     Column(
@@ -1156,7 +1269,7 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
                     ) {
                         Icon(Icons.Default.Description, contentDescription = null)
                         Text(
-                            attachment.documentName ?: "文件",
+                            attachment.documentName ?: uiText("文件", "File"),
                             style = MaterialTheme.typography.labelSmall,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -1171,9 +1284,18 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
         Text(
             combined.ifBlank {
                 when {
-                    attachments.any { it.sendsImage } -> "这张图里没有识别到文字，原图发给了模型。"
-                    attachments.any { it.documentName != null } -> "这份文件里没有取到文字。"
-                    else -> "这张图里没有识别到文字。"
+                    attachments.any { it.sendsImage } -> uiText(
+                        "这张图里没有识别到文字，原图发给了模型。",
+                        "No text was recognized; the original photo was sent to the model.",
+                    )
+                    attachments.any { it.documentName != null } -> uiText(
+                        "这份文件里没有取到文字。",
+                        "No text could be extracted from this file.",
+                    )
+                    else -> uiText(
+                        "这张图里没有识别到文字。",
+                        "No text was recognized in this photo.",
+                    )
                 }
             },
             style = MaterialTheme.typography.bodySmall,
@@ -1183,18 +1305,22 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
 }
 
 private fun toolCallLabel(call: com.pinapia.vana.session.ToolCallRecord): String = when (call.name) {
-    "remember" -> "记住了"
-    "list_medications" -> "查看了用药表"
-    "log_medication", "update_medication" -> "更新了用药表"
-    "list_measurements" -> "查看了测量卡片"
-    "log_measurement" -> "记下了测量"
-    AskUserTools.ASK_TOOL_NAME -> "问了你一句"
-    "web_search" -> "搜索了网页"
-    "search_sessions" -> "查找了过往对话"
-    "read_session" -> "读了一次过往对话"
+    "remember" -> L10n.text("记住了", "Saved to memory")
+    "list_medications" -> L10n.text("查看了用药表", "Viewed medications")
+    "log_medication", "update_medication" -> L10n.text("更新了用药表", "Updated medications")
+    "list_measurements" -> L10n.text("查看了测量卡片", "Viewed measurements")
+    "log_measurement" -> L10n.text("记下了测量", "Recorded a measurement")
+    AskUserTools.ASK_TOOL_NAME -> L10n.text("问了你一句", "Asked a question")
+    "web_search" -> L10n.text("搜索了网页", "Searched the web")
+    "search_sessions" -> L10n.text("查找了过往对话", "Searched past conversations")
+    "read_session" -> L10n.text("读了一次过往对话", "Read a past conversation")
     ExerciseTools.SUGGEST_TOOL_NAME ->
-        if (call.exerciseIDs.isEmpty()) "没找到合适的动作" else "挑了 ${call.exerciseIDs.size} 个动作"
-    else -> "调用了 ${call.name}"
+        if (call.exerciseIDs.isEmpty()) {
+            L10n.text("没找到合适的动作", "No suitable exercise found")
+        } else {
+            L10n.text("挑了 ${call.exerciseIDs.size} 个动作", "Selected ${call.exerciseIDs.size} exercises")
+        }
+    else -> L10n.text("调用了 ${call.name}", "Used ${call.name}")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1252,7 +1378,7 @@ private fun ComposerBar(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "添加照片或文件",
+                        contentDescription = uiText("添加照片或文件", "Add photo or file"),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                             alpha = if (canAttachMore) 1f else 0.38f,
                         ),
@@ -1274,7 +1400,7 @@ private fun ComposerBar(
                         ) {
                             if (input.isEmpty()) {
                                 Text(
-                                    "问问 Vana…",
+                                    uiText("问问 Vana…", "Ask Vana…"),
                                     style = textStyle,
                                     color = placeholderColor,
                                 )
@@ -1312,7 +1438,7 @@ private fun ComposerBar(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 enabled = true,
-                contentDescription = "停止回答",
+                contentDescription = uiText("停止回答", "Stop response"),
                 icon = Icons.Default.Stop,
             )
         } else {
@@ -1329,7 +1455,7 @@ private fun ComposerBar(
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 enabled = canSend,
-                contentDescription = "发送",
+                contentDescription = uiText("发送", "Send"),
                 icon = Icons.AutoMirrored.Filled.Send,
                 iconAlpha = if (canSend) 1f else 0.45f,
             )
@@ -1351,7 +1477,11 @@ private fun ComposerBar(
                     .padding(start = 8.dp, end = 8.dp, bottom = 28.dp),
             ) {
                 Text(
-                    "照片在本机识别成文字，文件直接取文字；原图默认不发，发送之前每一张都能单独决定",
+                    uiText(
+                        "照片在本机识别成文字，文件直接取文字；原图默认不发，发送之前每一张都能单独决定",
+                        "Photos are recognized on-device and text is extracted from files. " +
+                            "Original photos are not sent by default and can be reviewed individually.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -1359,8 +1489,8 @@ private fun ComposerBar(
                 if (hasCamera) {
                     AttachSheetRow(
                         icon = Icons.Default.PhotoCamera,
-                        title = "拍照",
-                        subtitle = "化验单、药盒、报告",
+                        title = uiText("拍照", "Take photo"),
+                        subtitle = uiText("化验单、药盒、报告", "Lab report, medicine package or report"),
                         onClick = {
                             showAttachSheet = false
                             onAddCamera()
@@ -1369,8 +1499,8 @@ private fun ComposerBar(
                 }
                 AttachSheetRow(
                     icon = Icons.Default.PhotoLibrary,
-                    title = "从相册选取",
-                    subtitle = "已经拍过的那些",
+                    title = uiText("从相册选取", "Choose from photos"),
+                    subtitle = uiText("已经拍过的那些", "Use an existing photo"),
                     onClick = {
                         showAttachSheet = false
                         onAddPhoto()
@@ -1378,8 +1508,8 @@ private fun ComposerBar(
                 )
                 AttachSheetRow(
                     icon = Icons.AutoMirrored.Filled.InsertDriveFile,
-                    title = "添加文件",
-                    subtitle = "PDF 或 Word",
+                    title = uiText("添加文件", "Add file"),
+                    subtitle = uiText("PDF 或 Word", "PDF or Word"),
                     onClick = {
                         showAttachSheet = false
                         onAddFile()
@@ -1491,14 +1621,22 @@ private fun SessionDrawer(
     val currentThreadId = remember(currentId, summaries) {
         summaries.firstOrNull { it.id == currentId }?.threadId
     }
+    val closeDescription = uiText("关闭会话列表", "Close conversation list")
+    val newDescription = uiText("新建", "New")
+    val familyDescription = uiText(
+        "家庭成员，当前 ${TenantScope.current.displayName}",
+        "Family members. Current: ${TenantScope.current.displayName}",
+    )
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("会话") },
+            title = { Text(uiText("会话", "Conversations")) },
             navigationIcon = {
                 IconButton(
                     onClick = onClose,
-                    modifier = Modifier.semantics { contentDescription = "关闭会话列表" },
+                    modifier = Modifier.semantics {
+                        contentDescription = closeDescription
+                    },
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                 }
@@ -1507,7 +1645,9 @@ private fun SessionDrawer(
                 Box {
                     IconButton(
                         onClick = { showNewMenu = true },
-                        modifier = Modifier.semantics { contentDescription = "新建" },
+                        modifier = Modifier.semantics {
+                            contentDescription = newDescription
+                        },
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
                     }
@@ -1516,7 +1656,7 @@ private fun SessionDrawer(
                         onDismissRequest = { showNewMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("新对话") },
+                            text = { Text(uiText("新对话", "New conversation")) },
                             onClick = {
                                 showNewMenu = false
                                 onNew()
@@ -1526,7 +1666,7 @@ private fun SessionDrawer(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("隐私对话（不保存）") },
+                            text = { Text(uiText("隐私对话（不保存）", "Private conversation (not saved)")) },
                             onClick = {
                                 showNewMenu = false
                                 onNewPrivate()
@@ -1536,7 +1676,7 @@ private fun SessionDrawer(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("新目标") },
+                            text = { Text(uiText("新目标", "New goal")) },
                             onClick = {
                                 showNewMenu = false
                                 showGoalDialog = true
@@ -1554,7 +1694,7 @@ private fun SessionDrawer(
             if (TenantScope.isolationAvailable) {
                 item(key = "tenant") {
                     ListItem(
-                        headlineContent = { Text("家庭成员") },
+                        headlineContent = { Text(uiText("家庭成员", "Family members")) },
                         supportingContent = {
                             Text(
                                 TenantScope.current.displayName,
@@ -1580,8 +1720,7 @@ private fun SessionDrawer(
                             .fillMaxWidth()
                             .clickable(onClick = onOpenTenants)
                             .semantics {
-                                contentDescription =
-                                    "家庭成员，当前 ${TenantScope.current.displayName}"
+                                contentDescription = familyDescription
                             },
                     )
                     HorizontalDivider()
@@ -1589,21 +1728,26 @@ private fun SessionDrawer(
             }
 
             if (goals.isNotEmpty()) {
-                item(key = "section-goals") { SessionSectionLabel("目标") }
+                item(key = "section-goals") { SessionSectionLabel(uiText("目标", "Goals")) }
                 items(goals, key = { "goal-${it.threadId}" }) { goal ->
                     val selected = goal.threadId == currentThreadId
                     SessionListRow(
                         title = goal.title,
                         subtitle = buildString {
                             append(SessionTimeSection.rowTimeLabel(goal.updatedAt.toEpochMilliseconds()))
-                            append(" · ${goal.messageCount} 条")
-                            if (goal.segmentCount > 1) append(" · ${goal.segmentCount} 段")
+                            append(uiText(" · ${goal.messageCount} 条", " · ${goal.messageCount} messages"))
+                            if (goal.segmentCount > 1) {
+                                append(uiText(" · ${goal.segmentCount} 段", " · ${goal.segmentCount} segments"))
+                            }
                         },
                         selected = selected,
                         pendingDelete = pendingDeleteGoal?.threadId == goal.threadId,
                         onOpen = { onOpenGoal(goal) },
                         onRequestDelete = { pendingDeleteGoal = goal },
-                        deleteLabel = "左滑删除目标 ${goal.title}",
+                        deleteLabel = uiText(
+                            "左滑删除目标 ${goal.title}",
+                            "Swipe left to delete goal ${goal.title}",
+                        ),
                     )
                 }
             }
@@ -1616,12 +1760,15 @@ private fun SessionDrawer(
                             .padding(horizontal = 24.dp, vertical = 48.dp),
                     ) {
                         Text(
-                            "还没有会话",
+                            uiText("还没有会话", "No conversations yet"),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "问一个健康问题，这里就会出现记录。",
+                            uiText(
+                                "问一个健康问题，这里就会出现记录。",
+                                "Ask a health question and the conversation will appear here.",
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1636,12 +1783,16 @@ private fun SessionDrawer(
                         val selected = summary.id == currentId
                         SessionListRow(
                             title = summary.title,
-                            subtitle = "${SessionTimeSection.rowTimeLabel(summary.updatedAt.toEpochMilliseconds())} · ${summary.messageCount} 条",
+                            subtitle = "${SessionTimeSection.rowTimeLabel(summary.updatedAt.toEpochMilliseconds())}" +
+                                uiText(" · ${summary.messageCount} 条", " · ${summary.messageCount} messages"),
                             selected = selected,
                             pendingDelete = pendingDeleteSessionId == summary.id,
                             onOpen = { onOpen(summary.id) },
                             onRequestDelete = { pendingDeleteSessionId = summary.id },
-                            deleteLabel = "左滑删除对话 ${summary.title}",
+                            deleteLabel = uiText(
+                                "左滑删除对话 ${summary.title}",
+                                "Swipe left to delete conversation ${summary.title}",
+                            ),
                         )
                     }
                 }
@@ -1656,16 +1807,23 @@ private fun SessionDrawer(
     if (showGoalDialog) {
         AlertDialog(
             onDismissRequest = { showGoalDialog = false },
-            title = { Text("新目标") },
+            title = { Text(uiText("新目标", "New goal")) },
             text = {
                 Column {
-                    Text("目标是一件要聊很久的事。之后每次回到它，都接着上次说。")
+                    Text(
+                        uiText(
+                            "目标是一件要聊很久的事。之后每次回到它，都接着上次说。",
+                            "A goal is a long-running topic. Each time you return, the conversation continues.",
+                        ),
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = goalName,
                         onValueChange = { goalName = it },
-                        label = { Text("目标名称") },
-                        placeholder = { Text("比如：减脂、备半马、把作息掰回来") },
+                        label = { Text(uiText("目标名称", "Goal name")) },
+                        placeholder = {
+                            Text(uiText("比如：减脂、备半马、把作息掰回来", "For example: lose weight, train for a race, improve sleep"))
+                        },
                         singleLine = true,
                     )
                 }
@@ -1678,47 +1836,56 @@ private fun SessionDrawer(
                         showGoalDialog = false
                     },
                     enabled = goalName.isNotBlank(),
-                ) { Text("开始") }
+                ) { Text(uiText("开始", "Start")) }
             },
             dismissButton = {
-                TextButton(onClick = { showGoalDialog = false }) { Text("取消") }
+                TextButton(onClick = { showGoalDialog = false }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
     pendingDeleteSessionId?.let { sessionId ->
-        val title = summaries.firstOrNull { it.id == sessionId }?.title ?: "此对话"
+        val title = summaries.firstOrNull { it.id == sessionId }?.title ?: uiText("此对话", "This conversation")
         AlertDialog(
             onDismissRequest = { pendingDeleteSessionId = null },
-            title = { Text("删除此对话？") },
-            text = { Text("「$title」会被删掉，无法撤销。") },
+            title = { Text(uiText("删除此对话？", "Delete this conversation?")) },
+            text = {
+                Text(uiText("「$title」会被删掉，无法撤销。", "\"$title\" will be deleted and cannot be restored."))
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
                         onDelete(sessionId)
                         pendingDeleteSessionId = null
                     },
-                ) { Text("删除对话") }
+                ) { Text(uiText("删除对话", "Delete conversation")) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteSessionId = null }) { Text("取消") }
+                TextButton(onClick = { pendingDeleteSessionId = null }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
     pendingDeleteGoal?.let { goal ->
         AlertDialog(
             onDismissRequest = { pendingDeleteGoal = null },
-            title = { Text("删除此目标？") },
-            text = { Text("「${goal.title}」会被删掉，无法撤销。") },
+            title = { Text(uiText("删除此目标？", "Delete this goal?")) },
+            text = {
+                Text(
+                    uiText(
+                        "「${goal.title}」会被删掉，无法撤销。",
+                        "\"${goal.title}\" will be deleted and cannot be restored.",
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
                         onDeleteGoal(goal)
                         pendingDeleteGoal = null
                     },
-                ) { Text("删除目标") }
+                ) { Text(uiText("删除目标", "Delete goal")) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteGoal = null }) { Text("取消") }
+                TextButton(onClick = { pendingDeleteGoal = null }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }

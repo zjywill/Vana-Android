@@ -13,6 +13,7 @@ import com.pinapia.vana.MainActivity
 import com.pinapia.vana.VanaApplication
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.ui.L10n
 import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,10 +59,14 @@ object CheckInScheduler {
         val manager = context.getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "每日 check-in",
+            L10n.text(context, "每日 check-in", "Daily check-ins"),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "早晚各一条，用于回访和记录近况的简短提醒"
+            description = L10n.text(
+                context,
+                "早晚各一条，用于回访和记录近况的简短提醒",
+                "Brief morning and evening reminders for follow-ups and updates",
+            )
         }
         manager.createNotificationChannel(channel)
     }
@@ -110,13 +115,13 @@ object CheckInScheduler {
         showNotification(
             context = context,
             notificationId = 1099,
-            title = "[测试] ${payload.title}",
+            title = L10n.text("[测试] ${payload.title}", "[Test] ${payload.title}"),
             body = payload.body,
             question = payload.question,
             followUpId = payload.followUpId,
             tenantId = TenantScope.owner.id,
         )
-        return "已发出测试 check-in：${payload.title}"
+        return L10n.text("已发出测试 check-in：${payload.title}", "Test check-in sent: ${payload.title}")
     }
 
     /**
@@ -134,7 +139,11 @@ object CheckInScheduler {
                 inStore = TenantScope.ownerStores.sessions,
             )
             return CheckInContent(
-                title = if (conclusion == null) "说好今天回头看的" else "说好今天回头看的，看过了",
+                title = if (conclusion == null) {
+                    L10n.text("说好今天回头看的", "Follow-up due today")
+                } else {
+                    L10n.text("说好今天回头看的，看过了", "Today's follow-up reviewed")
+                },
                 body = conclusion ?: followUp.text,
                 question = followUp.text,
                 followUpId = followUp.id,
@@ -143,14 +152,20 @@ object CheckInScheduler {
 
         return when (period) {
             DayPeriod.MORNING -> CheckInContent(
-                title = "早上好",
-                body = "今天有什么想关注的？",
-                question = "今天有什么想关注的？",
+                title = L10n.text("早上好", "Good morning"),
+                body = L10n.text("今天有什么想关注的？", "What would you like to focus on today?"),
+                question = L10n.text("今天有什么想关注的？", "What would you like to focus on today?"),
             )
             DayPeriod.AFTERNOON, DayPeriod.EVENING -> CheckInContent(
-                title = "今天收个尾",
-                body = "今天有什么想记下，或者之后回头看的？",
-                question = "今天有什么想记下或跟进的？",
+                title = L10n.text("今天收个尾", "End-of-day check-in"),
+                body = L10n.text(
+                    "今天有什么想记下，或者之后回头看的？",
+                    "Anything from today you want to record or follow up on?",
+                ),
+                question = L10n.text(
+                    "今天有什么想记下或跟进的？",
+                    "Anything from today you want to record or follow up on?",
+                ),
             )
         }
     }

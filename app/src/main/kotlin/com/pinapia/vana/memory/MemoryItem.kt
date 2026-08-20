@@ -1,5 +1,6 @@
 package com.pinapia.vana.memory
 
+import com.pinapia.vana.ui.L10n
 import java.util.UUID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -40,18 +41,30 @@ data class MemoryItem(
 
         val label: String
             get() = when (this) {
-                PROFILE -> "长期情况"
-                PREFERENCE -> "表达偏好"
-                INTERPRETATION -> "已有解释"
-                FOLLOW_UP -> "待跟进"
+                PROFILE -> L10n.text("长期情况", "Long-term context")
+                PREFERENCE -> L10n.text("表达偏好", "Communication preferences")
+                INTERPRETATION -> L10n.text("已有解释", "Established interpretation")
+                FOLLOW_UP -> L10n.text("待跟进", "Follow-up")
             }
 
         val hint: String
             get() = when (this) {
-                PROFILE -> "作息、工作、伤病限制、正在进行的目标"
-                PREFERENCE -> "希望 Vana 怎么说话、自己看重哪个指标"
-                INTERPRETATION -> "对你而言某个指标的正常范围，或某段异常的原因"
-                FOLLOW_UP -> "说好过一阵子再看的事，到点会在 check-in 里提醒你"
+                PROFILE -> L10n.text(
+                    "作息、工作、伤病限制、正在进行的目标",
+                    "Schedule, work, physical limitations and ongoing goals",
+                )
+                PREFERENCE -> L10n.text(
+                    "希望 Vana 怎么说话、自己看重哪个指标",
+                    "How you want Vana to communicate and what matters to you",
+                )
+                INTERPRETATION -> L10n.text(
+                    "对你而言某个指标的正常范围，或某段异常的原因",
+                    "Your established baseline or an explanation already discussed",
+                )
+                FOLLOW_UP -> L10n.text(
+                    "说好过一阵子再看的事，到点会在 check-in 里提醒你",
+                    "Something to revisit later; Vana includes it in a check-in when due",
+                )
             }
     }
 
@@ -75,9 +88,9 @@ data class MemoryItem(
 
     val originLabel: String
         get() = when (origin) {
-            Origin.MANUAL -> "你写的"
-            Origin.ASKED -> "你让我记的"
-            Origin.EXTRACTED -> "从对话中记下"
+            Origin.MANUAL -> L10n.text("你写的", "Added by you")
+            Origin.ASKED -> L10n.text("你让我记的", "Saved at your request")
+            Origin.EXTRACTED -> L10n.text("从对话中记下", "Remembered from a conversation")
         }
 
     companion object {

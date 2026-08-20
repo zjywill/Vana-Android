@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 界面和词表整个是中文的,和 iOS 那边把 developmentLanguage 定在 zh-Hans 同一个理由。 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="zh-Hans" />
     <locale android:name="zh-Hant" />
+    <locale android:name="en" />
 </locale-config>

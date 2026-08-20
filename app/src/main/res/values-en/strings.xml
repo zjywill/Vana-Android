@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Vana</string>
+    <string name="shortcut_ask_short">Ask Vana</string>
+    <string name="shortcut_ask_long">Bring a question into Vana</string>
+</resources>

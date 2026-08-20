@@ -37,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.settings.EngineSettings
+import com.pinapia.vana.ui.L10n
+import com.pinapia.vana.ui.uiText
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -113,15 +115,15 @@ fun MemoryListScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Vana 记住的事") },
+                title = { Text(uiText("Vana 记住的事", "What Vana remembers")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
                 actions = {
                     IconButton(onClick = { editing = MemoryDraft() }) {
-                        Icon(Icons.Default.Add, contentDescription = "添加一条")
+                        Icon(Icons.Default.Add, contentDescription = uiText("添加一条", "Add memory"))
                     }
                 },
             )
@@ -141,7 +143,7 @@ fun MemoryListScreen(
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("记住我说过的事", modifier = Modifier.weight(1f))
+                    Text(uiText("记住我说过的事", "Remember what I say"), modifier = Modifier.weight(1f))
                     Switch(
                         checked = enabled,
                         onCheckedChange = {
@@ -151,7 +153,10 @@ fun MemoryListScreen(
                     )
                 }
                 Text(
-                    "开着时记下长期情况/偏好并带入提问；关掉只是先不用，已记的还在，删有单独按钮。",
+                    uiText(
+                        "开着时记下长期情况/偏好并带入提问；关掉只是先不用，已记的还在，删有单独按钮。",
+                        "When enabled, Vana remembers long-term context and preferences and includes relevant items with questions. Turning it off keeps existing memories on this device.",
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -159,9 +164,12 @@ fun MemoryListScreen(
             }
             if (items.isEmpty()) {
                 item {
-                    Text("还没有记住什么", style = MaterialTheme.typography.titleMedium)
+                    Text(uiText("还没有记住什么", "No memories yet"), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "多聊几次，Vana 会把长期成立的事记下来；也可以现在就自己加一条。",
+                        uiText(
+                            "多聊几次，Vana 会把长期成立的事记下来；也可以现在就自己加一条。",
+                            "Vana can remember durable context from conversations, or you can add an item yourself.",
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
@@ -214,13 +222,13 @@ fun MemoryListScreen(
                                         append(" · ")
                                         append(
                                             if (mem.isDue()) {
-                                                "该回头看了"
+                                                uiText("该回头看了", "Follow-up due")
                                             } else {
                                                 val d = Clock.System.now()
                                                     .until(mem.dueAt!!, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
                                                     .toInt()
                                                     .coerceAtLeast(1)
-                                                "${d} 天后回头看"
+                                                uiText("${d} 天后回头看", "Follow up in $d days")
                                             },
                                         )
                                     }
@@ -233,7 +241,10 @@ fun MemoryListScreen(
                 }
                 item {
                     Text(
-                        "已记 ${items.size}/${MemorySnapshot.MAX_ITEMS} 条。这里只记查不到的事；对话时这些内容会随问题一起发给你选的模型 provider。",
+                        uiText(
+                            "已记 ${items.size}/${MemorySnapshot.MAX_ITEMS} 条。这里只记查不到的事；对话时这些内容会随问题一起发给你选的模型 provider。",
+                            "${items.size}/${MemorySnapshot.MAX_ITEMS} memories saved. Relevant items are sent with questions to your selected model provider.",
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 12.dp),
@@ -242,7 +253,7 @@ fun MemoryListScreen(
                         onClick = { confirmClear = true },
                         enabled = items.isNotEmpty(),
                     ) {
-                        Text("忘掉全部", color = MaterialTheme.colorScheme.error)
+                        Text(uiText("忘掉全部", "Forget all"), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -252,17 +263,24 @@ fun MemoryListScreen(
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("忘掉全部记忆？") },
-            text = { Text("包括你自己添加的那些，无法撤销。对话、用药和测量记录不会被删除。") },
+            title = { Text(uiText("忘掉全部记忆？", "Forget all memories?")) },
+            text = {
+                Text(
+                    uiText(
+                        "包括你自己添加的那些，无法撤销。对话、用药和测量记录不会被删除。",
+                        "This includes memories you added yourself and cannot be undone. Conversations, medications and measurements are not deleted.",
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     store.removeAll()
                     confirmClear = false
                     reload()
-                }) { Text("忘掉全部") }
+                }) { Text(uiText("忘掉全部", "Forget all")) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmClear = false }) { Text("取消") }
+                TextButton(onClick = { confirmClear = false }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
@@ -283,10 +301,12 @@ private fun MemoryEditorSheet(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (draft.id == null) "添加记忆" else "编辑记忆") },
+                title = {
+                    Text(if (draft.id == null) uiText("添加记忆", "Add memory") else uiText("编辑记忆", "Edit memory"))
+                },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "取消")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("取消", "Cancel"))
                     }
                 },
                 actions = {
@@ -295,7 +315,7 @@ private fun MemoryEditorSheet(
                             onSave(draft.copy(text = text, kind = kind, days = days))
                         },
                         enabled = text.isNotBlank(),
-                    ) { Text("保存") }
+                    ) { Text(uiText("保存", "Save")) }
                 },
             )
         },
@@ -312,15 +332,18 @@ private fun MemoryEditorSheet(
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("比如：他上夜班，白天补觉") },
+                label = { Text(uiText("比如：他上夜班，白天补觉", "For example: works nights and sleeps during the day")) },
             )
             Text(
-                "一句话说清就行。不要写具体数字——那些每次都会重新查。",
+                uiText(
+                    "一句话说清就行。不要写具体数字——那些每次都会重新查。",
+                    "Keep it to one clear sentence. Do not store measurements here; Vana checks those separately.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "类别：${kind.label}",
+                uiText("类别：${kind.label}", "Category: ${kind.label}"),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showKinds = !showKinds }
@@ -347,13 +370,13 @@ private fun MemoryEditorSheet(
                 }
             }
             if (kind == MemoryItem.Kind.FOLLOW_UP) {
-                Text("多久后回头看", style = MaterialTheme.typography.titleSmall)
+                Text(uiText("多久后回头看", "Follow up after"), style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FollowUpDayOptions.forEach { option ->
                         FilterChip(
                             selected = days == option,
                             onClick = { days = option },
-                            label = { Text("${option}天") },
+                            label = { Text(uiText("${option}天", "$option days")) },
                         )
                     }
                 }
@@ -365,9 +388,9 @@ private fun MemoryEditorSheet(
 private fun relativeTime(millis: Long): String {
     val minutes = (System.currentTimeMillis() - millis) / 60_000
     return when {
-        minutes < 1 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        minutes < 24 * 60 -> "${minutes / 60}小时前"
-        else -> "${minutes / (24 * 60)}天前"
+        minutes < 1 -> L10n.text("刚刚", "Just now")
+        minutes < 60 -> L10n.text("${minutes}分钟前", "$minutes minutes ago")
+        minutes < 24 * 60 -> L10n.text("${minutes / 60}小时前", "${minutes / 60} hours ago")
+        else -> L10n.text("${minutes / (24 * 60)}天前", "${minutes / (24 * 60)} days ago")
     }
 }

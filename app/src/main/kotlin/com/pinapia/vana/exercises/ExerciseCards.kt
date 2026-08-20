@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.ui.uiText
 
 @Composable
 fun ExerciseCards(
@@ -60,7 +61,7 @@ private fun ExerciseCard(move: ExerciseMove) {
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    Text(move.zh, style = MaterialTheme.typography.titleSmall)
+                    Text(uiText(move.zh, move.en.ifBlank { move.zh }), style = MaterialTheme.typography.titleSmall)
                     Text(
                         move.part,
                         style = MaterialTheme.typography.bodySmall,
@@ -72,7 +73,7 @@ private fun ExerciseCard(move: ExerciseMove) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        if (expanded) "收起步骤" else "展开步骤",
+                        if (expanded) uiText("收起步骤", "Hide steps") else uiText("展开步骤", "Show steps"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -86,9 +87,9 @@ private fun ExerciseCard(move: ExerciseMove) {
                     move.steps.forEachIndexed { index, step ->
                         Text("${index + 1}. $step", style = MaterialTheme.typography.bodyMedium)
                     }
-                    Text("要领", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("要领", "Key point"), style = MaterialTheme.typography.labelLarge)
                     Text(move.cue, style = MaterialTheme.typography.bodyMedium)
-                    Text("什么情况别做", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("什么情况别做", "When to avoid"), style = MaterialTheme.typography.labelLarge)
                     Text(move.avoid, style = MaterialTheme.typography.bodyMedium)
                 }
             }

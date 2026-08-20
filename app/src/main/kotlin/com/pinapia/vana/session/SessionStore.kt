@@ -4,6 +4,7 @@ import java.io.File
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import com.pinapia.vana.ui.L10n
 
 class SessionStore(
     private val parent: File,
@@ -72,7 +73,7 @@ class SessionStore(
                 threadId = threadId,
                 title = latest.threadTitle?.takeIf { it.isNotBlank() }
                     ?: SessionThread.parse(threadId)?.title
-                    ?: "长期目标",
+                    ?: L10n.text("长期目标", "Long-term goal"),
                 updatedAt = latest.updatedAt,
                 latestSessionId = latest.id,
                 segmentCount = segments.size,
@@ -134,7 +135,10 @@ class SessionStore(
         val thread = entry.thread
         return if (thread != null) {
             val base = entry.threadTitle?.takeIf { it.isNotBlank() } ?: thread.title
-            "$base · ${SessionTitle.dateLabel(entry.updatedAt)}起"
+            L10n.text(
+                "$base · ${SessionTitle.dateLabel(entry.updatedAt)}起",
+                "$base · since ${SessionTitle.dateLabel(entry.updatedAt)}",
+            )
         } else {
             entry.title
         }

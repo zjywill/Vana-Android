@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.ui.uiText
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -158,10 +159,10 @@ fun MedicationEditScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(if (draft.id == null) "加一条" else "编辑") },
+                title = { Text(if (draft.id == null) uiText("加一条", "Add item") else uiText("编辑", "Edit")) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "取消")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("取消", "Cancel"))
                     }
                 },
                 actions = {
@@ -181,7 +182,7 @@ fun MedicationEditScreen(
                             )
                         },
                         enabled = name.isNotBlank(),
-                    ) { Text("保存") }
+                    ) { Text(uiText("保存", "Save")) }
                 },
             )
         },
@@ -198,11 +199,11 @@ fun MedicationEditScreen(
                 value = name,
                 onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("名字，比如：褪黑素") },
+                label = { Text(uiText("名字，比如：褪黑素", "Name, for example melatonin")) },
                 singleLine = true,
             )
             Text(
-                "关系：${status.label}",
+                uiText("关系：${status.label}", "Status: ${status.label}"),
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showStatuses = !showStatuses }
@@ -233,45 +234,54 @@ fun MedicationEditScreen(
                 value = whenText,
                 onValueChange = { whenText = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("什么情况下吃，比如：头疼时") },
+                label = { Text(uiText("什么情况下吃，比如：头疼时", "When you take it, for example for a headache")) },
             )
             OutlinedTextField(
                 value = reason,
                 onValueChange = { reason = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("为什么吃 / 谁让你吃的") },
+                label = { Text(uiText("为什么吃 / 谁让你吃的", "Why you take it or who recommended it")) },
             )
             Text(
-                "不用写剂量。Vana 不做用药提醒，剂量和按时吃在「健康」App 里管更合适。",
+                uiText(
+                    "不用写剂量。Vana 不做用药提醒，也不提供剂量建议。",
+                    "Do not enter a dose. Vana does not provide dose advice or medication reminders.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text("你自己的评价", style = MaterialTheme.typography.titleSmall)
+            Text(uiText("你自己的评价", "Your assessment"), style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
                 value = outcome,
                 onValueChange = { outcome = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("有没有用？有什么感觉？") },
+                label = { Text(uiText("有没有用？有什么感觉？", "Did it help? How did it feel?")) },
             )
             Text(
-                "记下来，Vana 下次就不会再推荐一次你试过的东西。",
+                uiText(
+                    "记下来，Vana 下次就不会再推荐一次你试过的东西。",
+                    "Record the result so Vana does not suggest something that already failed for you.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text("过多久回头看", style = MaterialTheme.typography.titleSmall)
+            Text(uiText("过多久回头看", "Follow up after"), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FollowUpDayOptions.forEach { days ->
                     FilterChip(
                         selected = followUpDays == days,
                         onClick = { followUpDays = days },
                         label = {
-                            Text(if (days == 0) "不用" else "${days}天后")
+                            Text(if (days == 0) uiText("不用", "None") else uiText("${days}天后", "$days days"))
                         },
                     )
                 }
             }
             Text(
-                "到时候 Vana 会在早上那条消息里问你一句有没有用。",
+                uiText(
+                    "到时候 Vana 会在早上那条消息里问你一句有没有用。",
+                    "Vana will include a brief follow-up in the morning check-in.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -279,16 +289,19 @@ fun MedicationEditScreen(
                 value = brief,
                 onValueChange = { brief = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("一般说明") },
+                label = { Text(uiText("一般说明", "General information")) },
             )
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("备注") },
+                label = { Text(uiText("备注", "Notes")) },
             )
             Text(
-                "「一般说明」原本由 Vana 自动写，改过之后就不会再被自动覆盖。",
+                uiText(
+                    "「一般说明」原本由 Vana 自动写，改过之后就不会再被自动覆盖。",
+                    "Vana can generate the general information. Once you edit it, it will not be overwritten automatically.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

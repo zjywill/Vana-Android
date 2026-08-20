@@ -1,5 +1,6 @@
 package com.pinapia.vana.medications
 
+import com.pinapia.vana.ui.L10n
 import java.util.UUID
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -43,18 +44,30 @@ data class MedicationItem(
 
         val label: String
             get() = when (this) {
-                CANNOT_TAKE -> "不能吃"
-                ONGOING -> "长期在吃"
-                AS_NEEDED -> "需要时吃"
-                TRIED -> "试过了"
+                CANNOT_TAKE -> L10n.text("不能吃", "Cannot take")
+                ONGOING -> L10n.text("长期在吃", "Ongoing")
+                AS_NEEDED -> L10n.text("需要时吃", "As needed")
+                TRIED -> L10n.text("试过了", "Tried")
             }
 
         val hint: String
             get() = when (this) {
-                CANNOT_TAKE -> "过敏、不耐受、医生说不能用的。Vana 给建议之前一定会先看这一组。"
-                ONGOING -> "每天或按疗程在吃的。它会成为解读你健康数据时的前提。"
-                AS_NEEDED -> "有需要才吃的。记下什么情况下吃，下次问起来 Vana 才接得上。"
-                TRIED -> "试过之后的结论。记下来，Vana 就不会再推荐一次你已经试过的东西。"
+                CANNOT_TAKE -> L10n.text(
+                    "过敏、不耐受、医生说不能用的。Vana 给建议之前一定会先看这一组。",
+                    "Allergies, intolerances or items a clinician told you not to use. Vana checks this group before responding.",
+                )
+                ONGOING -> L10n.text(
+                    "每天或按疗程在吃的。它会成为解读你记录时的前提。",
+                    "Items taken daily or as a course. Vana considers them when interpreting what you record.",
+                )
+                AS_NEEDED -> L10n.text(
+                    "有需要才吃的。记下什么情况下吃，下次问起来 Vana 才接得上。",
+                    "Items taken only when needed. Record when you use them so Vana has context later.",
+                )
+                TRIED -> L10n.text(
+                    "试过之后的结论。记下来，Vana 就不会再推荐一次你已经试过的东西。",
+                    "What happened after trying an item, so Vana does not suggest it again without context.",
+                )
             }
     }
 
@@ -102,9 +115,9 @@ data class MedicationItem(
 
     val originLabel: String
         get() = when (origin) {
-            Origin.MANUAL -> "你自己加的"
-            Origin.ASKED -> "你在对话里让我记的"
-            Origin.HEALTH -> "来自「健康」App"
+            Origin.MANUAL -> L10n.text("你自己加的", "Added by you")
+            Origin.ASKED -> L10n.text("你在对话里让我记的", "Saved from a conversation")
+            Origin.HEALTH -> L10n.text("来自旧版本导入", "Imported from an earlier version")
         }
 
     companion object {

@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.pinapia.vana.checkin.CheckInScheduler
 import kotlinx.coroutines.launch
+import com.pinapia.vana.ui.uiText
 
 /**
  * 只在 Debug 构建里从设置页进入的开发工具。
@@ -46,10 +47,10 @@ fun DeveloperScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("开发") },
+                title = { Text(uiText("开发", "Developer")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )
@@ -63,7 +64,7 @@ fun DeveloperScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("通知", style = MaterialTheme.typography.titleMedium)
+            Text(uiText("通知", "Notifications"), style = MaterialTheme.typography.titleMedium)
             Button(
                 onClick = {
                     scope.launch {
@@ -73,7 +74,7 @@ fun DeveloperScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("发一条测试 check-in")
+                Text(uiText("发一条测试 check-in", "Send a test check-in"))
             }
 
             status?.let {

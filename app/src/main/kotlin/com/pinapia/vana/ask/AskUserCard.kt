@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.ui.uiText
 
 @Composable
 fun AskUserCard(
@@ -101,7 +102,7 @@ fun AskUserCard(
                     onValueChange = { custom = it },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = interactive,
-                    placeholder = { Text("都不是，我自己说") },
+                    placeholder = { Text(uiText("都不是，我自己说", "Something else")) },
                     maxLines = 3,
                 )
             }
@@ -109,7 +110,7 @@ fun AskUserCard(
             when {
                 answer != null -> {
                     Text(
-                        if (answer.declined) "已跳过" else "已回答",
+                        if (answer.declined) uiText("已跳过", "Skipped") else uiText("已回答", "Answered"),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -120,7 +121,7 @@ fun AskUserCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextButton(onClick = { onAnswer(AskUserAnswer(declined = true)) }) {
-                            Text("跳过")
+                            Text(uiText("跳过", "Skip"))
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         if (needsConfirmation) {
@@ -134,7 +135,7 @@ fun AskUserCard(
                                 },
                                 enabled = selected.isNotEmpty() || custom.isNotBlank(),
                             ) {
-                                Text(if (custom.isNotBlank()) "发送" else "确认")
+                                Text(if (custom.isNotBlank()) uiText("发送", "Send") else uiText("确认", "Confirm"))
                             }
                         }
                     }

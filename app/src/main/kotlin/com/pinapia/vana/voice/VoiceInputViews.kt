@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
+import com.pinapia.vana.ui.uiText
 import kotlin.math.hypot
 
 /**
@@ -61,6 +62,7 @@ fun VoiceInputButton(
 ) {
     val view = LocalView.current
     var isPressing by remember { mutableStateOf(false) }
+    val holdToTalkDescription = uiText("按住说话", "Hold to talk")
 
     val background = when {
         isCancelling -> MaterialTheme.colorScheme.error
@@ -75,7 +77,7 @@ fun VoiceInputButton(
     Box(
         modifier = modifier
             .size(44.dp)
-            .semantics { contentDescription = "按住说话" }
+            .semantics { contentDescription = holdToTalkDescription }
             .pointerInput(enabled) {
                 if (!enabled) return@pointerInput
                 awaitPointerEventScope {
@@ -189,7 +191,11 @@ fun VoiceLevelStrip(
                 }
             }
             Text(
-                if (isCancelling) "松开取消" else "松开填进输入框，不会直接发送",
+                if (isCancelling) {
+                    uiText("松开取消", "Release to cancel")
+                } else {
+                    uiText("松开填进输入框，不会直接发送", "Release to insert text without sending")
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isCancelling) {
                     MaterialTheme.colorScheme.error
