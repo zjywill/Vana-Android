@@ -4,5 +4,5 @@
   "adapter": "openai",
   "api": "https://api.siliconflow.cn/v1",
   "modelsFile": "models/siliconflow.json",
-  "defaultModelId": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus"
+  "defaultModelId": "deepseek-ai/DeepSeek-V4-Pro"
 }

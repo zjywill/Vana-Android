@@ -4,5 +4,5 @@
   "adapter": "openai",
   "api": "https://api.siliconflow.com/v1",
   "modelsFile": "models/siliconflow-com.json",
-  "defaultModelId": "Qwen/Qwen3-VL-32B-Thinking"
+  "defaultModelId": "tencent/Hunyuan-A13B-Instruct"
 }

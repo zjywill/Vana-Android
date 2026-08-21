@@ -4,5 +4,5 @@
   "api": "https://integrate.api.nvidia.com/v1",
   "adapter": "openai",
   "modelsFile": "models/nvidia.json",
-  "defaultModelId": "z-ai/glm-5.2"
+  "defaultModelId": "nvidia/llama-3.3-nemotron-super-49b-v1"
 }

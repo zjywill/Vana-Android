@@ -5,6 +5,78 @@
   "api": "https://api.ppinfra.com/v3/openai",
   "models": [
     {
+      "id": "zai-org/glm-5.3",
+      "name": "GLM 5.3",
+      "display_name": "GLM 5.3",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false,
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
+        }
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "display_name": "DeepSeek V4 Pro 0813",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false,
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
+        }
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash-0731",
+      "name": "Deepseek V4 Flash 0731",
+      "display_name": "Deepseek V4 Flash 0731",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false,
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
+        }
+      }
+    },
+    {
       "id": "moonshotai/kimi-k3",
       "name": "Kimi K3",
       "display_name": "Kimi K3",
@@ -121,11 +193,22 @@
       "extra_capabilities": {
         "reasoning": {
           "supported": true,
+          "default_enabled": true,
+          "mode": "effort",
+          "effort": "high",
           "interleaved": true,
           "summaries": true,
           "visibility": "summary",
           "continuation": [
             "thinking_blocks"
+          ],
+          "effort_options": [
+            "low",
+            "high",
+            "max"
+          ],
+          "notes": [
+            "The DeepSeek API maps xhigh to high for V4 Flash; effort_options lists distinct model-effective levels."
           ]
         }
       }
@@ -151,12 +234,46 @@
       "extra_capabilities": {
         "reasoning": {
           "supported": true,
+          "default_enabled": true,
+          "mode": "effort",
+          "effort": "high",
           "interleaved": true,
           "summaries": true,
           "visibility": "summary",
           "continuation": [
             "thinking_blocks"
+          ],
+          "effort_options": [
+            "high",
+            "max"
+          ],
+          "notes": [
+            "The DeepSeek API maps low to high and xhigh to max for V4 Pro; effort_options lists distinct model-effective levels."
           ]
+        }
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-max",
+      "name": "Qwen3.8 Max",
+      "display_name": "Qwen3.8 Max",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false,
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
         }
       }
     },
@@ -1890,6 +2007,44 @@
       "vision": false
     },
     {
+      "id": "pprouter/fusion",
+      "name": "pprouter/fusion",
+      "display_name": "pprouter/fusion",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false
+    },
+    {
+      "id": "pprouter/mom",
+      "name": "pprouter/mom",
+      "display_name": "pprouter/mom",
+      "type": "chat",
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "metadata": {
+        "source": "public-provider-conf"
+      },
+      "vision": false
+    },
+    {
       "id": "elephant",
       "name": "Ling-2.6-flash",
       "display_name": "Ling-2.6-flash",
@@ -2275,5 +2430,5 @@
       "vision": false
     }
   ],
-  "defaultModelId": "moonshotai/kimi-k3"
+  "defaultModelId": "zai-org/glm-5.3"
 }

@@ -4,5 +4,5 @@
   "api": "https://tokenflux.ai/v1",
   "adapter": "openai",
   "modelsFile": "models/tokenflux.json",
-  "defaultModelId": "google/gemini-2.5-flash"
+  "defaultModelId": "anthropic/claude-fable-5"
 }

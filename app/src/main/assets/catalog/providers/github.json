@@ -5,5 +5,5 @@
   "adapter": "openai",
   "providerDbSourceId": "github-models",
   "modelsFile": "models/github.json",
-  "defaultModelId": "xai/grok-3-mini"
+  "defaultModelId": "microsoft/phi-3.5-vision-instruct"
 }

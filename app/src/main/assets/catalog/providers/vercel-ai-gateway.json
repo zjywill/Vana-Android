@@ -5,5 +5,5 @@
   "adapter": "openai",
   "providerDbSourceId": "vercel",
   "modelsFile": "models/vercel-ai-gateway.json",
-  "defaultModelId": "xai/grok-4.20-reasoning-beta"
+  "defaultModelId": "tencent/hy3"
 }

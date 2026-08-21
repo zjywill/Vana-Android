@@ -4,5 +4,5 @@
   "api": "https://router.huggingface.co/v1",
   "adapter": "openai",
   "modelsFile": "models/huggingface.json",
-  "defaultModelId": "Qwen/Qwen3.5-9B"
+  "defaultModelId": "tencent/Hy3"
 }

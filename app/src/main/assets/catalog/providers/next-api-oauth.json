@@ -1,7 +1,8 @@
 {
   "id": "dimcode-api-oauth",
-  "name": "DimCode OAuth",
+  "name": "DimAgent OAuth",
   "adapter": "openai",
+  "modalityAdapterProviderId": "openai",
   "customModels": true,
   "models": []
 }

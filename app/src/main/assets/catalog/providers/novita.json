@@ -5,5 +5,5 @@
   "adapter": "openai",
   "providerDbSourceId": "novita-ai",
   "modelsFile": "models/novita.json",
-  "defaultModelId": "minimaxai/minimax-m1-80k"
+  "defaultModelId": "deepseek/deepseek-v3.1-terminus"
 }

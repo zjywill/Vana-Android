@@ -4,5 +4,5 @@
   "adapter": "openai",
   "lookupOnly": true,
   "modelsFile": "models/custom-provider.json",
-  "defaultModelId": "deepseek-reasoner"
+  "defaultModelId": "claude-fable-5"
 }
