@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -427,45 +428,72 @@ fun ChatScreen(
                     .imePadding(),
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .nestedScroll(followScroll),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (session.isEmpty) {
-                        item {
-                            WelcomeCard(
-                                isOwner = TenantScope.current.isOwner,
-                                isPrivate = session.isPrivate,
-                                onTogglePrivate = { viewModel.setPrivate(!session.isPrivate) },
-                                suggestions = viewModel.suggestedQuestions,
-                                onSuggestion = viewModel::send,
-                                setupGuidance = engineGuidance,
-                                onOpenSettings = onOpenSettings,
-                            )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                    ) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(followScroll),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            if (session.isEmpty) {
+                                item {
+                                    WelcomeCard(
+                                        isOwner = TenantScope.current.isOwner,
+                                        isPrivate = session.isPrivate,
+                                        onTogglePrivate = { viewModel.setPrivate(!session.isPrivate) },
+                                        suggestions = viewModel.suggestedQuestions,
+                                        onSuggestion = viewModel::send,
+                                        setupGuidance = engineGuidance,
+                                        onOpenSettings = onOpenSettings,
+                                    )
+                                }
+                            }
+                            items(session.messages, key = { it.id }) { message ->
+                                MessageBubble(
+                                    message = message,
+                                    isLiveReply = isReplying && message.id == lastAssistantId,
+                                    isAskLive = !isReplying && message.id == lastAssistantId,
+                                    isReplying = isReplying,
+                                    exerciseLibrary = exerciseLibrary,
+                                    recovery = viewModel.errorRecovery(message.id),
+                                    onRetry = { viewModel.retry(message.id) },
+                                    onOpenSettings = onOpenSettings,
+                                    onBranch = { viewModel.branch(message.id) },
+                                    onAnswerAsk = { callId, answer ->
+                                        viewModel.answerAsk(message.id, callId, answer)
+                                    },
+                                )
+                            }
+                        }
+
+                        if (!session.isEmpty && !followOutput.value) {
+                            SmallFloatingActionButton(
+                                onClick = {
+                                    scope.launch {
+                                        if (listState.animateToConversationBottom()) {
+                                            followOutput.value = true
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 12.dp),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ) {
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = uiText("回到最新消息", "Jump to latest message"),
+                                )
+                            }
                         }
                     }
-                    items(session.messages, key = { it.id }) { message ->
-                        MessageBubble(
-                            message = message,
-                            isLiveReply = isReplying && message.id == lastAssistantId,
-                            isAskLive = !isReplying && message.id == lastAssistantId,
-                            isReplying = isReplying,
-                            exerciseLibrary = exerciseLibrary,
-                            recovery = viewModel.errorRecovery(message.id),
-                            onRetry = { viewModel.retry(message.id) },
-                            onOpenSettings = onOpenSettings,
-                            onBranch = { viewModel.branch(message.id) },
-                            onAnswerAsk = { callId, answer ->
-                                viewModel.answerAsk(message.id, callId, answer)
-                            },
-                        )
-                    }
-                }
 
                 // 空会话时配置提示已经嵌进欢迎卡,别在输入框上方再刷一行红字。
                 if (!session.isEmpty) {
@@ -579,27 +607,6 @@ fun ChatScreen(
                     },
                     onVoiceCancellingChange = { voiceCancelling = it },
                 )
-                }
-
-                if (!session.isEmpty && !followOutput.value) {
-                    SmallFloatingActionButton(
-                        onClick = {
-                            scope.launch {
-                                val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                                if (lastIndex >= 0) {
-                                    listState.animateScrollToItem(lastIndex)
-                                    followOutput.value = true
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 76.dp),
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = uiText("回到最新消息", "Jump to latest message"))
-                    }
                 }
             }
         }
@@ -983,6 +990,18 @@ private fun LazyListState.bottomOverflowOrHidden(): Int? {
     if (last.index != lastIndex) return null
     val viewportBottom = info.viewportEndOffset - info.afterContentPadding
     return (last.offset + last.size) - viewportBottom
+}
+
+private suspend fun LazyListState.animateToConversationBottom(): Boolean {
+    val lastIndex = layoutInfo.totalItemsCount - 1
+    if (lastIndex < 0) return false
+
+    animateScrollToItem(lastIndex)
+    val overflow = bottomOverflowOrHidden() ?: return false
+    if (overflow > 1) {
+        animateScrollBy(overflow.toFloat())
+    }
+    return true
 }
 
 @Composable
