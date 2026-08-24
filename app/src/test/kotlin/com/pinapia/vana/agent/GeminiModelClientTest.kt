@@ -68,7 +68,34 @@ class GeminiModelClientTest {
                     name = "read_steps",
                     description = "Read step totals",
                     inputSchema = RuntimeJSONValue.obj(
-                        mapOf("type" to RuntimeJSONValue.string("object")),
+                        mapOf(
+                            "type" to RuntimeJSONValue.string("object"),
+                            "properties" to RuntimeJSONValue.obj(
+                                mapOf(
+                                    "entries" to RuntimeJSONValue.obj(
+                                        mapOf(
+                                            "type" to RuntimeJSONValue.string("array"),
+                                            "items" to RuntimeJSONValue.obj(
+                                                mapOf(
+                                                    "type" to RuntimeJSONValue.string("object"),
+                                                    "properties" to RuntimeJSONValue.obj(
+                                                        mapOf(
+                                                            "days" to RuntimeJSONValue.obj(
+                                                                mapOf(
+                                                                    "type" to RuntimeJSONValue.string("integer"),
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    "additionalProperties" to RuntimeJSONValue.bool(false),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            "additionalProperties" to RuntimeJSONValue.bool(false),
+                        ),
                     ),
                 ),
             ),
@@ -80,10 +107,16 @@ class GeminiModelClientTest {
             root["systemInstruction"]!!.jsonObject["parts"]!!
                 .jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content,
         )
+        val declaration = root["tools"]!!.jsonArray.single().jsonObject["functionDeclarations"]!!
+            .jsonArray.single().jsonObject
+        assertEquals("read_steps", declaration["name"]!!.jsonPrimitive.content)
+        assertTrue("parameters" !in declaration)
+        val schema = declaration["parametersJsonSchema"]!!.jsonObject
+        assertEquals("false", schema["additionalProperties"]!!.jsonPrimitive.content)
         assertEquals(
-            "read_steps",
-            root["tools"]!!.jsonArray.single().jsonObject["functionDeclarations"]!!
-                .jsonArray.single().jsonObject["name"]!!.jsonPrimitive.content,
+            "false",
+            schema["properties"]!!.jsonObject["entries"]!!.jsonObject["items"]!!
+                .jsonObject["additionalProperties"]!!.jsonPrimitive.content,
         )
         val contents = root["contents"]!!.jsonArray
         assertEquals("model", contents[1].jsonObject["role"]!!.jsonPrimitive.content)

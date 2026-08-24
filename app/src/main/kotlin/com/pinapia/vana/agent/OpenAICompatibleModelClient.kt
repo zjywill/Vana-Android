@@ -848,7 +848,7 @@ class OpenAICompatibleModelClient(
                         put("type", "object")
                         put("properties", buildJsonObject {})
                     }
-                    put("parameters", parameters)
+                    put("parametersJsonSchema", parameters)
                 },
             )
         }
