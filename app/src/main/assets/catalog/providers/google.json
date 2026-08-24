@@ -1,6 +1,7 @@
 {
   "id": "google",
   "name": "Google",
+  "api": "https://generativelanguage.googleapis.com",
   "doc": "https://ai.google.dev/gemini-api/docs/pricing",
   "display_name": "Google",
   "models": [

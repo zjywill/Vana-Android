@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
  * 设置页只做选择，不维护一份手写名单。
  *
  * 过滤规则同 iOS [CloudCatalog]：
- * - 有已实现的 wire protocol（Android 目前：openai / anthropic）
+ * - 有已实现的 wire protocol（Android 目前：openai / anthropic / gemini）
  * - 有可连的托管 API（排除 localhost / 无 api）
  * - 模型列表只列 `tool_call == true`（用药、测量、记忆等能力依赖工具调用）
  */
@@ -28,12 +28,14 @@ object CloudCatalog {
     enum class WireProtocol(val adapter: String) {
         OPENAI("openai"),
         ANTHROPIC("anthropic"),
+        GEMINI("gemini"),
         ;
 
         companion object {
             fun fromAdapter(adapter: String?): WireProtocol? = when (adapter) {
                 OPENAI.adapter -> OPENAI
                 ANTHROPIC.adapter -> ANTHROPIC
+                GEMINI.adapter -> GEMINI
                 else -> null
             }
         }
@@ -275,33 +277,66 @@ internal object ModelListClient {
                     builder.header("anthropic-version", "2023-06-01")
                 }
             }
+            CloudCatalog.WireProtocol.GEMINI -> {
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (key.isValid) builder.header("x-goog-api-key", key.value)
+            }
         }
         http.newCall(builder.build()).execute().use { response ->
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
                 error("HTTP ${response.code}: ${body.take(200)}")
             }
-            return decodeModels(body)
+            return decodeModels(body, wire)
         }
     }
 
-    private fun modelsEndpoint(baseUrl: String, wire: CloudCatalog.WireProtocol): String {
+    internal fun modelsEndpoint(baseUrl: String, wire: CloudCatalog.WireProtocol): String {
         val trimmed = baseUrl.trimEnd('/')
         val needsV1 = !trimmed.endsWith("/v1")
         return when (wire) {
             CloudCatalog.WireProtocol.OPENAI,
             CloudCatalog.WireProtocol.ANTHROPIC,
             -> if (needsV1) "$trimmed/v1/models" else "$trimmed/models"
+            CloudCatalog.WireProtocol.GEMINI ->
+                if (trimmed.endsWith("/v1beta")) "$trimmed/models" else "$trimmed/v1beta/models"
         }
     }
 
-    private fun decodeModels(body: String): List<CloudCatalog.ModelInfo> {
+    internal fun decodeModels(
+        body: String,
+        wire: CloudCatalog.WireProtocol = CloudCatalog.WireProtocol.OPENAI,
+    ): List<CloudCatalog.ModelInfo> {
         val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return emptyList()
-        val data = root["data"]?.jsonArray ?: return emptyList()
+        val data = when (wire) {
+            CloudCatalog.WireProtocol.GEMINI -> root["models"]?.jsonArray
+            CloudCatalog.WireProtocol.OPENAI,
+            CloudCatalog.WireProtocol.ANTHROPIC,
+            -> root["data"]?.jsonArray
+        } ?: return emptyList()
         return data.mapNotNull { entry ->
             val obj = entry as? JsonObject ?: return@mapNotNull null
-            val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-            val name = obj["display_name"]?.jsonPrimitive?.contentOrNull
+            val rawId = when (wire) {
+                CloudCatalog.WireProtocol.GEMINI -> obj["name"]?.jsonPrimitive?.contentOrNull
+                CloudCatalog.WireProtocol.OPENAI,
+                CloudCatalog.WireProtocol.ANTHROPIC,
+                -> obj["id"]?.jsonPrimitive?.contentOrNull
+            } ?: return@mapNotNull null
+            if (
+                wire == CloudCatalog.WireProtocol.GEMINI &&
+                obj["supportedGenerationMethods"]?.jsonArray?.none {
+                    it.jsonPrimitive.contentOrNull == "generateContent"
+                } == true
+            ) {
+                return@mapNotNull null
+            }
+            val id = rawId.removePrefix("models/")
+            val name = when (wire) {
+                CloudCatalog.WireProtocol.GEMINI -> obj["displayName"]?.jsonPrimitive?.contentOrNull
+                CloudCatalog.WireProtocol.OPENAI,
+                CloudCatalog.WireProtocol.ANTHROPIC,
+                -> obj["display_name"]?.jsonPrimitive?.contentOrNull
+            }
             CloudCatalog.ModelInfo(id = id, name = name)
         }
     }

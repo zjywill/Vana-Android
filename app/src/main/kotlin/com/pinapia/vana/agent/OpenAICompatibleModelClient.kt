@@ -10,6 +10,7 @@ import com.pinapia.vana.agentruntime.AgentTranscript
 import com.pinapia.vana.agentruntime.AgentUsage
 import com.pinapia.vana.agentruntime.CapabilityDefinition
 import com.pinapia.vana.agentruntime.CapabilityInvocation
+import com.pinapia.vana.agentruntime.RuntimeJSONValue
 import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.CloudCatalog
 import java.util.UUID
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
@@ -47,7 +49,7 @@ private fun JsonElement?.asStringOrNull(): String? = (this as? JsonPrimitive)?.c
 private fun JsonElement?.asIntOrNull(): Int? = (this as? JsonPrimitive)?.intOrNull
 
 /**
- * OpenAI Chat Completions SSE + Anthropic Messages SSE。
+ * OpenAI Chat Completions、Anthropic Messages 和 Google Gemini SSE。
  */
 class OpenAICompatibleModelClient(
     override val profile: AgentModelProfile,
@@ -79,10 +81,12 @@ class OpenAICompatibleModelClient(
         val body = when (wireProtocol) {
             CloudCatalog.WireProtocol.OPENAI -> openaiBody(request)
             CloudCatalog.WireProtocol.ANTHROPIC -> anthropicBody(request)
+            CloudCatalog.WireProtocol.GEMINI -> geminiBody(request)
         }
         val url = when (wireProtocol) {
             CloudCatalog.WireProtocol.OPENAI -> joinUrl(baseUrl, "chat/completions")
             CloudCatalog.WireProtocol.ANTHROPIC -> joinUrl(baseUrl, "v1/messages")
+            CloudCatalog.WireProtocol.GEMINI -> geminiEndpoint(baseUrl, request.profile.modelId)
         }
         val builder = Request.Builder()
             .url(url)
@@ -116,6 +120,19 @@ class OpenAICompatibleModelClient(
                 }
                 builder.header("x-api-key", key.value)
                 builder.header("anthropic-version", "2023-06-01")
+            }
+            CloudCatalog.WireProtocol.GEMINI -> {
+                val key = ApiKeyNormalizer.normalize(apiKey)
+                if (!key.isValid) {
+                    trySend(
+                        AgentModelStreamEvent.Completed(
+                            AgentModelResponse(failureMessage = key.error ?: "API 密钥无效"),
+                        ),
+                    )
+                    close()
+                    return@callbackFlow
+                }
+                builder.header("x-goog-api-key", key.value)
             }
         }
 
@@ -217,6 +234,30 @@ class OpenAICompatibleModelClient(
                                 }
                             }
                         }
+                        CloudCatalog.WireProtocol.GEMINI -> {
+                            val chunk = parseGeminiChunk(data)
+                            servedModelId = chunk.modelVersion ?: servedModelId
+                            failure = chunk.failure ?: failure
+                            usage = chunk.usage ?: usage
+                            finishReason = chunk.finishReason ?: finishReason
+                            chunk.reasoningDeltas.forEach { delta ->
+                                reasoning.append(delta)
+                                trySend(AgentModelStreamEvent.ReasoningDelta(delta))
+                            }
+                            chunk.textDeltas.forEach { delta ->
+                                text.append(delta)
+                                trySend(AgentModelStreamEvent.TextDelta(delta))
+                            }
+                            chunk.toolCalls.forEach { call ->
+                                val index = toolCalls.size
+                                toolCalls[index] = MutableToolCall(
+                                    id = "${call.name}-${index + 1}",
+                                    name = call.name,
+                                    arguments = call.arguments,
+                                    metadata = call.metadata,
+                                )
+                            }
+                        }
                     }
                 } catch (error: Throwable) {
                     failure = error.message ?: "parse error"
@@ -237,14 +278,16 @@ class OpenAICompatibleModelClient(
             }
 
             override fun onClosed(eventSource: EventSource) {
-                val pending = toolCalls.entries.sortedBy { it.key }.mapNotNull { (_, call) ->
+                val completedCalls = toolCalls.entries.sortedBy { it.key }.mapNotNull { (_, call) ->
                     if (call.name.isBlank()) return@mapNotNull null
-                    CapabilityInvocation(
+                    val invocation = CapabilityInvocation(
                         toolCallId = call.id.ifBlank { UUID.randomUUID().toString() },
                         name = call.name,
                         input = call.arguments.ifBlank { "{}" },
                     )
+                    invocation to call.metadata
                 }
+                val pending = completedCalls.map { it.first }
                 val parts = mutableListOf<AgentTranscript.Part>()
                 if (reasoning.isNotEmpty()) {
                     parts += AgentTranscript.Part.Reasoning(reasoning.toString())
@@ -252,12 +295,13 @@ class OpenAICompatibleModelClient(
                 if (text.isNotEmpty()) {
                     parts += AgentTranscript.Part.Text(text.toString())
                 }
-                parts += pending.map {
+                parts += completedCalls.map { (invocation, metadata) ->
                     AgentTranscript.Part.ToolCallPart(
                         AgentTranscript.ToolCall(
-                            toolCallId = it.toolCallId,
-                            toolName = it.name,
-                            input = it.input,
+                            toolCallId = invocation.toolCallId,
+                            toolName = invocation.name,
+                            input = invocation.input,
+                            metadata = metadata,
                         ),
                     )
                 }
@@ -445,6 +489,220 @@ class OpenAICompatibleModelClient(
         }.toString()
     }
 
+    internal fun geminiBody(request: AgentModelRequest): String {
+        val system = request.prompt.messages
+            .filter { it.role == AgentTranscript.Role.SYSTEM }
+            .map { it.text }
+            .filter { it.isNotBlank() }
+            .joinToString("\n\n")
+        val contents = buildJsonArray {
+            request.prompt.messages
+                .filter { it.role != AgentTranscript.Role.SYSTEM }
+                .forEach { message ->
+                    val parts = buildJsonArray {
+                        message.parts.forEach { part ->
+                            when (part) {
+                                is AgentTranscript.Part.Text -> {
+                                    if (part.text.isNotEmpty()) {
+                                        add(buildJsonObject { put("text", part.text) })
+                                    }
+                                }
+                                is AgentTranscript.Part.Reasoning -> add(
+                                    buildJsonObject {
+                                        put("text", part.text)
+                                        put("thought", true)
+                                        part.metadata["google"]?.get("thoughtSignature")?.let { signature ->
+                                            put(
+                                                "thoughtSignature",
+                                                json.parseToJsonElement(signature.encodedString()),
+                                            )
+                                        }
+                                    },
+                                )
+                                is AgentTranscript.Part.ToolCallPart -> add(
+                                    buildJsonObject {
+                                        put(
+                                            "functionCall",
+                                            buildJsonObject {
+                                                put("name", part.toolCall.toolName)
+                                                val args = runCatching {
+                                                    json.parseToJsonElement(
+                                                        part.toolCall.input.ifBlank { "{}" },
+                                                    )
+                                                }.getOrElse { buildJsonObject {} }
+                                                put("args", args)
+                                            },
+                                        )
+                                        part.toolCall.metadata["google"]?.get("thoughtSignature")?.let { signature ->
+                                            put(
+                                                "thoughtSignature",
+                                                json.parseToJsonElement(signature.encodedString()),
+                                            )
+                                        }
+                                    },
+                                )
+                                is AgentTranscript.Part.ToolResultPart -> {
+                                    val result = part.toolResult.result
+                                    val response = if (result.objectValue != null) {
+                                        json.parseToJsonElement(result.encodedString())
+                                    } else {
+                                        buildJsonObject {
+                                            put("result", json.parseToJsonElement(result.encodedString()))
+                                        }
+                                    }
+                                    add(
+                                        buildJsonObject {
+                                            put(
+                                                "functionResponse",
+                                                buildJsonObject {
+                                                    put("name", part.toolResult.toolName)
+                                                    put("response", response)
+                                                },
+                                            )
+                                        },
+                                    )
+                                }
+                                is AgentTranscript.Part.File -> {
+                                    when (val payload = part.file.data) {
+                                        is AgentTranscript.FilePart.Payload.Base64 -> add(
+                                            buildJsonObject {
+                                                put(
+                                                    "inlineData",
+                                                    buildJsonObject {
+                                                        put("mimeType", part.file.mediaType)
+                                                        put("data", payload.value)
+                                                    },
+                                                )
+                                            },
+                                        )
+                                        is AgentTranscript.FilePart.Payload.Url -> add(
+                                            buildJsonObject {
+                                                put(
+                                                    "fileData",
+                                                    buildJsonObject {
+                                                        put("mimeType", part.file.mediaType)
+                                                        put("fileUri", payload.value)
+                                                    },
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (parts.isNotEmpty()) {
+                        add(
+                            buildJsonObject {
+                                put(
+                                    "role",
+                                    if (message.role == AgentTranscript.Role.ASSISTANT) "model" else "user",
+                                )
+                                put("parts", parts)
+                            },
+                        )
+                    }
+                }
+        }
+        return buildJsonObject {
+            if (system.isNotEmpty()) {
+                put(
+                    "systemInstruction",
+                    buildJsonObject {
+                        put(
+                            "parts",
+                            buildJsonArray {
+                                add(buildJsonObject { put("text", system) })
+                            },
+                        )
+                    },
+                )
+            }
+            put("contents", contents)
+            if (request.capabilities.isNotEmpty()) {
+                put(
+                    "tools",
+                    buildJsonArray {
+                        add(
+                            buildJsonObject {
+                                put("functionDeclarations", toolsGemini(request.capabilities))
+                            },
+                        )
+                    },
+                )
+            }
+            put(
+                "generationConfig",
+                buildJsonObject {
+                    request.profile.maxOutputTokens?.let { put("maxOutputTokens", it) }
+                    if (supportsReasoning) {
+                        put(
+                            "thinkingConfig",
+                            buildJsonObject {
+                                if (request.profile.modelId.startsWith("gemini-3")) {
+                                    put("thinkingLevel", if (thinkingEnabled) "high" else "minimal")
+                                } else {
+                                    put("thinkingBudget", if (thinkingEnabled) -1 else 0)
+                                }
+                            },
+                        )
+                    }
+                },
+            )
+        }.toString()
+    }
+
+    internal fun parseGeminiChunk(data: String): GeminiChunk {
+        val root = json.parseToJsonElement(data).asObjectOrNull()
+            ?: return GeminiChunk(failure = "Gemini returned a non-object event")
+        val text = mutableListOf<String>()
+        val reasoning = mutableListOf<String>()
+        val calls = mutableListOf<GeminiToolCall>()
+        var finishReason: String? = null
+
+        root["candidates"].asArrayOrNull()?.forEach { candidateElement ->
+            val candidate = candidateElement.asObjectOrNull() ?: return@forEach
+            finishReason = candidate["finishReason"].asStringOrNull() ?: finishReason
+            candidate["content"].asObjectOrNull()
+                ?.get("parts").asArrayOrNull()
+                ?.forEach { partElement ->
+                    val part = partElement.asObjectOrNull() ?: return@forEach
+                    part["text"].asStringOrNull()?.takeIf { it.isNotEmpty() }?.let { delta ->
+                        if ((part["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
+                            reasoning += delta
+                        } else {
+                            text += delta
+                        }
+                    }
+                    part["functionCall"].asObjectOrNull()?.let { call ->
+                        val name = call["name"].asStringOrNull() ?: return@let
+                        val metadata = part["thoughtSignature"]?.let { signature ->
+                            mapOf(
+                                "google" to mapOf(
+                                    "thoughtSignature" to RuntimeJSONValue.fromJsonElement(signature),
+                                ),
+                            )
+                        }.orEmpty()
+                        calls += GeminiToolCall(
+                            name = name,
+                            arguments = call["args"]?.toString() ?: "{}",
+                            metadata = metadata,
+                        )
+                    }
+                }
+        }
+
+        return GeminiChunk(
+            textDeltas = text,
+            reasoningDeltas = reasoning,
+            toolCalls = calls,
+            usage = root["usageMetadata"].asObjectOrNull()?.let(::parseGeminiUsage),
+            finishReason = finishReason,
+            modelVersion = root["modelVersion"].asStringOrNull(),
+            failure = root["error"].asObjectOrNull()?.get("message").asStringOrNull(),
+        )
+    }
+
     private fun userContentOpenAI(message: AgentTranscript.Message): JsonObject {
         val files = message.parts.filterIsInstance<AgentTranscript.Part.File>()
         val text = message.parts.filterIsInstance<AgentTranscript.Part.Text>()
@@ -578,6 +836,24 @@ class OpenAICompatibleModelClient(
         }
     }
 
+    private fun toolsGemini(capabilities: List<CapabilityDefinition>): JsonArray = buildJsonArray {
+        capabilities.forEach { capability ->
+            add(
+                buildJsonObject {
+                    put("name", capability.name)
+                    capability.description?.let { put("description", it) }
+                    val parameters = runCatching {
+                        json.parseToJsonElement(capability.inputSchema.encodedString())
+                    }.getOrNull().asObjectOrNull() ?: buildJsonObject {
+                        put("type", "object")
+                        put("properties", buildJsonObject {})
+                    }
+                    put("parameters", parameters)
+                },
+            )
+        }
+    }
+
     private fun parseUsage(obj: JsonObject): AgentUsage = AgentUsage(
         inputTokens = AgentUsage.Input(total = obj["prompt_tokens"].asIntOrNull()),
         outputTokens = AgentUsage.Output(total = obj["completion_tokens"].asIntOrNull()),
@@ -592,13 +868,24 @@ class OpenAICompatibleModelClient(
         ),
     )
 
+    private fun parseGeminiUsage(obj: JsonObject): AgentUsage {
+        val candidates = obj["candidatesTokenCount"].asIntOrNull() ?: 0
+        val thoughts = obj["thoughtsTokenCount"].asIntOrNull() ?: 0
+        return AgentUsage(
+            inputTokens = AgentUsage.Input(total = obj["promptTokenCount"].asIntOrNull()),
+            outputTokens = AgentUsage.Output(total = candidates + thoughts),
+        )
+    }
+
     private fun mapFinishReason(raw: String?, hasTools: Boolean): AgentFinishReason? {
         if (raw == null && !hasTools) return null
         val unified = when (raw) {
-            "stop", "end_turn" -> AgentFinishReason.Unified.STOP
-            "length", "max_tokens" -> AgentFinishReason.Unified.LENGTH
+            "stop", "end_turn", "STOP" -> AgentFinishReason.Unified.STOP
+            "length", "max_tokens", "MAX_TOKENS" -> AgentFinishReason.Unified.LENGTH
             "tool_calls", "tool_use" -> AgentFinishReason.Unified.TOOL_CALLS
-            "content_filter" -> AgentFinishReason.Unified.CONTENT_FILTER
+            "content_filter", "SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT",
+            "SPII", "IMAGE_SAFETY",
+            -> AgentFinishReason.Unified.CONTENT_FILTER
             null -> if (hasTools) AgentFinishReason.Unified.TOOL_CALLS else AgentFinishReason.Unified.STOP
             else -> AgentFinishReason.Unified.OTHER
         }
@@ -619,6 +906,23 @@ class OpenAICompatibleModelClient(
         var id: String = "",
         var name: String = "",
         var arguments: String = "",
+        var metadata: Map<String, Map<String, RuntimeJSONValue>> = emptyMap(),
+    )
+
+    internal data class GeminiToolCall(
+        val name: String,
+        val arguments: String,
+        val metadata: Map<String, Map<String, RuntimeJSONValue>> = emptyMap(),
+    )
+
+    internal data class GeminiChunk(
+        val textDeltas: List<String> = emptyList(),
+        val reasoningDeltas: List<String> = emptyList(),
+        val toolCalls: List<GeminiToolCall> = emptyList(),
+        val usage: AgentUsage? = null,
+        val finishReason: String? = null,
+        val modelVersion: String? = null,
+        val failure: String? = null,
     )
 
     companion object {
@@ -639,6 +943,11 @@ class OpenAICompatibleModelClient(
             } else {
                 "$trimmed/$path"
             }
+        }
+
+        internal fun geminiEndpoint(base: String, model: String): String {
+            val trimmed = base.trimEnd('/').removeSuffix("/v1beta")
+            return "$trimmed/v1beta/models/$model:streamGenerateContent?alt=sse"
         }
     }
 }
