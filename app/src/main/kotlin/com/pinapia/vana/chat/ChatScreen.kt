@@ -4,6 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -1001,6 +1006,10 @@ private fun MessageBubble(
     // 动作卡 / 问题卡等这一轮写完再出。工具一返回卡上的数据就齐了,正文要等下一轮请求
     // 才吐出来——卡先出来、回答插在卡上面,就是这段窗口。判据是整轮结束,不是「正文开口」。
     val showsToolCards = !isLiveReply
+    val showsTrailingIndicator = showsTrailingReplyIndicator(
+        isLiveReply = isLiveReply,
+        hasRunningToolCall = message.hasRunningToolCall,
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
@@ -1068,10 +1077,19 @@ private fun MessageBubble(
                                         }
                                     },
                                     label = {
-                                        Text(
-                                            toolCallLabel(call) +
-                                                if (call.isError) uiText("（失败）", " (failed)") else "",
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            if (call.output == null) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(14.dp),
+                                                    strokeWidth = 2.dp,
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                            }
+                                            Text(
+                                                toolCallLabel(call) +
+                                                    if (call.isError) uiText("（失败）", " (failed)") else "",
+                                            )
+                                        }
                                     },
                                 )
                                 if (expandedToolId == call.id && !call.output.isNullOrBlank()) {
@@ -1101,6 +1119,9 @@ private fun MessageBubble(
                     MarkdownText(markdown = "…", modifier = Modifier.fillMaxWidth())
                 } else if (message.textIsPlaceholder && message.text.isNotBlank() && segments.none { it is TurnSegment.Text }) {
                     MarkdownText(markdown = message.text, modifier = Modifier.fillMaxWidth())
+                }
+                if (showsTrailingIndicator) {
+                    ReplyTypingIndicator()
                 }
             }
             message.foldedSpan?.let { count ->
@@ -1161,7 +1182,7 @@ private fun MessageBubble(
                     )
                 }
             }
-            if (!isUser && !message.textIsPlaceholder && message.text.isNotBlank()) {
+            if (!isUser && !isLiveReply && !message.textIsPlaceholder && message.text.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick = onBranch, enabled = !isReplying) {
                         Text(uiText("在新对话里分支", "Branch into a new conversation"))
@@ -1180,6 +1201,50 @@ private fun MessageBubble(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+internal fun showsTrailingReplyIndicator(
+    isLiveReply: Boolean,
+    hasRunningToolCall: Boolean,
+): Boolean = isLiveReply && !hasRunningToolCall
+
+@Composable
+private fun ReplyTypingIndicator() {
+    val transition = rememberInfiniteTransition(label = "reply-typing")
+    val replyDescription = uiText("正在回复", "Replying")
+    val dotColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(22.dp)
+            .semantics {
+                contentDescription = replyDescription
+            },
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(3) { index ->
+            val alpha by transition.animateFloat(
+                initialValue = 0.25f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 550,
+                        delayMillis = index * 180,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "reply-dot-$index",
+            )
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .alpha(alpha)
+                    .clip(CircleShape)
+                    .background(dotColor),
+            )
         }
     }
 }
