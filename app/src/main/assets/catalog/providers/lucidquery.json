@@ -1,0 +1,78 @@
+{
+  "id": "lucidquery",
+  "name": "LucidQuery",
+  "api": "https://api.lucidquery.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "lucidnova-rf1-100b",
+      "name": "LucidNova RF1 100B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 120000,
+        "output": 8000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "lucidquery-agi-01-frontier",
+      "name": "AGI-01 Frontier",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 300000,
+        "output": 120000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "lucidquery-agi-01-swift",
+      "name": "AGI-01 Swift",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 300000,
+        "output": 120000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "lucidquery-nexus-coder",
+      "name": "LucidQuery Nexus Coder",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 250000,
+        "output": 60000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

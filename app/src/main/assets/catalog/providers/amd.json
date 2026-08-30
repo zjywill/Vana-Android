@@ -1,0 +1,42 @@
+{
+  "id": "amd",
+  "name": "AMD",
+  "api": "https://developer.amd.com.cn/radeon/api/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash 0731",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "Qwen3.8-Flash-Next",
+      "name": "Qwen3.8 Flash Next",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

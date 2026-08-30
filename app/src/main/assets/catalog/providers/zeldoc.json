@@ -1,0 +1,26 @@
+{
+  "id": "zeldoc",
+  "name": "Zeldoc",
+  "api": "https://api.zeldoc.ai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "zdev",
+      "name": "ZDev",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

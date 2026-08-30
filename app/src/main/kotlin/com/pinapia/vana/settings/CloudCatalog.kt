@@ -74,21 +74,34 @@ object CloudCatalog {
         fun model(modelId: String): ModelInfo? = models.firstOrNull { it.id == modelId }
     }
 
+    /**
+     * 解析放到后台线程,访问方需要时才等它(`FutureTask.get`)。
+     *
+     * 换到 models.dev 目录之后 catalog 从 423KB/49 家涨到 ~2.4MB/179 家,原来在
+     * `Application.onCreate` 里同步解析的那一下变成了百毫秒级的冷启动税。第一个真正
+     * 要读名单的地方(设置页、发消息前的 vision 判断)几乎总在启动完成之后,后台那趟
+     * 到那时早就跑完了;真赶上了,getter 阻塞到解析完,行为和原来的同步版完全一样——
+     * **没有「名单短暂为空」这种中间态**,别把 get() 改成非阻塞的快照。
+     */
     @Volatile
-    private var allProviders: List<ProviderInfo> = emptyList()
+    private var loadTask: java.util.concurrent.FutureTask<Pair<List<ProviderInfo>, String>>? = null
 
-    @Volatile
-    private var diagnosticsMessage: String = "尚未载入 catalog"
+    private val loadedPair: Pair<List<ProviderInfo>, String>
+        get() = loadTask?.get() ?: (emptyList<ProviderInfo>() to "尚未载入 catalog")
+
+    private val allProviders: List<ProviderInfo> get() = loadedPair.first
 
     private val json = Json { ignoreUnknownKeys = true }
 
     fun bootstrap(context: Context) {
-        val (loaded, diagnostics) = loadFromAssets(context.assets)
-        allProviders = loaded
-        diagnosticsMessage = diagnostics
+        if (loadTask != null) return
+        val assets = context.assets
+        val task = java.util.concurrent.FutureTask { loadFromAssets(assets) }
+        loadTask = task
+        Thread(task, "catalog-load").start()
     }
 
-    val diagnostics: String get() = diagnosticsMessage
+    val diagnostics: String get() = loadedPair.second
 
     val isLoaded: Boolean get() = providers.isNotEmpty()
 

@@ -1,0 +1,25 @@
+{
+  "id": "longcat",
+  "name": "LongCat",
+  "api": "https://api.longcat.chat/openai",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "LongCat-2.0",
+      "name": "LongCat-2.0",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

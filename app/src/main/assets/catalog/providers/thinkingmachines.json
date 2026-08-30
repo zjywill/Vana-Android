@@ -1,0 +1,44 @@
+{
+  "id": "thinkingmachines",
+  "name": "Thinking Machines",
+  "api": "https://tinker.thinkingmachines.dev/services/tinker-prod/anthropic/api/v1",
+  "adapter": "anthropic",
+  "models": [
+    {
+      "id": "thinkingmachines/Inkling",
+      "name": "Inkling",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 65536,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "thinkingmachines/Inkling:peft:262144",
+      "name": "Inkling (256K)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

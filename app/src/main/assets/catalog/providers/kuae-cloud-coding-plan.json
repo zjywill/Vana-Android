@@ -1,0 +1,25 @@
+{
+  "id": "kuae-cloud-coding-plan",
+  "name": "KUAE Cloud Coding Plan",
+  "api": "https://coding-plan-endpoint.kuaecloud.net/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "GLM-4.7",
+      "name": "GLM-4.7",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "kosmik",
+  "name": "Kosmik Compute",
+  "api": "https://api.koscompute.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "qwen/qwen3.8-27b",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

@@ -1,9 +1,0 @@
-{
-  "id": "github",
-  "name": "GitHub Models",
-  "api": "https://models.github.ai/inference",
-  "adapter": "openai",
-  "providerDbSourceId": "github-models",
-  "modelsFile": "models/github.json",
-  "defaultModelId": "microsoft/phi-3.5-vision-instruct"
-}

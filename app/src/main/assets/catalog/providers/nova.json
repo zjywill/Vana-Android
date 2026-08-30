@@ -1,0 +1,48 @@
+{
+  "id": "nova",
+  "name": "Nova",
+  "api": "https://api.nova.amazon.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "nova-2-lite-v1",
+      "name": "Nova 2 Lite",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "nova-2-pro-v1",
+      "name": "Nova 2 Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    }
+  ]
+}

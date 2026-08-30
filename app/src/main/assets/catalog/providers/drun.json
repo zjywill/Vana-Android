@@ -1,0 +1,59 @@
+{
+  "id": "drun",
+  "name": "D.Run (China)",
+  "api": "https://chat.d.run/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "public/deepseek-r1",
+      "name": "DeepSeek R1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "public/deepseek-v3",
+      "name": "DeepSeek V3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "public/minimax-m25",
+      "name": "MiniMax M2.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 204800,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

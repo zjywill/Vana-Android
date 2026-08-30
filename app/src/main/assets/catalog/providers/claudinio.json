@@ -1,0 +1,48 @@
+{
+  "id": "claudinio",
+  "name": "Claudinio",
+  "api": "https://api.claudin.io/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "claudinio",
+      "name": "Claudinio",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 256000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "claudius",
+      "name": "Claudius",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 256000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    }
+  ]
+}

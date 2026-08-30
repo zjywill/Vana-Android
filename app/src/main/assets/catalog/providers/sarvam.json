@@ -1,0 +1,42 @@
+{
+  "id": "sarvam",
+  "name": "Sarvam AI",
+  "api": "https://api.sarvam.ai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "sarvam-105b",
+      "name": "Sarvam-105B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "sarvam-30b",
+      "name": "Sarvam-30B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 65536,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

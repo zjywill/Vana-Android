@@ -1,0 +1,26 @@
+{
+  "id": "standardcompute",
+  "name": "Standard Compute",
+  "api": "https://api.stdcmpt.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "standardcompute",
+      "name": "Standard Compute",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 24576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

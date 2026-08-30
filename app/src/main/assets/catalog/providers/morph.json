@@ -1,0 +1,59 @@
+{
+  "id": "morph",
+  "name": "Morph",
+  "api": "https://api.morphllm.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "auto",
+      "name": "Auto",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 32000,
+        "output": 32000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "morph-v3-fast",
+      "name": "Morph v3 Fast",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 16000,
+        "output": 16000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "morph-v3-large",
+      "name": "Morph v3 Large",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 32000,
+        "output": 32000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

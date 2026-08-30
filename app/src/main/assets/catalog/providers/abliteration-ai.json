@@ -1,0 +1,43 @@
+{
+  "id": "abliteration-ai",
+  "name": "abliteration.ai",
+  "api": "https://api.abliteration.ai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "abliterated-model",
+      "name": "Abliterated Model",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 150000,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "abliterated-model-large",
+      "name": "Abliterated Model Large",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 999990
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

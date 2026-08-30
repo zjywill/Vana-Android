@@ -1,8 +1,0 @@
-{
-  "id": "flymux-anthropic",
-  "name": "FlyMux (Anthropic)",
-  "api": "https://api.flymux.com/",
-  "adapter": "anthropic",
-  "customModels": true,
-  "models": []
-}

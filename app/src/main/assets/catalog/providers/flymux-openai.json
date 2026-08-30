@@ -1,8 +1,0 @@
-{
-  "id": "flymux-openai",
-  "name": "FlyMux (OpenAI)",
-  "api": "https://api.flymux.com/v1",
-  "adapter": "openai-responses",
-  "customModels": true,
-  "models": []
-}

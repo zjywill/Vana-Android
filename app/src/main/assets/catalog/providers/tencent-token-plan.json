@@ -1,0 +1,42 @@
+{
+  "id": "tencent-token-plan",
+  "name": "Tencent Token Plan",
+  "api": "https://api.lkeap.cloud.tencent.com/plan/v3",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "hy3",
+      "name": "Hy3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 256000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "hy4-preview",
+      "name": "Hy4 preview",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1024000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

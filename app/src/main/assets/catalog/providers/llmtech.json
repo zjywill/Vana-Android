@@ -1,0 +1,25 @@
+{
+  "id": "llmtech",
+  "name": "LLM Tech",
+  "api": "https://api.llmtech.eu/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "unsloth/Qwen3.8-27B-NVFP4",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

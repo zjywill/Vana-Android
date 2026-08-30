@@ -1,8 +1,0 @@
-{
-  "id": "siliconflow-com",
-  "name": "SiliconFlow (com)",
-  "adapter": "openai",
-  "api": "https://api.siliconflow.com/v1",
-  "modelsFile": "models/siliconflow-com.json",
-  "defaultModelId": "tencent/Hunyuan-A13B-Instruct"
-}

@@ -1,0 +1,25 @@
+{
+  "id": "echo",
+  "name": "Echo",
+  "api": "https://echo.tracerml.ai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

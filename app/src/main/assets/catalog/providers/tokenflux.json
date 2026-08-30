@@ -1,8 +1,0 @@
-{
-  "id": "tokenflux",
-  "name": "TokenFlux",
-  "api": "https://tokenflux.ai/v1",
-  "adapter": "openai",
-  "modelsFile": "models/tokenflux.json",
-  "defaultModelId": "anthropic/claude-fable-5"
-}

@@ -1,185 +1,83 @@
 {
   "id": "kimi-for-coding",
-  "api": "https://api.kimi.com/coding",
   "name": "Kimi For Coding",
-  "doc": "https://www.kimi.com/code/docs/en/kimi-code/models.html",
-  "display_name": "Kimi For Coding",
-  "ccmock": true,
-  "remoteModelList": false,
+  "api": "https://api.kimi.com/coding/v1",
   "adapter": "anthropic",
   "models": [
     {
       "id": "k3",
-      "name": "K3",
-      "description": "Kimi flagship coding model for complex engineering and long-horizon reasoning",
-      "family": "kimi-k3",
-      "attachment": true,
-      "reasoning": {
-        "supported": true,
-        "default": true
-      },
-      "reasoning_options": [
-        {
-          "type": "effort",
-          "values": [
-            "low",
-            "high",
-            "max"
-          ]
-        }
-      ],
+      "name": "Kimi K3",
       "tool_call": true,
-      "interleaved": {
-        "field": "reasoning_content"
-      },
-      "structured_output": true,
-      "temperature": false,
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ],
-        "output": [
-          "text"
-        ]
+      "reasoning": {
+        "supported": true
       },
       "limit": {
         "context": 1048576,
         "output": 131072
       },
-      "cost": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "k3-256k",
+      "name": "Kimi K3-256K",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
       },
-      "display_name": "K3",
-      "type": "chat",
-      "extra_capabilities": {
-        "reasoning": {
-          "supported": true,
-          "default_enabled": true,
-          "mode": "effort",
-          "effort": "high",
-          "effort_options": [
-            "low",
-            "high",
-            "max"
-          ],
-          "interleaved": true,
-          "summaries": false,
-          "visibility": "full",
-          "continuation": [
-            "reasoning_content"
-          ]
-        }
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
       }
     },
     {
       "id": "kimi-for-coding",
-      "name": "K2.7 Coding",
-      "description": "Stable Kimi coding model with thinking enabled",
-      "family": "kimi-k2.7-code",
-      "attachment": true,
-      "reasoning": {
-        "supported": true,
-        "default": true
-      },
+      "name": "Kimi K2.7 Code",
       "tool_call": true,
-      "interleaved": {
-        "field": "reasoning_content"
-      },
-      "structured_output": true,
-      "temperature": true,
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ],
-        "output": [
-          "text"
-        ]
+      "reasoning": {
+        "supported": true
       },
       "limit": {
         "context": 262144,
         "output": 32768
       },
-      "cost": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0
-      },
-      "display_name": "K2.7 Coding",
-      "type": "chat",
-      "extra_capabilities": {
-        "reasoning": {
-          "supported": true,
-          "default_enabled": true,
-          "mode": "fixed",
-          "interleaved": true,
-          "summaries": false,
-          "visibility": "full",
-          "continuation": [
-            "reasoning_content"
-          ]
-        }
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
       }
     },
     {
       "id": "kimi-for-coding-highspeed",
-      "name": "K2.7 Coding Highspeed",
-      "description": "High-speed Kimi K2.7 Code with the same coding capability",
-      "family": "kimi-k2.7-code",
-      "attachment": true,
-      "reasoning": {
-        "supported": true,
-        "default": true
-      },
+      "name": "Kimi For Coding HighSpeed",
       "tool_call": true,
-      "interleaved": {
-        "field": "reasoning_content"
-      },
-      "structured_output": true,
-      "temperature": true,
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ],
-        "output": [
-          "text"
-        ]
+      "reasoning": {
+        "supported": true
       },
       "limit": {
         "context": 262144,
         "output": 32768
       },
-      "cost": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0
-      },
-      "display_name": "K2.7 Coding Highspeed",
-      "type": "chat",
-      "extra_capabilities": {
-        "reasoning": {
-          "supported": true,
-          "default_enabled": true,
-          "mode": "fixed",
-          "interleaved": true,
-          "summaries": false,
-          "visibility": "full",
-          "continuation": [
-            "reasoning_content"
-          ]
-        }
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
       }
     }
-  ],
-  "defaultModelId": "kimi-for-coding"
+  ]
 }

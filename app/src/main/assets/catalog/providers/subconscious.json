@@ -1,0 +1,42 @@
+{
+  "id": "subconscious",
+  "name": "Subconscious",
+  "api": "https://api.subconscious.dev/v1",
+  "adapter": "anthropic",
+  "models": [
+    {
+      "id": "subconscious/glm-5.2",
+      "name": "GLM-5.2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "subconscious/tim-qwen3.6-27b",
+      "name": "TIM-Qwen3.6 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 8192,
+        "output": 5000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "inception",
+  "name": "Inception",
+  "api": "https://api.inceptionlabs.ai/v1/",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "mercury-2",
+      "name": "Mercury 2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 50000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "mercury-edit-2",
+      "name": "Mercury Edit 2",
+      "tool_call": false,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

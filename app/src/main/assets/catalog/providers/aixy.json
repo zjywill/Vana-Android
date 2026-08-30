@@ -1,0 +1,27 @@
+{
+  "id": "aixy",
+  "name": "Aixy",
+  "api": "https://api.aixy-gateway.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 1047576,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    }
+  ]
+}
