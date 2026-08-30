@@ -61,6 +61,13 @@ fun DataUseNoticeScreen(
                         Text(DataUseNotice.privacyLink)
                     }
                 }
+                // 同意的内容写在按钮正上方,不塞进滚动区:滚动区可以不被读完,
+                // 而「点这一下等于同意了什么」必须和那一下同框。
+                Text(
+                    DataUseNotice.consentFootnote,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Button(onClick = onAccept, modifier = Modifier.fillMaxWidth()) {
                     Text(DataUseNotice.cta)
                 }

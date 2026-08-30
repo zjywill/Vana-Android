@@ -46,6 +46,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -160,6 +161,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import com.pinapia.vana.vision.AttachmentReviewScreen
 import com.pinapia.vana.vision.CapturePhoto
+import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
 @OptIn(ExperimentalMaterial3Api::class)
@@ -226,6 +228,41 @@ fun ChatScreen(
         viewModel.cloudSetupRequests.collect {
             currentOpenSettings()
         }
+    }
+
+    // 第一次要把数据发给这家 provider:点名征一次同意(iOS 2026-08-29 被 5.1.2(i) 判的
+    // 那条,两边同一套修法)。「同意并发送」把刚才那句原样发出去;「取消」字留在输入框里。
+    val pendingProviderConsent by viewModel.pendingProviderConsent.collectAsStateWithLifecycle()
+    pendingProviderConsent?.let { providerId ->
+        val providerName = CloudCatalog.providerName(providerId)
+        AlertDialog(
+            onDismissRequest = viewModel::declineProviderConsent,
+            title = { Text(uiText("发送给 $providerName？", "Send to $providerName?")) },
+            text = {
+                Text(
+                    uiText(
+                        "你的问题，连同它需要用到的内容（这条对话的往来、长期记忆和用药表里的条目、识别出的文字），" +
+                            "会发送给第三方模型服务 $providerName 来生成回答，由对方按它自己的隐私政策处理。" +
+                            "这台设备上发给这家服务的请求只问这一次；换用其他服务时会再次询问。",
+                        "Your question, along with what it needs (this conversation, entries from long-term memory " +
+                            "and the medication list, and recognized text), will be sent to the third-party model " +
+                            "service $providerName to generate the answer, handled under its own privacy policy. " +
+                            "On this device you will only be asked once for this service; switching to another " +
+                            "service will ask again.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::confirmProviderConsent) {
+                    Text(uiText("同意并发送", "Agree and Send"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::declineProviderConsent) {
+                    Text(uiText("取消", "Cancel"))
+                }
+            },
+        )
     }
 
     val micPermissionLauncher = rememberLauncherForActivityResult(

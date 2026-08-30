@@ -41,6 +41,9 @@ object DerivedTurn {
         val model = engineSettings.model.trim()
         if (model.isEmpty()) return null
         val provider = engineSettings.providerId.ifBlank { EngineSettings.DEFAULT_PROVIDER }
+        // 后台派生跑在用户不在场的时候——这家 provider 没被点名同意过就不发,
+        // 同意之前替他发一轮正是 5.1.2(i) 那句「before sharing」要挡的事。
+        if (!engineSettings.hasProviderConsent(provider)) return null
 
         var session = ChatSession(
             threadId = thread.id,

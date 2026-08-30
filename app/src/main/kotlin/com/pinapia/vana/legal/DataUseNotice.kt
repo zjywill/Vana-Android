@@ -17,6 +17,12 @@ object DataUseNotice {
         get() = Group(
         title = L10n.text("会发给你配置的模型服务", "Sent to the model service you configure"),
         points = listOf(
+            // 「发给谁」必须点得出名字(iOS 2026-08-29 被 5.1.1(i)/5.1.2(i) 判的一半):
+            // 默认预选的是 DeepSeek,写出来;第一次真发给某家之前还会点名再问一次。
+            L10n.text(
+                "对方是一家由你选定的第三方模型服务——默认预选的是 DeepSeek（深度求索），可以在设置里换成目录里的其他家。第一次真的要发给某一家之前，Vana 还会点名问你一次",
+                "The recipient is a third-party model service you choose — DeepSeek is pre-selected by default, and you can switch to any other provider in Settings. The first time Vana is about to send to a given service, it names that service and asks you once more",
+            ),
             L10n.text("你打的字，以及这条对话里的往来", "What you type and the earlier messages in this conversation"),
             L10n.text("化验单、报告、药盒在本机识别出来的文字", "Text recognized on this device from reports and medicine packaging"),
             L10n.text("照片原图——默认不发；本机认不出文字的那些会问你一句，你点了才发", "Original photos are not sent by default; Vana asks before sending a photo when no text was recognized"),
@@ -64,7 +70,21 @@ object DataUseNotice {
         )
 
     val title: String get() = L10n.text("在开始之前", "Before you begin")
-    val cta: String get() = L10n.text("开始使用", "Start using Vana")
+
+    /**
+     * 这一屏是一次**明确同意**,不只是告知。第一版按钮写「开始使用」(告知不做成同意书),
+     * iOS 2026-08-29 被 5.1.1(i)/5.1.2(i) 判回来:发给第三方 AI 服务之前必须
+     * obtain the user's permission。按钮上方那句 [consentFootnote] 说清点下去同意了什么。
+     */
+    val cta: String get() = L10n.text("同意并继续", "Agree and continue")
+
+    /** 按钮上方那句:点下去到底同意了什么。引号里的按钮文字必须和 [cta] 是同一串。 */
+    val consentFootnote: String
+        get() = L10n.text(
+            "点「同意并继续」，表示你已读过上面的说明，并同意 Vana 在你提问时，把「会发出去」那一组里列出的内容发给你选定的模型服务来生成回答。",
+            "By tapping “Agree and continue”, you confirm you have read the notice above and agree that, when you ask a question, Vana sends the items listed under “Sent to the model service you configure” to the model service you choose in order to generate the answer.",
+        )
+
     val privacyLink: String get() = L10n.text("完整的隐私说明", "Full privacy policy")
 
     val medicalDisclaimer: String

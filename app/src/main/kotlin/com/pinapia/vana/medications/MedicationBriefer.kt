@@ -88,6 +88,9 @@ class MedicationBriefer(
             val key = secureKeyStore.apiKey?.trim().orEmpty()
             if (key.isEmpty()) return false
             val provider = engineSettings.providerId.ifBlank { EngineSettings.DEFAULT_PROVIDER }
+            // 同意之前不发:药名也是他的个人数据,而这一步可能在他一句话都没发过的时候
+            // 就跑(录完第一条药顺手生成说明)。
+            if (!engineSettings.hasProviderConsent(provider)) return false
             val text = runCatching {
                 MedicationBriefer(provider, model, key).brief(item.name)
             }.getOrNull() ?: return false

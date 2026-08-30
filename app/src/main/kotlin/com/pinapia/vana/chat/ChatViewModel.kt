@@ -94,6 +94,13 @@ class ChatViewModel(
     private val _cloudSetupRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val cloudSetupRequests: SharedFlow<Unit> = _cloudSetupRequests
 
+    /**
+     * 他按了发送,但还没同意过把数据发给当前这家 provider。存 provider id,界面拿它弹
+     * 点名确认的 dialog。同意或取消都当场清掉;打的字留在输入框里,同意之后再发。
+     */
+    private val _pendingProviderConsent = MutableStateFlow<String?>(null)
+    val pendingProviderConsent: StateFlow<String?> = _pendingProviderConsent.asStateFlow()
+
     private val _retryNotice = MutableStateFlow<String?>(null)
     val retryNotice: StateFlow<String?> = _retryNotice.asStateFlow()
 
@@ -259,6 +266,17 @@ class ChatViewModel(
             _cloudSetupRequests.tryEmit(Unit)
             return
         }
+        // 第一次要发给这家 provider:先点名征一次同意(iOS 2026-08-29 被 5.1.2(i) 判的
+        // 正是「发送之前没问过、也没点过名」)。字留在输入框里,他在 dialog 上按「同意并
+        // 发送」会再回到这里,那时候这道闸已经开了。换 provider 会再问,同一家只问一次。
+        val provider = engineSettings.providerId.ifBlank { EngineSettings.DEFAULT_PROVIDER }
+        if (!engineSettings.hasProviderConsent(provider)) {
+            if (text != null) {
+                _input.value = trimmed
+            }
+            _pendingProviderConsent.value = provider
+            return
+        }
         _input.value = ""
         _followUps.value = emptyList()
         val persist = !_session.value.isPrivate
@@ -277,6 +295,19 @@ class ChatViewModel(
         if (!_isReplying.value) {
             startReply()
         }
+    }
+
+    /** 他在点名确认的 dialog 上按了「同意并发送」:记下来,把刚才那句(还在输入框里)发出去。 */
+    fun confirmProviderConsent() {
+        val provider = _pendingProviderConsent.value ?: return
+        engineSettings.recordProviderConsent(provider)
+        _pendingProviderConsent.value = null
+        send()
+    }
+
+    /** 按了「取消」:什么都不发,字留在输入框里,不记录任何东西——下次按发送会再问。 */
+    fun declineProviderConsent() {
+        _pendingProviderConsent.value = null
     }
 
     fun addPhoto(bitmap: Bitmap) {
@@ -895,6 +926,9 @@ class ChatViewModel(
         if (!MemoryHarvest.shouldHarvest(session, engineSettings.memoryEnabled)) return
         val key = secureKeyStore.apiKey?.trim().orEmpty()
         if (key.isEmpty()) return
+        // 没同意过发给这家的不抽。能走到这儿说明对话发生过,同意几乎必然在;
+        // 这一句兜的是「聊完之后换了 provider」那条缝。
+        if (!engineSettings.hasProviderConsent(engineSettings.providerId)) return
         val snapshot = memorySnapshotProvider()
         val messageCount = session.messages.size
         val sessionId = session.id

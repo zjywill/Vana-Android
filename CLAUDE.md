@@ -83,6 +83,27 @@ voice/        按住说话
 ui/theme/     配色与字阶
 ```
 
+## provider catalog:从 AIKit 同步,来源是 models.dev
+
+`assets/catalog/providers` 不是手写的,由 `python3 scripts/sync-catalog.py` 从
+aikitswift(上游 2026-08-29 起改由 models.dev 生成)同步:只留 Android 实现了协议
+(openai / anthropic / gemini)且可连的托管 provider,并剥掉 `CloudCatalog` 不读的字段
+(cost、description 那些)——两条都是机械规则,不是手工挑名单。**不要手工编辑这些 JSON**,
+要改就改脚本重跑;来源 commit 记在 `assets/catalog/PROVENANCE.md`。
+目录涨到 ~2.4MB/179 家之后,解析挪到了后台线程(`CloudCatalog.bootstrap` 起
+`FutureTask`,getter 阻塞到解析完)——别把它改回 onCreate 同步解析,也别改成非阻塞快照。
+
+## 发给第三方之前先点名征得同意(同 iOS,5.1.1(i)/5.1.2(i))
+
+iOS 2026-08-29 被判的那条,两边同一套修法,细节见 iOS `CLAUDE.md` 合规那节:
+告知屏是明确同意(「同意并继续」+ `consentFootnote`,清单点名默认的 DeepSeek);
+第一次真的要发给某家 provider 之前,聊天里弹点名确认,按 provider 记在
+`EngineSettings.hasProviderConsent`(`consentedProviderIds`),换家再问。这道闸挡住
+**每一条会出设备的路**:聊天 `send()`、后台派生(`DerivedTurn`)、抽记忆(`harvestIfNeeded`)、
+用药说明(`MedicationBriefer.fill`),同意之前全不跑。`ConnectionTest` 只发一句 "hi"
+不含个人数据,不拦。隐私说明(两份 HTML)里「发给谁 + 发送以同意为前提」要和这套行为
+逐字对上。
+
 ## 约定
 
 - Compose only，不写 View/XML 界面（`themes.xml` 只管启动窗口到第一帧那一下；shortcuts / Manifest 除外）。

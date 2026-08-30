@@ -59,6 +59,32 @@ class EngineSettings(context: Context) {
         get() = prefs.getBoolean(DATA_USE_KEY, false)
         set(value) = prefs.edit().putBoolean(DATA_USE_KEY, value).apply()
 
+    /**
+     * 「把数据发给某一家第三方模型服务」这件事,按 provider 记一次同意。
+     *
+     * iOS 2026-08-29 被 5.1.2(i) 判的:发给第三方 AI 服务之前必须点名对方、征得同意,
+     * 「你配置的模型服务」这个代词不算。第一次真的要向某一家发送之前弹一次点名确认
+     * (ChatScreen 那个 dialog),同意了记在这里;换 provider 会再问,同一家只问一次。
+     * 这道闸挡的是每一条会出设备的路(聊天、后台派生、抽记忆、用药说明),不只聊天。
+     * 设备级、只增不撤——要反悔就删 key 或换 provider,那两下本来就把发送整个停了。
+     */
+    fun hasProviderConsent(providerId: String): Boolean {
+        val trimmed = providerId.trim()
+        if (trimmed.isEmpty()) return false
+        return prefs.getStringSet(CONSENTED_PROVIDERS_KEY, emptySet())
+            .orEmpty()
+            .contains(trimmed)
+    }
+
+    fun recordProviderConsent(providerId: String) {
+        val trimmed = providerId.trim()
+        if (trimmed.isEmpty() || hasProviderConsent(trimmed)) return
+        // getStringSet 返回的集合不许原地改,必须拷一份再 put。
+        val next = prefs.getStringSet(CONSENTED_PROVIDERS_KEY, emptySet()).orEmpty().toMutableSet()
+        next += trimmed
+        prefs.edit().putStringSet(CONSENTED_PROVIDERS_KEY, next).apply()
+    }
+
     fun isConfigured(secureKeyStore: SecureKeyStore): Boolean {
         val key = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
         return key.isValid && providerId.isNotBlank() && model.isNotBlank()
@@ -81,6 +107,7 @@ class EngineSettings(context: Context) {
         const val MORNING_HOUR_KEY = "morningCheckInHour"
         const val EVENING_HOUR_KEY = "eveningCheckInHour"
         const val DATA_USE_KEY = "hasAcceptedDataUseNotice"
+        const val CONSENTED_PROVIDERS_KEY = "consentedProviderIds"
 
         const val DEFAULT_PROVIDER = "deepseek"
         const val DEFAULT_MODEL = "deepseek-v4-flash"

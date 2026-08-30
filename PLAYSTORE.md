@@ -58,6 +58,9 @@ Vana is not a medical device and does not provide diagnoses, treatment plans, or
 - Privacy Policy URL 发布自 `app/src/main/assets/PrivacyPolicy.html`，线上和包内必须是同一份。
 - Data safety 要按真实传输填写：用户输入、附件 OCR 文字、用户主动选择的原图、城市名、
   记忆和用药内容会发送给用户选择的模型 Provider；API key 只用于鉴权，不发送给 Vana。
+- 发送以明确同意为前提（同 iOS 2026-08-29 那次 5.1.1(i)/5.1.2(i) 的修法）：首启告知屏
+  是「同意并继续」，首次向某家 Provider 发送前还有点名确认弹窗。审核走真实路径时会先
+  撞上这两步，说明文案里不要绕开。
 - 不申请设备健康数据权限，不要在 Health apps declaration 里声称正在读取设备健康数据。
 
 ## 提交前真实路径
