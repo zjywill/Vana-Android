@@ -19,6 +19,19 @@
 
 > 仓库叫 `Vana-Android`，应用显示名是 **Vana**，包名 `com.pinapia.vana`。和 [Vana-iOS](https://github.com/zjywill/Vana-iOS) 是同一个产品的两个客户端。
 
+<p align="center">
+  <img src="docs/store/zh-CN/01-chat-1.png" width="19%" alt="拍下化验单，得到看得懂的解读">
+  <img src="docs/store/zh-CN/02-chat-2.png" width="19%" alt="化验单解读（续）">
+  <img src="docs/store/zh-CN/03-memory.png" width="19%" alt="它记得你说过的事">
+  <img src="docs/store/zh-CN/04-medications.png" width="19%" alt="在吃的、不能吃的，分开记">
+  <img src="docs/store/zh-CN/05-privacy.png" width="19%" alt="先问过你，才发出去">
+</p>
+
+<p align="center">
+  <sub>头两张是同一台设备的全景切分，商店里并排展示。图上的内容是
+  <a href="scripts/gen-demo-data.py">预置的演示数据</a>，不是真实健康记录。</sub>
+</p>
+
 ## 大概是这样用的
 
 > **你**:我最近记的体重有什么变化
@@ -114,6 +127,17 @@ cd Vana-Android
 ./gradlew :app:testGithubDebugUnitTest
 ./gradlew :app:installGithubDebug
 ```
+
+商店截图由 [goldie](https://github.com/kacperkapusciak/goldie) 生成，配置在
+[`goldie.config.ts`](./goldie.config.ts)，流程在 `.argent/flows/`：
+
+```bash
+adb shell setprop debug.vana.demo 1   # 打开 debug 包里的演示数据补种
+goldie all                            # 截图 -> 套边框加标题 -> 按 Play 规格校验
+```
+
+演示数据只在 debug 包里（`app/src/debug/`），release 侧是空实现；不设那个属性
+就一行都不跑。产物落在 `out/`，不进版本库，`docs/store/` 下是选定的那一版。
 
 | 模块 | 是什么 | iOS 对应 |
 | --- | --- | --- |
