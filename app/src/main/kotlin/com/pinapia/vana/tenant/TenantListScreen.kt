@@ -1,5 +1,6 @@
 package com.pinapia.vana.tenant
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,10 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -58,12 +55,12 @@ fun TenantListScreen(
                 title = { Text(uiText("家庭成员", "Family members")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showAdd = true }) {
-                        Icon(Icons.Default.Add, contentDescription = uiText("添加成员", "Add family member"))
+                        Icon(VanaIcons.Plus, contentDescription = uiText("添加成员", "Add family member"))
                     }
                 },
             )
@@ -196,7 +193,7 @@ private fun TenantRow(
             }
         }
         if (selected) {
-            Icon(Icons.Default.Check, contentDescription = uiText("当前", "Current"), tint = MaterialTheme.colorScheme.primary)
+            Icon(VanaIcons.Check, contentDescription = uiText("当前", "Current"), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

@@ -1,12 +1,11 @@
 package com.pinapia.vana.legal
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import android.annotation.SuppressLint
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +35,7 @@ fun PrivacyPolicyScreen(
                 title = { Text(uiText("隐私说明", "Privacy policy")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )

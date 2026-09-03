@@ -1,5 +1,6 @@
 package com.pinapia.vana.vision
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -97,7 +95,7 @@ fun AttachmentReviewScreen(
                 title = { Text(uiText("核对识别结果", "Review recognized text")) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = uiText("完成", "Done"))
+                        Icon(VanaIcons.XMark, contentDescription = uiText("完成", "Done"))
                     }
                 },
                 actions = {
@@ -127,7 +125,7 @@ fun AttachmentReviewScreen(
                 )
             } else {
                 Icon(
-                    Icons.Default.Description,
+                    VanaIcons.DocumentText,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

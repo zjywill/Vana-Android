@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FEFEFE</color>
+    <!-- 和 Color.kt 里 background 保持一致,只给启动窗口到第一帧那一下用。 -->
+    <color name="window_background_light">#F7F9FD</color>
+    <color name="window_background_dark">#141A24</color>
 </resources>

@@ -1,5 +1,6 @@
 package com.pinapia.vana.medications
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,13 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -109,12 +103,12 @@ fun MedicationListScreen(
                         title = { Text(uiText("用药与补剂", "Medications and supplements")) },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                                Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                             }
                         },
                         actions = {
                             IconButton(onClick = { editing = MedicationDraft() }) {
-                                Icon(Icons.Default.Add, contentDescription = uiText("加一条", "Add item"))
+                                Icon(VanaIcons.Plus, contentDescription = uiText("加一条", "Add item"))
                             }
                         },
                     )
@@ -236,8 +230,8 @@ fun MedicationListScreen(
 }
 
 private fun MedicationItem.Status.icon(): ImageVector = when (this) {
-    MedicationItem.Status.CANNOT_TAKE -> Icons.Default.Block
-    MedicationItem.Status.ONGOING -> Icons.Default.Medication
-    MedicationItem.Status.AS_NEEDED -> Icons.Default.LocalHospital
-    MedicationItem.Status.TRIED -> Icons.Default.CheckCircle
+    MedicationItem.Status.CANNOT_TAKE -> VanaIcons.NoSymbol
+    MedicationItem.Status.ONGOING -> VanaIcons.Beaker
+    MedicationItem.Status.AS_NEEDED -> VanaIcons.Clock
+    MedicationItem.Status.TRIED -> VanaIcons.CheckCircle
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.ui.theme.ReasoningLavender
 
 /**
  * 一个模型能做什么,用几颗小标签说清。
@@ -26,7 +27,7 @@ fun ModelCapabilityTags(
 ) {
     val tags = buildList {
         if (model.supportsVision) add(Tag("看图", MaterialTheme.colorScheme.primary))
-        if (model.supportsReasoning) add(Tag("思考", Color(0xFF7B61FF)))
+        if (model.supportsReasoning) add(Tag("思考", ReasoningLavender))
         if (!model.supportsTools) {
             add(Tag("不支持工具", MaterialTheme.colorScheme.tertiary))
         }

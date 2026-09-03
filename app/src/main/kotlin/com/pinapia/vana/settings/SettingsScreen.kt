@@ -1,5 +1,6 @@
 package com.pinapia.vana.settings
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -18,9 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -154,7 +152,7 @@ fun SettingsScreen(
                 title = { Text(uiText("设置", "Settings")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )
@@ -755,7 +753,7 @@ private fun SettingsPickerRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            VanaIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )

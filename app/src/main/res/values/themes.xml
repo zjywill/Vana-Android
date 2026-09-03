@@ -5,6 +5,6 @@
       NoActionBar 是必须的:Material3 的顶栏画在 Compose 里,再叠一个系统 ActionBar 就是两条。
     -->
     <style name="Theme.Vana" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">@color/window_background_light</item>
     </style>
 </resources>

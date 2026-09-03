@@ -1,5 +1,6 @@
 package com.pinapia.vana.memory
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,9 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -118,12 +116,12 @@ fun MemoryListScreen(
                 title = { Text(uiText("Vana 记住的事", "What Vana remembers")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                     }
                 },
                 actions = {
                     IconButton(onClick = { editing = MemoryDraft() }) {
-                        Icon(Icons.Default.Add, contentDescription = uiText("添加一条", "Add memory"))
+                        Icon(VanaIcons.Plus, contentDescription = uiText("添加一条", "Add memory"))
                     }
                 },
             )
@@ -306,7 +304,7 @@ private fun MemoryEditorSheet(
                 },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("取消", "Cancel"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("取消", "Cancel"))
                     }
                 },
                 actions = {

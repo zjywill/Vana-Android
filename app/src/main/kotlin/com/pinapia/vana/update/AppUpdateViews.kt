@@ -1,5 +1,6 @@
 package com.pinapia.vana.update
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -11,8 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -289,7 +288,7 @@ private fun SettingsPickerRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            VanaIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )

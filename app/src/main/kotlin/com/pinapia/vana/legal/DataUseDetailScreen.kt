@@ -1,12 +1,11 @@
 package com.pinapia.vana.legal
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +30,7 @@ fun DataUseDetailScreen(
                 title = { Text(uiText("数据会发送到哪里", "Where your data goes")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = uiText("返回", "Back"))
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
                     }
                 },
             )

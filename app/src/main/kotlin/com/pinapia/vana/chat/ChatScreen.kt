@@ -1,5 +1,6 @@
 package com.pinapia.vana.chat
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -9,17 +10,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
@@ -123,17 +113,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -440,18 +419,18 @@ fun ChatScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = uiText("会话列表", "Conversations"))
+                            Icon(VanaIcons.Bars, contentDescription = uiText("会话列表", "Conversations"))
                         }
                     },
                     actions = {
                         IconButton(onClick = onOpenMeasurements) {
-                            Icon(Icons.Default.MonitorHeart, contentDescription = uiText("测量卡片", "Measurements"))
+                            Icon(VanaIcons.Heart, contentDescription = uiText("测量卡片", "Measurements"))
                         }
                         IconButton(onClick = onOpenMedications) {
-                            Icon(Icons.Default.Medication, contentDescription = uiText("用药与补剂", "Medications and supplements"))
+                            Icon(VanaIcons.Beaker, contentDescription = uiText("用药与补剂", "Medications and supplements"))
                         }
                         IconButton(onClick = onOpenSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = uiText("设置", "Settings"))
+                            Icon(VanaIcons.Cog, contentDescription = uiText("设置", "Settings"))
                         }
                     },
                 )
@@ -525,7 +504,7 @@ fun ChatScreen(
                                 contentColor = MaterialTheme.colorScheme.onSurface,
                             ) {
                                 Icon(
-                                    Icons.Default.KeyboardArrowDown,
+                                    VanaIcons.ChevronDown,
                                     contentDescription = uiText("回到最新消息", "Jump to latest message"),
                                 )
                             }
@@ -781,7 +760,7 @@ private fun DraftStrip(
                             }
                             draft.isDocument -> {
                                 Icon(
-                                    Icons.Default.Description,
+                                    VanaIcons.DocumentText,
                                     contentDescription = draft.documentName ?: uiText("文件附件", "File attachment"),
                                     modifier = Modifier
                                         .size(68.dp)
@@ -815,7 +794,7 @@ private fun DraftStrip(
                         }
                         if (draft.sendsImage) {
                             Icon(
-                                Icons.Default.Visibility,
+                                VanaIcons.Eye,
                                 contentDescription = uiText("原图会一起发出去", "Original photo will be sent"),
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -848,7 +827,7 @@ private fun DraftStrip(
                         .size(32.dp),
                 ) {
                     Icon(
-                        Icons.Default.Close,
+                        VanaIcons.XMark,
                         contentDescription = uiText("不发这张", "Remove this attachment"),
                         modifier = Modifier.size(18.dp),
                     )
@@ -1388,7 +1367,7 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
                         modifier = Modifier.padding(8.dp),
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Icon(Icons.Default.Description, contentDescription = null)
+                        Icon(VanaIcons.DocumentText, contentDescription = null)
                         Text(
                             attachment.documentName ?: uiText("文件", "File"),
                             style = MaterialTheme.typography.labelSmall,
@@ -1498,7 +1477,7 @@ private fun ComposerBar(
                     modifier = Modifier.size(44.dp),
                 ) {
                     Icon(
-                        Icons.Default.Add,
+                        VanaIcons.Plus,
                         contentDescription = uiText("添加照片或文件", "Add photo or file"),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                             alpha = if (canAttachMore) 1f else 0.38f,
@@ -1560,7 +1539,7 @@ private fun ComposerBar(
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 enabled = true,
                 contentDescription = uiText("停止回答", "Stop response"),
-                icon = Icons.Default.Stop,
+                icon = VanaIcons.Stop,
             )
         } else {
             ComposerCircleButton(
@@ -1577,7 +1556,7 @@ private fun ComposerBar(
                 },
                 enabled = canSend,
                 contentDescription = uiText("发送", "Send"),
-                icon = Icons.AutoMirrored.Filled.Send,
+                icon = VanaIcons.PaperAirplane,
                 iconAlpha = if (canSend) 1f else 0.45f,
             )
         }
@@ -1609,7 +1588,7 @@ private fun ComposerBar(
                 )
                 if (hasCamera) {
                     AttachSheetRow(
-                        icon = Icons.Default.PhotoCamera,
+                        icon = VanaIcons.Camera,
                         title = uiText("拍照", "Take photo"),
                         subtitle = uiText("化验单、药盒、报告", "Lab report, medicine package or report"),
                         onClick = {
@@ -1619,7 +1598,7 @@ private fun ComposerBar(
                     )
                 }
                 AttachSheetRow(
-                    icon = Icons.Default.PhotoLibrary,
+                    icon = VanaIcons.Photo,
                     title = uiText("从相册选取", "Choose from photos"),
                     subtitle = uiText("已经拍过的那些", "Use an existing photo"),
                     onClick = {
@@ -1628,7 +1607,7 @@ private fun ComposerBar(
                     },
                 )
                 AttachSheetRow(
-                    icon = Icons.AutoMirrored.Filled.InsertDriveFile,
+                    icon = VanaIcons.Document,
                     title = uiText("添加文件", "Add file"),
                     subtitle = uiText("PDF 或 Word", "PDF or Word"),
                     onClick = {
@@ -1759,7 +1738,7 @@ private fun SessionDrawer(
                         contentDescription = closeDescription
                     },
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Icon(VanaIcons.ArrowLeft, contentDescription = null)
                 }
             },
             actions = {
@@ -1770,7 +1749,7 @@ private fun SessionDrawer(
                             contentDescription = newDescription
                         },
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
+                        Icon(VanaIcons.PencilSquare, contentDescription = null)
                     }
                     DropdownMenu(
                         expanded = showNewMenu,
@@ -1783,7 +1762,7 @@ private fun SessionDrawer(
                                 onNew()
                             },
                             leadingIcon = {
-                                Icon(Icons.Default.Edit, contentDescription = null)
+                                Icon(VanaIcons.PencilSquare, contentDescription = null)
                             },
                         )
                         DropdownMenuItem(
@@ -1793,7 +1772,7 @@ private fun SessionDrawer(
                                 onNewPrivate()
                             },
                             leadingIcon = {
-                                Icon(Icons.Default.VisibilityOff, contentDescription = null)
+                                Icon(VanaIcons.EyeSlash, contentDescription = null)
                             },
                         )
                         DropdownMenuItem(
@@ -1803,7 +1782,7 @@ private fun SessionDrawer(
                                 showGoalDialog = true
                             },
                             leadingIcon = {
-                                Icon(Icons.Default.Add, contentDescription = null)
+                                Icon(VanaIcons.Plus, contentDescription = null)
                             },
                         )
                     }
@@ -1825,14 +1804,14 @@ private fun SessionDrawer(
                         },
                         leadingContent = {
                             Icon(
-                                Icons.Default.Person,
+                                VanaIcons.User,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         },
                         trailingContent = {
                             Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                VanaIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -2068,7 +2047,7 @@ private fun SessionListRow(
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(
-                    Icons.Default.Delete,
+                    VanaIcons.Trash,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onError,
                 )
@@ -2093,7 +2072,7 @@ private fun SessionListRow(
                 trailingContent = if (selected) {
                     {
                         Icon(
-                            Icons.Default.Check,
+                            VanaIcons.Check,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),

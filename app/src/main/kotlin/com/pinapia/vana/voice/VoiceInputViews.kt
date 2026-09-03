@@ -1,5 +1,6 @@
 package com.pinapia.vana.voice
 
+import com.pinapia.vana.ui.icons.VanaIcons
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,9 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -130,7 +128,7 @@ fun VoiceInputButton(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = if (isCancelling) Icons.Default.Close else Icons.Default.Mic,
+                imageVector = if (isCancelling) VanaIcons.XMark else VanaIcons.Microphone,
                 contentDescription = null,
                 tint = tint,
                 modifier = Modifier.size(18.dp),
