@@ -1,0 +1,19 @@
+{
+ "version": 1,
+ "tenants": [
+  {
+   "id": "8f3c1d20-4a55-4c7e-9b12-0d61a7e5c401",
+   "name": "我",
+   "kind": "owner",
+   "ageBand": "adult",
+   "createdAt": "2026-01-06T09:30:00Z"
+  },
+  {
+   "id": "b21e5f77-1c39-4a80-8e64-2f7ac9d31b55",
+   "name": "妈妈",
+   "kind": "managed",
+   "ageBand": "senior",
+   "createdAt": "2026-03-07T09:30:00Z"
+  }
+ ]
+}

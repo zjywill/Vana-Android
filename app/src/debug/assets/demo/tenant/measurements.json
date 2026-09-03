@@ -1,0 +1,58 @@
+{
+ "cards": [
+  {
+   "id": "2241364e-52af-49a9-aea1-38270906e89e",
+   "name": "低密度脂蛋白",
+   "value": "3.82",
+   "unit": "mmol/L",
+   "observedAt": "2026-09-03T09:30:00Z",
+   "note": "体检，空腹",
+   "recordedAt": "2026-09-03T09:30:00Z"
+  },
+  {
+   "id": "21509a3d-2d7f-4cc2-b735-96c879dd8a32",
+   "name": "总胆固醇",
+   "value": "5.90",
+   "unit": "mmol/L",
+   "observedAt": "2026-09-03T09:30:00Z",
+   "note": "体检，空腹",
+   "recordedAt": "2026-09-03T09:30:00Z"
+  },
+  {
+   "id": "884ec538-396b-49b2-913e-7cf23ee1ce24",
+   "name": "空腹血糖",
+   "value": "6.1",
+   "unit": "mmol/L",
+   "observedAt": "2026-09-03T09:30:00Z",
+   "note": "体检，空腹",
+   "recordedAt": "2026-09-03T09:30:00Z"
+  },
+  {
+   "id": "69a9bc9c-300e-4a55-83cc-3b9405f34796",
+   "name": "血压",
+   "value": "128/82",
+   "unit": "mmHg",
+   "observedAt": "2026-09-02T09:30:00Z",
+   "note": "早上起床后量的",
+   "recordedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "id": "b2abd56f-2246-4c19-9ec7-89ecb16fa356",
+   "name": "体重",
+   "value": "71.4",
+   "unit": "kg",
+   "observedAt": "2026-09-02T09:30:00Z",
+   "note": "",
+   "recordedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "id": "8d164235-6eb0-41f8-b544-1da2c1b18fe4",
+   "name": "低密度脂蛋白",
+   "value": "3.31",
+   "unit": "mmol/L",
+   "observedAt": "2025-11-11T09:30:00Z",
+   "note": "去年体检",
+   "recordedAt": "2025-11-11T09:30:00Z"
+  }
+ ]
+}

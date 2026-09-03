@@ -19,3 +19,6 @@ google-services.json
 /key/
 .env
 .env.*
+
+# goldie 的产物：原始截图、合成图、store.json。都能从 `goldie all` 重新生成。
+/out/

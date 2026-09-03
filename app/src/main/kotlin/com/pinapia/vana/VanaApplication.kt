@@ -1,6 +1,7 @@
 package com.pinapia.vana
 
 import android.app.Application
+import com.pinapia.vana.demo.DemoSeed
 import com.pinapia.vana.location.LocationProvider
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.EngineSettings
@@ -26,6 +27,9 @@ class VanaApplication : Application() {
         engineSettings = EngineSettings(this)
         secureKeyStore = SecureKeyStore(this)
         locationProvider = LocationProvider(this)
+        // 必须在 TenantScope.bootstrap 之前：那一步会在 tenants.json 缺席时凭空建
+        // 一个 owner。release 侧是空实现。
+        DemoSeed.applyIfRequested(this)
         tenantStore = TenantStore(filesDir)
         TenantScope.bootstrap(parent = filesDir, store = tenantStore)
         CloudCatalog.bootstrap(this)

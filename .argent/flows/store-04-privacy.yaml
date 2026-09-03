@@ -1,0 +1,8 @@
+# 本机优先：设置页顶部，密钥只进本机加密存储那一段。
+steps:
+  - launch: com.pinapia.vana
+  - await: { visible: { text: Vana } }
+  - await: { idle: true }
+  - tap: { text: 设置 }
+  - await: { visible: { text: 云端模型 } }
+  - await: { idle: true }

@@ -1,0 +1,63 @@
+{
+ "items": [
+  {
+   "name": "二甲双胍缓释片",
+   "status": "ongoing",
+   "when": "每天晚餐后",
+   "reason": "内分泌科开的，空腹血糖 6.8",
+   "outcome": "吃了四个月，复查 6.1，肠胃一开始不舒服，两周后好了",
+   "startedAt": "2026-05-06T09:30:00Z",
+   "id": "ddca820e-434c-48f4-9df6-4738be65fb73",
+   "origin": "manual",
+   "createdAt": "2026-04-06T09:30:00Z",
+   "updatedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "name": "红曲胶囊",
+   "status": "asNeeded",
+   "when": "想起来就吃，断断续续",
+   "reason": "自己买的，想降血脂",
+   "outcome": "说不好，这次复查低密度反而涨了",
+   "startedAt": "2026-03-07T09:30:00Z",
+   "id": "2b5ff385-c8ce-46e6-9c07-eb65c585ef95",
+   "origin": "manual",
+   "createdAt": "2026-04-06T09:30:00Z",
+   "updatedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "name": "维生素 D3",
+   "status": "ongoing",
+   "when": "每天早上",
+   "reason": "去年查 25-羟维生素 D 偏低",
+   "outcome": "复查回到正常范围",
+   "startedAt": "2025-11-07T09:30:00Z",
+   "id": "239bbbb7-59dd-43dd-84cb-ca483b5af419",
+   "origin": "manual",
+   "createdAt": "2026-04-06T09:30:00Z",
+   "updatedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "name": "布洛芬",
+   "status": "cannotTake",
+   "when": "",
+   "reason": "胃溃疡史，消化科明确说了不要用",
+   "outcome": "",
+   "note": "疼痛要用药先问医生",
+   "id": "c54c265e-9a17-44d7-8f11-92d6b19eaba6",
+   "origin": "manual",
+   "createdAt": "2026-04-06T09:30:00Z",
+   "updatedAt": "2026-09-02T09:30:00Z"
+  },
+  {
+   "name": "褪黑素",
+   "status": "tried",
+   "when": "睡不着的时候",
+   "reason": "入睡困难",
+   "outcome": "吃了两周没感觉，第二天反而发沉，停了",
+   "id": "90e0130e-da48-404d-87c2-9a717e190c9a",
+   "origin": "manual",
+   "createdAt": "2026-04-06T09:30:00Z",
+   "updatedAt": "2026-09-02T09:30:00Z"
+  }
+ ]
+}

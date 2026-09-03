@@ -1,0 +1,8 @@
+# 用药与补剂：顶栏烧瓶图标。
+steps:
+  - launch: com.pinapia.vana
+  - await: { visible: { text: Vana } }
+  - await: { idle: true }
+  - tap: { text: 用药与补剂 }
+  - await: { visible: { text: 二甲双胍缓释片 } }
+  - await: { idle: true }

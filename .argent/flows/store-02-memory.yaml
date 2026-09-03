@@ -1,0 +1,12 @@
+# 长期记忆：设置 → Vana 记住的事。
+steps:
+  - launch: com.pinapia.vana
+  - await: { visible: { text: Vana } }
+  - await: { idle: true }
+  - tap: { text: 设置 }
+  - await: { visible: { text: 云端模型 } }
+  - await: { idle: true }
+  - scroll-to: { target: { text: Vana 记住的事 } }
+  - tap: { text: Vana 记住的事 }
+  - await: { visible: { text: 长期情况 } }
+  - await: { idle: true }

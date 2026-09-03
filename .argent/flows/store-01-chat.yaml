@@ -1,0 +1,14 @@
+# 主图：打开已有会话，停在化验单解读那一屏。
+steps:
+  - launch: com.pinapia.vana
+  - await: { visible: { text: Vana } }
+  - await: { idle: true }
+  - tap: { text: 会话列表 }
+  - await: { visible: { text: 会话 } }
+  - await: { idle: true }
+  - tap: { text: 这是今天体检的血脂四项 }
+  - await: { idle: true }
+  # 会话打开时停在底部，要的那一屏在上面。
+  - scroll-to: { target: { text: 总胆固醇 }, direction: up }
+  - await: { visible: { text: 总胆固醇 } }
+  - await: { idle: true }

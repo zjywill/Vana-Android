@@ -1,0 +1,45 @@
+{
+ "items": [
+  {
+   "id": "79c5cd16-f9e0-4e52-9c5b-316fc5d586c2",
+   "text": "父亲 50 多岁做过心脏支架，有早发冠心病家族史",
+   "kind": "profile",
+   "origin": "asked",
+   "createdAt": "2026-08-04T09:30:00Z",
+   "updatedAt": "2026-09-01T09:30:00Z"
+  },
+  {
+   "id": "d1fe7acd-2eec-412e-a333-2c5278b6ce48",
+   "text": "有胃溃疡史，消化科交代不要用布洛芬类",
+   "kind": "profile",
+   "origin": "asked",
+   "createdAt": "2026-08-04T09:30:00Z",
+   "updatedAt": "2026-09-01T09:30:00Z"
+  },
+  {
+   "id": "3d7d2737-ba27-454f-bdd8-917f96575b61",
+   "text": "希望直接说结论，不要先铺垫一段安慰的话",
+   "kind": "preference",
+   "origin": "extracted",
+   "createdAt": "2026-08-04T09:30:00Z",
+   "updatedAt": "2026-09-01T09:30:00Z"
+  },
+  {
+   "id": "e1a913e2-f0b4-4d72-98cc-b8e65acbca3e",
+   "text": "跑步时膝盖疼，2026 年 8 月起按「连续两周不疼再加量」推进",
+   "kind": "interpretation",
+   "origin": "extracted",
+   "createdAt": "2026-08-04T09:30:00Z",
+   "updatedAt": "2026-09-01T09:30:00Z"
+  },
+  {
+   "id": "d2192763-12e4-4cf2-b1b0-db299ae85642",
+   "text": "12 月复查血脂四项，空腹",
+   "kind": "followUp",
+   "origin": "asked",
+   "createdAt": "2026-08-04T09:30:00Z",
+   "updatedAt": "2026-09-01T09:30:00Z",
+   "dueAt": "2026-12-10T09:30:00Z"
+  }
+ ]
+}
