@@ -56,6 +56,7 @@ check-in 和「问 Vana」App Shortcut 已落地。设备健康数据不属于 A
 | `NSLocationDefaultAccuracyReduced` | 只声明 `ACCESS_COARSE_LOCATION` | 不要加 `ACCESS_FINE_LOCATION`。城市决定气候、季节、时差和就医方式，那是要位置的全部理由 |
 | App Intents / Siri | App Shortcuts / Assistant deep link（`vana://action/ask`） | 「问 Vana」打开聊天自动发送 |
 | `BackgroundDigest`（scenePhase） | WorkManager | 「后台的模型调用同时只准跑一件」那把锁照样要有，它补的是一个真失灵 |
+| Asset catalog（`Exercises.xcassets` 里一图一个 imageset，SVG 由 Xcode 转成矢量） | `assets/exercises/` 平铺文件名 + androidsvg 渲成 bitmap | 数据是同一份 `exercises.json`，`files` 里就是平铺的文件名，两边不用各存一套 |
 | `MARKETING_VERSION` / plist | `versionName` / `versionCode` | — |
 
 ## 目录规划
@@ -82,6 +83,28 @@ vision/       拍照 / 选文件 / OCR / RecognizedTextLayout
 voice/        按住说话
 ui/theme/     配色与字阶
 ```
+
+## 动作库这一侧的三处不同(`exercises/`)
+
+设计决策整个在 iOS 那份 `CLAUDE.md` 的「架构:动作库」里,数据也是同一份
+`exercises.json`(295 个动作、879 张图,从 iOS 仓库同步过来)。这边只记真正不一样的三处:
+
+- **图是平铺文件名,不是 asset catalog。** `files` 里存的就是 `wg-plank-1.svg` 这种名字,
+  iOS 那边拿它去找同名 imageset,这边直接是 `assets/exercises/` 下的文件。所以**同步图的时候
+  要把 iOS 的 imageset 目录摊平**,别把目录结构一起搬过来。
+- **SVG 要自己渲成 bitmap 并且必须缓存**(`ExerciseSvg`)。iOS 那边 SVG 进 asset catalog 之后
+  是系统在管;这边每次都要 androidsvg 解一遍。而**帧是循环的**——一张图三帧、一屏三张卡,
+  按乒乓的节奏就是每秒解一次,不缓存等于每一圈都重解。缓存的键是文件名加尺寸(内容打在包里
+  不会变),上限按「一屏撑死几张卡 × 每张几帧」定:不设上限的话,用户往回翻聊天记录会攒下
+  几百张 256×256 的 bitmap。
+- **`ExerciseLibrary.parse(raw)` 是为测试留的口子。** 这边的单元测试没有 Robolectric,
+  拿不到 `Context` 也就读不到 assets;而这个库最要紧的那几条(关节排除、器械过滤、不给剂量)
+  盯的正是数据本身,不是读文件那一步。测试直接读 `src/main/assets/exercises.json`,
+  断言的口径要和 iOS 的 `VanaTests/ExerciseTests` 一致——两边对同一份数据说出两种结论,
+  改的人只会更糊涂。
+
+包体积:879 张 SVG 未压缩 22.8MB,进 APK 压到 10.2MB。「不联网、不按需下载」那条和 iOS 一样
+成立,这个代价是认了的。
 
 ## provider catalog:从 AIKit 同步,来源是 models.dev
 

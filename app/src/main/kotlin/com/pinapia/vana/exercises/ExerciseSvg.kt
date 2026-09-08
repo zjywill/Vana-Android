@@ -56,15 +56,23 @@ fun ExerciseFigure(
 
 @Composable
 private fun AlternatingFigures(names: List<String>) {
-    var step by remember { mutableIntStateOf(0) }
-    LaunchedEffect(names) {
+    // **三帧要乒乓着走**（起→中→止→中），不是一路循环：一路循环的话末尾那一下是从「止」
+    // 直接跳回「起」，读起来是抽搐而不是一个动作。两张时首尾往返本来就等于原样循环，
+    // 所以这一段对 `ek` 那几条是恒等的。
+    val frames = remember(names) {
+        if (names.size > 2) names + names.drop(1).dropLast(1).reversed() else names
+    }
+    // 三帧比两态多一档，单帧停留短一点，整个动作走一圈的时长才不会翻倍。
+    val interval = if (names.size > 2) 900L else 1_300L
+    var step by remember(frames) { mutableIntStateOf(0) }
+    LaunchedEffect(frames) {
         while (isActive) {
-            delay(1_300)
-            step = (step + 1) % names.size
+            delay(interval)
+            step = (step + 1) % frames.size
         }
     }
     SvgAsset(
-        fileName = names[step % names.size],
+        fileName = frames[step % frames.size],
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -98,7 +106,31 @@ val ExerciseMove.imageNames: List<String>
     }
 
 object ExerciseSvg {
+    /**
+     * 已经画好的那几张。
+     *
+     * **帧是循环的，所以不缓存等于每一圈都重解一遍 SVG。** 一张图三帧、一屏三张卡，按乒乓的
+     * 节奏就是每秒钟解一次；而这几张 SVG 是重描出来的单路径，解析并不便宜。缓存的键是文件名，
+     * 内容打在包里不会变。
+     *
+     * 上限按「一屏撑死几张卡 × 每张几帧」定，超了丢最早的——不设上限的话，用户翻着聊天记录
+     * 往回滚，几百张 256×256 的 bitmap 会一直攒着。
+     */
+    private const val CACHE_LIMIT = 24
+    private val cache = object : LinkedHashMap<String, Bitmap>(CACHE_LIMIT, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>): Boolean =
+            size > CACHE_LIMIT
+    }
+
     fun render(context: Context, fileName: String, sizePx: Int): Bitmap? {
+        val key = "$fileName@$sizePx"
+        synchronized(cache) { cache[key] }?.let { return it }
+        return renderUncached(context, fileName, sizePx)?.also {
+            synchronized(cache) { cache[key] = it }
+        }
+    }
+
+    private fun renderUncached(context: Context, fileName: String, sizePx: Int): Bitmap? {
         return runCatching {
             val svg = context.assets.open("exercises/$fileName").use { SVG.getFromInputStream(it) }
             val picture = svg.renderToPicture()
