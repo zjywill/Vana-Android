@@ -4,9 +4,13 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,9 +34,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 /**
- * 动作示意图。`files` 里是 `ek-0001-tension.svg` 这种资产名，落在 `assets/exercises/`。
+ * 动作示意图。`files` 里是 `wg-plank-1.svg` 这种资产名，落在 `assets/exercises/`。
  *
- * 两张时交替显示——两态本来就是同一个动作的起止。素材是白底的，这一层永远垫白。
+ * 多于一张时交替显示——那几帧本来就是同一个动作的起止。素材是白底的，这一层永远垫白。
+ *
+ * **关掉动效时并排显示，不是退回一张静图。** 那时候「会动」本来就不是可用的信息通道，
+ * 但并排仍然说得清先后；退回一张的话，这张卡就又变回了「一张静图说不出方向」的样子，
+ * 而那正是这个库当初把单帧动作全部换掉的理由。三帧的只并排头尾两张——一格里挤三张，
+ * 每张只剩三分之一宽，谁都看不清。
  */
 @Composable
 fun ExerciseFigure(
@@ -40,6 +49,7 @@ fun ExerciseFigure(
     modifier: Modifier = Modifier,
 ) {
     val names = move.imageNames
+    val reduceMotion = rememberReduceMotion()
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -47,9 +57,41 @@ fun ExerciseFigure(
             .padding(4.dp),
     ) {
         when {
-            names.size > 1 -> AlternatingFigures(names = names)
+            names.size > 1 && !reduceMotion -> AlternatingFigures(names = names)
+            names.size > 1 -> StillFigures(names = names)
             names.size == 1 -> SvgAsset(fileName = names[0], modifier = Modifier.fillMaxSize())
             else -> Box(Modifier.fillMaxSize())
+        }
+    }
+}
+
+/**
+ * 系统里「移除动画」开着没有。
+ *
+ * Android 这一侧对应 iOS 的 `accessibilityReduceMotion` 的是
+ * `Settings.Global.ANIMATOR_DURATION_SCALE`：用户在开发者选项或无障碍设置里把动画关掉时它是 0。
+ * 读不到就按「没关」走——猜错的代价是图照常在动，比一张不动的静图轻。
+ */
+@Composable
+private fun rememberReduceMotion(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        runCatching {
+            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+        }.getOrDefault(false)
+    }
+}
+
+/** 关掉动效时的那一版：并排显示头尾，也就是这个动作的起止。 */
+@Composable
+private fun StillFigures(names: List<String>) {
+    val shown = remember(names) { if (names.size > 2) listOf(names.first(), names.last()) else names }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        shown.forEach { name ->
+            SvgAsset(fileName = name, modifier = Modifier.weight(1f).fillMaxHeight())
         }
     }
 }

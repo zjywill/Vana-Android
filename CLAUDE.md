@@ -26,8 +26,15 @@ check-in 和「问 Vana」App Shortcut 已落地。设备健康数据不属于 A
 
 ```bash
 ./gradlew :app:assembleDebug
-./gradlew :agent-runtime:test        # agent core，秒级，不需要模拟器
-./gradlew :app:testDebugUnitTest
+./gradlew :agent-runtime:test           # agent core，秒级，不需要模拟器
+./gradlew :app:testPlayDebugUnitTest    # 有 play / github 两个 flavor，没有 testDebugUnitTest
+```
+
+`local.properties` 不进仓库，所以新机器上第一次跑要给 SDK 路径，否则报
+`SDK location not found`：
+
+```bash
+ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 ```
 
 ## 模块边界：`:agent-runtime` 是纯 Kotlin/JVM，不是 Android library
