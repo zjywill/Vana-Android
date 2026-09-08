@@ -1,0 +1,46 @@
+# 隐私说明发到 GitHub Pages。
+#
+# 仓库里**只有** app/src/main/assets 下那一份，是 app 内「关于 > 隐私说明」直接渲染的同一个
+# 文件；这里在构建时拷出来发布，不在仓库里留第二份副本。分成两份的话，改一处忘一处，
+# 而对不上的那次恰好是审核在核对的那一条。
+name: Publish privacy policy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/src/main/assets/PrivacyPolicy.html
+      - app/src/main/assets/PrivacyPolicy.en.html
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site
+        run: |
+          mkdir -p site/en
+          cp app/src/main/assets/PrivacyPolicy.html site/index.html
+          cp app/src/main/assets/PrivacyPolicy.en.html site/en/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
