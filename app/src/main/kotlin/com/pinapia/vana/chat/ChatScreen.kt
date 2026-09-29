@@ -175,7 +175,24 @@ fun ChatScreen(
     val focusMedication by viewModel.focusMedication.collectAsStateWithLifecycle()
     val todayCards by viewModel.todayCards.collectAsStateWithLifecycle()
     val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
-    var todayExpanded by rememberSaveable { mutableStateOf(false) }
+    val todayAfterId by viewModel.todayAfterId.collectAsStateWithLifecycle()
+    // 「今天」那张卡:本机数据拼的,不进线程、不进上下文。不留痕那一层里不出。
+    val today: @Composable () -> Unit = {
+        if (!viewModel.ephemeral) {
+            TodayStrip(
+                cards = todayCards,
+                onAction = { action ->
+                    when (action) {
+                        TodayAction.OpenTasks -> onOpenTasks()
+                        TodayAction.OpenMemory -> onOpenMemory()
+                        is TodayAction.OpenTask -> onOpenTask(action.id)
+                        is TodayAction.OpenSurface -> onOpenSurface(action.surfaceId)
+                        is TodayAction.Ask -> viewModel.send(action.prompt)
+                    }
+                },
+            )
+        }
+    }
     var pendingDeleteAssistantId by remember { mutableStateOf<String?>(null) }
     val input by viewModel.input.collectAsStateWithLifecycle()
     val isReplying by viewModel.isReplying.collectAsStateWithLifecycle()
@@ -346,14 +363,20 @@ fun ChatScreen(
     // 只在「最后一条」换了的时候回到底部(新消息、后台追加的消息):往前翻出更早的历史会让条数变多,
     // 那不该把用户拽回底部。打开 app 读完历史那一下直接落在末尾,不要从头一路动画滚过整条线程。
     var scrolledToEndOnce by remember { mutableStateOf(false) }
-    LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id) {
+    // 回到前台就是又打开了一次:「今天」挪到最新那条下面(下面那个 effect 跟着贴一次底)。
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        if (!viewModel.ephemeral && !viewModel.isReplying.value) viewModel.pinTodayToLatest()
+    }
+    LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id, todayAfterId) {
         if (!historyLoaded) return@LaunchedEffect
         followOutput.value = true
         if (session.messages.isNotEmpty()) {
+            // 打开时线程是空的,「今天」那一项排在所有消息前面:最后一条的下标要往后挪一格。
+            val last = session.messages.lastIndex + if (todayAfterId == null) 1 else 0
             if (scrolledToEndOnce) {
-                listState.animateScrollToItem(session.messages.lastIndex)
+                listState.animateScrollToItem(last)
             } else {
-                listState.scrollToItem(session.messages.lastIndex)
+                listState.scrollToItem(last)
             }
         }
         scrolledToEndOnce = true
@@ -474,25 +497,6 @@ fun ChatScreen(
                     .imePadding(),
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    if (!viewModel.ephemeral) {
-                        TodayStrip(
-                            cards = todayCards,
-                            expanded = todayExpanded,
-                            onToggle = { todayExpanded = !todayExpanded },
-                            onAction = { action ->
-                                when (action) {
-                                    TodayAction.OpenTasks -> onOpenTasks()
-                                    TodayAction.OpenMemory -> onOpenMemory()
-                                    is TodayAction.OpenTask -> onOpenTask(action.id)
-                                    is TodayAction.OpenSurface -> onOpenSurface(action.surfaceId)
-                                    is TodayAction.Ask -> {
-                                        todayExpanded = false
-                                        viewModel.send(action.prompt)
-                                    }
-                                }
-                            },
-                        )
-                    }
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -506,6 +510,10 @@ fun ChatScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
+                            // 打开时线程是空的:「今天」排在最前面(那时候最前面就是最新的);之后说的话排在它下面。
+                            if (historyLoaded && todayAfterId == null) {
+                                item(key = "today") { today() }
+                            }
                             if (session.isEmpty && historyLoaded) {
                                 item {
                                     WelcomeCard(
@@ -541,6 +549,8 @@ fun ChatScreen(
                                     },
                                     onOpenTask = onOpenTask,
                                 )
+                                // 打开 app 那一刻的最新一条下面。之后说的话排在它下面,它不跟着挪。
+                                if (message.id == todayAfterId) today()
                               }
                             }
                         }

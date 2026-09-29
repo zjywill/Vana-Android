@@ -31,7 +31,11 @@ data class TodayCard(
     val title: String,
     val body: String? = null,
     val action: TodayAction = TodayAction.OpenTasks,
+    val kind: TodayKind = TodayKind.REMINDER,
 )
+
+/** 卡片是哪一类。决定那一行图标的颜色和那两个字,不影响排序(排序看 `priority`)。和 iOS 同一套。 */
+enum class TodayKind { REMINDER, OVERDUE, NEEDS_YOU, RUNNING, GOAL, FOLLOW_UP, MEDICATION }
 
 /** 各插件拼卡片要看的那点本机数据。 */
 class TodayContext(

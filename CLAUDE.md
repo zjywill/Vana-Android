@@ -134,7 +134,21 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 - **「今天」是本机数据拼出来的，一次模型调用都不发**（`TodayCompute`/`TodayFeed`）：核心贡献到点/过点的提醒、
   等你确认的任务、目标、到期的待跟进；健康贡献到期的用药回访（`VanaPlugin.todayCards`，关掉的插件不被问）。
   天天打开天天付钱是不该的——别把它改成让模型写一段早间简报。
+- **「今天」是一张普通卡片，排在对话那一列里**（`TodayStrip`）：头上「今天 · 日期」，一件事一行，图标按
+  `TodayKind` 上色（和 iOS 同一套颜色），最多五行、多了指向任务页。**不折叠、不悬浮**——浮在顶上时对话从它底下
+  穿过去。**每次打开 app 时它是最新的一条**：排在那一刻最后一条消息下面（`ChatViewModel.todayAfterId`，读完线程、
+  `ON_START` 各定一次），之后说的话排在它下面；打开时线程是空的就排在最前面（这时贴底的下标要多挪一格）。
+  它只是屏幕上的一张卡，**不进线程、不进给模型的上下文**。
 - 用户手动做的事和模型工具走同一批上限（`TaskActions` 对 `TasksTools`）：两条路进来的东西在盘上长得一样。
+
+## 设置归哪儿（`SettingsScreen` / `PluginsScreen` / `PluginDetailScreen`）
+
+判据和 iOS 一样（见 iOS `CLAUDE.md`「设置归哪儿」）：**关掉这个插件，这件设置还有没有意义**。没有意义的在插件
+详情页里（用药、测量、家人档案），还有意义的留在设置。插件页每个插件一行（名字、一句话、开没开），点进去是
+开关 → surfaces → 免责声明。
+
+和 iOS 不一样的一处：**Android 的每日 check-in 留在设置**。它的正文是待跟进和当天的提醒，不读设备健康数据，
+健康关掉照样有话说；iOS 那边的 check-in 是 `HealthSituation.detect()` 写的，所以归健康插件。
 
 ## 后台任务（子 agent，`SubagentRunner` / `SubagentScheduler`）
 
@@ -205,7 +219,7 @@ memory/       长期记忆
 recall/       召回（读线程档案）与后台一轮（`BackgroundTurn`：待跟进回访，也是后台任务的装配底座）、`BackgroundModelWork` 那把锁
 search/       网页搜索、读网页（`FetchUrlPolicy`、`HtmlText`）
 tasks/        提醒/目标/后台任务：`TaskStore`、`ReminderScheduler`、`TasksTools`、`SubagentRunner`/`Scheduler`、任务页与详情
-today/        「今天」：`TodayCompute`（纯函数）、`TodayFeed`、聊天顶上那条 `TodayStrip`
+today/        「今天」：`TodayCompute`（纯函数）、`TodayFeed`、对话里那张 `TodayStrip`
 notes/        笔记与清单
 session/      消息模型（`ChatMessage`；`ChatSession` 只是内存里那条线程末尾的一段视图）
 thread/       一条永远的对话：`ThreadStore` / `ThreadWriter` / `ThreadArchive` / `ThreadWindow`

@@ -40,6 +40,7 @@ import com.pinapia.vana.settings.DeveloperScreen
 import com.pinapia.vana.settings.SettingsScreen
 import com.pinapia.vana.memory.MemoryHarvester
 import com.pinapia.vana.plugins.PluginSurface
+import com.pinapia.vana.plugins.PluginDetailScreen
 import com.pinapia.vana.plugins.PluginsScreen
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.notes.NotesScreen
@@ -72,6 +73,8 @@ private object Routes {
     const val SETTINGS = "settings"
     const val MEMORY = "memory"
     const val PLUGINS = "plugins"
+    const val PLUGIN = "plugin/{id}"
+    fun plugin(id: String) = "plugin/$id"
     const val NOTES = "notes"
     const val TASKS = "tasks"
     const val TASK = "task/{id}"
@@ -283,6 +286,14 @@ fun VanaApp(
         }
         composable(Routes.PLUGINS) {
             PluginsScreen(
+                engineSettings = app.engineSettings,
+                onBack = { navController.popBackStack() },
+                onOpenPlugin = { navController.navigate(Routes.plugin(it)) },
+            )
+        }
+        composable(Routes.PLUGIN) { entry ->
+            PluginDetailScreen(
+                pluginId = entry.arguments?.getString("id").orEmpty(),
                 engineSettings = app.engineSettings,
                 onBack = { navController.popBackStack() },
                 // 插件只说「是什么」,去哪儿由外壳定。

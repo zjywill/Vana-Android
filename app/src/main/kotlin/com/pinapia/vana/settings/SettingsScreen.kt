@@ -311,6 +311,9 @@ fun SettingsScreen(
                 thinking = it
                 engineSettings.thinkingEnabled = it
             }
+            HorizontalDivider()
+            // 记忆、对话、后台任务:三件都是「Vana 替你留着或替你做的事」,和插件无关,关不掉。
+            Text(uiText("记忆与对话", "Memory & conversation"), style = MaterialTheme.typography.titleMedium)
             SettingSwitch(uiText("长期记忆", "Long-term memory"), memory) {
                 memory = it
                 engineSettings.memoryEnabled = it
@@ -323,21 +326,6 @@ fun SettingsScreen(
                     .padding(vertical = 8.dp),
                 style = MaterialTheme.typography.bodyLarge,
             )
-            Text(
-                uiText("插件", "Plugins"),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenPlugins)
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                uiText("健康等可以整个开关的能力。", "Capabilities such as Health that you can switch off entirely."),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            HorizontalDivider()
-            Text(uiText("对话历史", "Conversation history"), style = MaterialTheme.typography.titleMedium)
             Text(
                 uiText(
                     "Vana 只有这一条对话，打开就接着上次。更早的内容不会一直发给模型——它们留在本机，需要时才被翻出来。" +
@@ -362,6 +350,42 @@ fun SettingsScreen(
             }
             Text(
                 uiText("清除会删除本机保存的消息（连同其中的照片），无法撤销。", "Clearing permanently deletes messages saved on this device, along with their photos."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            SettingSwitch(uiText("只读任务自动开始", "Start read-only tasks automatically"), autoStartTasks) { enabled ->
+                autoStartTasks = enabled
+                engineSettings.autoStartTasks = enabled
+            }
+            Text(
+                uiText(
+                    "Vana 可以把要花几分钟的独立事务（比如查资料、比较方案）放到后台去做。默认每一件都先给你一张确认卡，" +
+                        "你点了「开始」才会跑；打开这一项后，只读的任务会直接开始。后台任务只读：它不会改动你的任何数据，" +
+                        "想让你做的事只会作为建议放在结果里，由你决定。它会把任务说明、用到的记忆和搜到的内容发给你选的模型服务。",
+                    "Vana can hand a self-contained job that takes a few minutes — researching, comparing options — to the background. " +
+                        "By default every job shows a confirmation card and only starts when you tap Start; with this on, " +
+                        "read-only jobs start right away. Background jobs are read-only: they never change your data, and anything " +
+                        "they want you to do appears as a suggestion for you to accept. A job sends its brief, the memory it needs " +
+                        "and what it finds to your chosen model service.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider()
+            // 插件自己的设置在插件详情页里,不散在这一页。
+            Text(uiText("插件", "Plugins"), style = MaterialTheme.typography.titleMedium)
+            Text(
+                uiText("管理插件", "Manage plugins"),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenPlugins)
+                    .padding(vertical = 8.dp),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                uiText("健康、笔记与清单这些能整个开关的能力，以及它们各自的设置（用药表、测量卡片、家人档案）。", "Capabilities you can turn on or off as a whole, like Health and Notes and lists, with their own settings (medications, measurement cards, family profiles)."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -400,7 +424,8 @@ fun SettingsScreen(
             )
 
             HorizontalDivider()
-            Text(uiText("提醒", "Reminders"), style = MaterialTheme.typography.titleMedium)
+            // 「提醒」这个词留给任务页里的提醒,这一节只管每天早晚那两条。
+            Text(uiText("每日 check-in", "Daily check-ins"), style = MaterialTheme.typography.titleMedium)
             SettingSwitch(uiText("每日 check-in", "Daily check-ins"), checkIns) { enabled ->
                 if (enabled) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -469,26 +494,6 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            HorizontalDivider()
-            Text(uiText("后台任务", "Background tasks"), style = MaterialTheme.typography.titleMedium)
-            SettingSwitch(uiText("只读任务自动开始", "Start read-only tasks automatically"), autoStartTasks) { enabled ->
-                autoStartTasks = enabled
-                engineSettings.autoStartTasks = enabled
-            }
-            Text(
-                uiText(
-                    "Vana 可以把要花几分钟的独立事务（比如查资料、比较方案）放到后台去做。默认每一件都先给你一张确认卡，" +
-                        "你点了「开始」才会跑；打开这一项后，只读的任务会直接开始。后台任务只读：它不会改动你的任何数据，" +
-                        "想让你做的事只会作为建议放在结果里，由你决定。它会把任务说明、用到的记忆和搜到的内容发给你选的模型服务。",
-                    "Vana can hand a self-contained job that takes a few minutes — researching, comparing options — to the background. " +
-                        "By default every job shows a confirmation card and only starts when you tap Start; with this on, " +
-                        "read-only jobs start right away. Background jobs are read-only: they never change your data, and anything " +
-                        "they want you to do appears as a suggestion for you to accept. A job sends its brief, the memory it needs " +
-                        "and what it finds to your chosen model service.",
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             HorizontalDivider()
             Text(uiText("位置", "Location"), style = MaterialTheme.typography.titleMedium)

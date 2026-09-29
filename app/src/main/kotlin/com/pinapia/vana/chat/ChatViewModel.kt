@@ -117,6 +117,19 @@ class ChatViewModel(
     }
     val todayCards: StateFlow<List<TodayCard>> = todayFeed?.cards ?: MutableStateFlow(emptyList())
 
+    /**
+     * 「今天」那张卡排在哪条消息下面。**每次打开 app 时定一次**([pinTodayToLatest]):那一刻它是最新的一条;
+     * 之后说的话排在它下面,它不跟着往下挪。null 表示打开时线程是空的——排在最前面。
+     * 它只是屏幕上的一张卡,不进线程、不进上下文。
+     */
+    private val _todayAfterId = MutableStateFlow<String?>(null)
+    val todayAfterId: StateFlow<String?> = _todayAfterId.asStateFlow()
+
+    /** 打开 app(读完线程、或者回到前台)时调一次。排队中的不算——那几条 Vana 还没看到。 */
+    fun pinTodayToLatest() {
+        _todayAfterId.value = _session.value.messages.lastOrNull { !it.isQueued }?.id
+    }
+
     /** 顶栏「任务」上的角标:需要他看一眼的有几件。 */
     val attentionCount: StateFlow<Int> = todayFeed?.attention ?: MutableStateFlow(0)
 
@@ -290,6 +303,7 @@ class ChatViewModel(
             val loaded = loadImagePayloads(_session.value.copy(messages = messages))
             // 读盘期间他要是已经发了话(极少),别把它盖掉。
             _session.update { current -> loaded.copy(messages = loaded.messages + current.messages) }
+            pinTodayToLatest()
             _historyLoaded.value = true
         }
     }

@@ -33,6 +33,7 @@ object CoreToday {
                     body = (if (overdue) L10n.text("已过点 · ", "Past due · ") else "") +
                         ReminderRules.describe(due, context.now, context.zone, en),
                     action = TodayAction.OpenTask(task.id),
+                    kind = if (overdue) TodayKind.OVERDUE else TodayKind.REMINDER,
                 ),
             )
         }
@@ -45,6 +46,7 @@ object CoreToday {
                     TodayPriority.RUNNING to L10n.text("进行中", "In progress")
                 else -> TodayPriority.RUNNING to L10n.text("排队中", "Queued")
             }
+            val kind = if (priority == TodayPriority.NEEDS_YOU) TodayKind.NEEDS_YOU else TodayKind.RUNNING
             add(
                 TodayCard(
                     id = "job-${task.id}",
@@ -53,6 +55,7 @@ object CoreToday {
                     title = task.title,
                     body = body,
                     action = TodayAction.OpenTask(task.id),
+                    kind = kind,
                 ),
             )
         }
@@ -66,6 +69,7 @@ object CoreToday {
                     title = task.title,
                     body = goalProgress(task),
                     action = TodayAction.OpenTask(task.id),
+                    kind = TodayKind.GOAL,
                 ),
             )
         }
@@ -83,6 +87,7 @@ object CoreToday {
                             "About \"${item.text}\" — how is it going now?",
                         ),
                     ),
+                    kind = TodayKind.FOLLOW_UP,
                 ),
             )
         }
@@ -120,6 +125,7 @@ object HealthToday {
             title = L10n.text("回头看看：${item.name}", "Check back on ${item.name}"),
             body = L10n.text("说好这几天回头评价一下效果", "You planned to review how it's working"),
             action = TodayAction.OpenSurface("medications"),
+            kind = TodayKind.MEDICATION,
         )
     }
 }

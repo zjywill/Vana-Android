@@ -34,26 +34,20 @@ import com.pinapia.vana.ui.icons.VanaIcons
 import com.pinapia.vana.ui.uiText
 
 /**
- * 插件页:每个能整个开关的插件一段——开关、一句话、它自己的入口页、它自己的免责声明。
+ * 插件页:每个能整个开关的插件一行(名字、一句话、开没开),点进去是它的详情页([PluginDetailScreen])。
  *
- * 以前用药和测量的开关散在设置里、入口占着聊天顶栏的两个图标。现在它们都属于「健康」这一个插件,
- * 关掉健康,下面的入口和子开关一起收起来。核心(记忆、召回、搜索……)不在这里:用户关不掉它。
+ * **一件设置归不归插件,只看一个问题:关掉这个插件,它还有没有意义。** 没有意义的(用药表、测量卡片、
+ * 家人档案)在插件自己的详情页里,关掉插件就一起收起来;还有意义的(模型、搜索、位置、照片、语音、记忆、
+ * check-in、后台任务)留在「设置」。核心(记忆、召回、搜索……)不在这里:用户关不掉它。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PluginsScreen(
     engineSettings: EngineSettings,
     onBack: () -> Unit,
-    onOpenSurface: (String) -> Unit,
+    onOpenPlugin: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 开关写进 SharedPreferences,不是 Compose 状态:写完拨一下这个数,让下面重新读。
-    var version by remember { mutableIntStateOf(0) }
-    fun set(id: String, enabled: Boolean) {
-        engineSettings.setPluginEnabled(id, enabled)
-        version++
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -73,60 +67,136 @@ fun PluginsScreen(
                 .padding(insets)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                uiText(
-                    "插件是可以整个开关的能力。关掉之后，Vana 不再带上它的规则、工具和数据。",
-                    "Plugins are capabilities you can switch off entirely. When off, Vana no longer uses their rules, tools or data.",
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
-            // version 只用来在开关变化后重新执行下面的读取。
-            @Suppress("UNUSED_EXPRESSION") version
             PluginRegistry.togglable.forEach { plugin ->
-                val id = plugin.manifest.id
-                val enabled = engineSettings.isPluginEnabled(id)
-                HorizontalDivider()
+                val enabled = engineSettings.isPluginEnabled(plugin.manifest.id)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp),
+                        .clickable { onOpenPlugin(plugin.manifest.id) }
+                        .padding(vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        plugin.manifest.name.text,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Switch(checked = enabled, onCheckedChange = { set(id, it) })
-                }
-                Text(
-                    plugin.manifest.summary.text,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (enabled) {
-                    plugin.surfaces
-                        .filter { it.id != PluginSurface.FAMILY || TenantScope.isolationAvailable }
-                        .forEach { surface ->
-                            SurfaceRow(
-                                surface = surface,
-                                toggled = surface.toggleId?.let { engineSettings.isPluginEnabled(it) },
-                                onToggle = { on -> surface.toggleId?.let { set(it, on) } },
-                                onClick = { onOpenSurface(surface.id) },
-                            )
-                        }
-                    plugin.disclaimer?.let {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(plugin.manifest.name.text, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            it,
+                            plugin.manifest.summary.text,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                            maxLines = 2,
                         )
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        if (enabled) uiText("已开启", "On") else uiText("已关闭", "Off"),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Icon(
+                        VanaIcons.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider()
+            }
+            Text(
+                uiText(
+                    "插件是可以整个开关的能力。关掉之后，Vana 不再带上它的规则、工具和数据；数据本身留在本机，重新打开就回来。",
+                    "Plugins are capabilities you can switch off entirely. When off, Vana no longer uses their rules, tools or data; the data stays on this device and comes back when you turn it on again.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 12.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 一个插件的详情页:开关、它自己的页面和设置、它自己的免责声明。关着的时候只剩开关和一句说明。
+ * 插件只说「是什么」(`surface.id`),去哪儿由外壳定([onOpenSurface])。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PluginDetailScreen(
+    pluginId: String,
+    engineSettings: EngineSettings,
+    onBack: () -> Unit,
+    onOpenSurface: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val plugin = PluginRegistry.togglable.firstOrNull { it.manifest.id == pluginId } ?: return
+    // 开关写进 SharedPreferences,不是 Compose 状态:写完拨一下这个数,让下面重新读。
+    var version by remember { mutableIntStateOf(0) }
+    fun set(id: String, enabled: Boolean) {
+        engineSettings.setPluginEnabled(id, enabled)
+        version++
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text(plugin.manifest.name.text) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
+                    }
+                },
+            )
+        },
+    ) { insets ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(insets)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            // version 只用来在开关变化后重新执行下面的读取。
+            @Suppress("UNUSED_EXPRESSION") version
+            val enabled = engineSettings.isPluginEnabled(plugin.manifest.id)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    uiText("启用", "Enabled"),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(checked = enabled, onCheckedChange = { set(plugin.manifest.id, it) })
+            }
+            Text(
+                plugin.manifest.summary.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            if (enabled) {
+                plugin.surfaces
+                    .filter { it.id != PluginSurface.FAMILY || TenantScope.isolationAvailable }
+                    .forEach { surface ->
+                        HorizontalDivider()
+                        SurfaceRow(
+                            surface = surface,
+                            toggled = surface.toggleId?.let { engineSettings.isPluginEnabled(it) },
+                            onToggle = { on -> surface.toggleId?.let { set(it, on) } },
+                            onClick = { onOpenSurface(surface.id) },
+                        )
+                    }
+                plugin.disclaimer?.let {
+                    HorizontalDivider()
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
+                    )
                 }
             }
         }
