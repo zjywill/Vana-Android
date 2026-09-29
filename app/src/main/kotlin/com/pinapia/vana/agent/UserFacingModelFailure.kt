@@ -26,8 +26,8 @@ object UserFacingModelFailure {
             )
         ModelFailure.Kind.CONTEXT_OVERFLOW ->
             L10n.text(
-                "这条对话太长，已经超出模型的上下文限制。请开一条新对话再问一次。",
-                "This conversation is too long for the model's context limit. Start a new conversation and ask again.",
+                "这一轮内容太多，超出了模型一次能看完的范围。请把这条消息缩短一些，或者少附几张图再试。",
+                "This turn is too large for the model to take in at once. Shorten the message or attach fewer photos and try again.",
             )
         ModelFailure.Kind.TRANSIENT ->
             L10n.text(

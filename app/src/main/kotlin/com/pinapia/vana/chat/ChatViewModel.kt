@@ -10,6 +10,7 @@ import com.pinapia.vana.agent.UserFacingModelFailure
 import com.pinapia.vana.agentruntime.AgentHookDispatcher
 import com.pinapia.vana.agentruntime.AgentPendingInput
 import com.pinapia.vana.agentruntime.AgentTurnEvent
+import com.pinapia.vana.agentruntime.WindowPolicy
 import com.pinapia.vana.agentruntime.apply
 import com.pinapia.vana.ask.AskUserAnswer
 import com.pinapia.vana.exercises.ExerciseLibrary
@@ -18,24 +19,27 @@ import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.measurements.MeasurementSnapshot
-import com.pinapia.vana.memory.MemoryExtractor
-import com.pinapia.vana.memory.MemoryHarvest
+import com.pinapia.vana.memory.MemoryHarvester
 import com.pinapia.vana.memory.MemorySnapshot
-import com.pinapia.vana.memory.apply
-import com.pinapia.vana.recall.SessionRecallTrigger
-import com.pinapia.vana.plugins.VanaPlugins
+import com.pinapia.vana.plugins.PluginEnvironment
+import com.pinapia.vana.plugins.PluginIds
+import com.pinapia.vana.plugins.PluginRegistry
+import com.pinapia.vana.plugins.PluginRoute
+import com.pinapia.vana.plugins.SuggestionContext
+import com.pinapia.vana.search.WebFetchClient
 import com.pinapia.vana.search.WebSearchClient
 import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.ChatSession
-import com.pinapia.vana.session.GoalSummary
-import com.pinapia.vana.session.SessionStore
-import com.pinapia.vana.session.SessionSummary
-import com.pinapia.vana.session.SessionThread
+import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.settings.SecureKeyStore
+import com.pinapia.vana.tasks.TasksEnvironment
 import com.pinapia.vana.tenant.Tenant
-import com.pinapia.vana.tenant.TenantOpening
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.thread.ThreadWindow
+import com.pinapia.vana.today.TodayCard
+import com.pinapia.vana.today.TodayFeed
+import com.pinapia.vana.thread.ThreadWriter
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.medications.MedicationBriefer
 import com.pinapia.vana.vision.AttachmentImage
@@ -46,8 +50,11 @@ import com.pinapia.vana.vision.TextRecognizer
 import com.pinapia.vana.vision.toBase64
 import android.graphics.Bitmap
 import java.util.UUID
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -59,10 +66,23 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import android.view.Choreographer
-import kotlinx.datetime.Clock
 
+/**
+ * 那条永远的对话。
+ *
+ * 没有「会话」这个用户能管理的东西了:打开就接着上次,一条时间线。内存里持有的是线程**末尾**的一段
+ * ([session].messages,向上滑再往前翻),盘上是追加式的 [com.pinapia.vana.thread.ThreadStore]。
+ *
+ * 三件事在这里接线,都是「每一轮请求带多少历史」这个问题的一部分:
+ * - **窗口**([ThreadWindow]):请求里只带窗口内的原文。窗口只在涨到高水位时一次砍到低水位,
+ *   两次淘汰之间请求前缀是纯追加,prompt 缓存稳定。窗口之外的历史不丢——记忆管长期事实,档案按需检索。
+ * - **持久化**:只写变了的,排在一个单消费者队列里,不会和后台写线程的主动消息抢。
+ * - **收割**:记忆抽取按水位线做,和窗口解耦。
+ *
+ * [ephemeral] 是「不留痕」浮层:内存里聊,不读盘不写盘、不抽记忆、不启动任务,关了就没。
+ */
 class ChatViewModel(
-    private val sessionStore: SessionStore,
+    private val threadWriter: ThreadWriter,
     private val engineSettings: EngineSettings,
     private val secureKeyStore: SecureKeyStore,
     private val locationProvider: LocationProvider,
@@ -71,15 +91,51 @@ class ChatViewModel(
     private val medicationSnapshotProvider: () -> MedicationSnapshot,
     private val measurementSnapshotProvider: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
     private val tenantProvider: () -> Tenant = { TenantScope.current },
+    /** 提醒、目标的存储和闹钟。浮层里没有。 */
+    private val tasksEnvironment: TasksEnvironment? = null,
+    val ephemeral: Boolean = false,
 ) : ViewModel() {
-    private val _session = MutableStateFlow(ChatSession())
+    private val threadStore get() = threadWriter.store
+
+    private val _session = MutableStateFlow(ChatSession(id = THREAD_SESSION_ID, isPrivate = ephemeral))
     val session: StateFlow<ChatSession> = _session.asStateFlow()
 
-    private val _summaries = MutableStateFlow<List<SessionSummary>>(emptyList())
-    val summaries: StateFlow<List<SessionSummary>> = _summaries.asStateFlow()
+    /** 盘上的历史读完了没。读完之前界面不该摆欢迎卡——不然每次打开都先闪一下「你好，我是 Vana」。 */
+    private val _historyLoaded = MutableStateFlow(ephemeral)
+    val isHistoryLoaded: StateFlow<Boolean> = _historyLoaded.asStateFlow()
 
-    private val _goals = MutableStateFlow<List<GoalSummary>>(emptyList())
-    val goals: StateFlow<List<GoalSummary>> = _goals.asStateFlow()
+    /** 「今天」头上的卡片。本机数据拼的,浮层里不出。 */
+    private val todayFeed: TodayFeed? = tasksEnvironment?.takeIf { !ephemeral }?.let { env ->
+        TodayFeed(
+            scope = viewModelScope,
+            loadTasks = { env.store.all() },
+            loadMemory = memorySnapshotProvider,
+            loadMedications = medicationSnapshotProvider,
+            isEnabled = engineSettings::isPluginEnabled,
+        )
+    }
+    val todayCards: StateFlow<List<TodayCard>> = todayFeed?.cards ?: MutableStateFlow(emptyList())
+
+    /** 顶栏「任务」上的角标:需要他看一眼的有几件。 */
+    val attentionCount: StateFlow<Int> = todayFeed?.attention ?: MutableStateFlow(0)
+
+    private val _hasOlder = MutableStateFlow(false)
+    val hasOlderHistory: StateFlow<Boolean> = _hasOlder.asStateFlow()
+
+    /** 往前翻出来了几条:界面据此把滚动位置补上,不然新塞进顶部的内容会把用户正看的那条顶下去。 */
+    private val _prepended = MutableSharedFlow<Int>(extraBufferCapacity = 1)
+    val prepended: SharedFlow<Int> = _prepended
+
+    private var oldestSegment = Int.MAX_VALUE
+    private var loadingOlder = false
+
+    /** 界面这一份已经同步给盘的 id。只删这里面有、列表里没了的,后台追加、界面还没读到的不会被误删。 */
+    private var syncedIds: Set<String> = emptySet()
+    private val dirtyIds = HashSet<String>()
+    private val persistSignal = Channel<Unit>(Channel.CONFLATED)
+
+    /** 窗口第一条消息的 id。窗口只在淘汰时前移。 */
+    private var windowStartId: String? = null
 
     private val _input = MutableStateFlow("")
     val input: StateFlow<String> = _input.asStateFlow()
@@ -109,23 +165,38 @@ class ChatViewModel(
     private val _draftAttachments = MutableStateFlow<List<DraftAttachment>>(emptyList())
     val draftAttachments: StateFlow<List<DraftAttachment>> = _draftAttachments.asStateFlow()
 
+    /** 「问问这个药」带进来的一次性上下文:下一轮回复里带着它,回复完就撤。 */
     private val _focusMedication = MutableStateFlow<MedicationItem?>(null)
     val focusMedication: StateFlow<MedicationItem?> = _focusMedication.asStateFlow()
 
     private var replyJob: Job? = null
     private var replyingMessageId: String? = null
     private var followUpHooks: AgentHookDispatcher? = null
-    private var followUpSessionId: String? = null
-    private var harvestJob: Job? = null
+    private var idleHarvestJob: Job? = null
+
+    private val harvester = MemoryHarvester(
+        writer = threadWriter,
+        memory = TenantScope.currentStores.memory,
+        settings = engineSettings,
+        secureKeyStore = secureKeyStore,
+        environment = ::pluginEnvironment,
+    )
+
     val suggestedQuestions: List<String>
-        get() {
-            _focusMedication.value?.openingQuestions?.let { return it }
-            val tenant = tenantProvider()
-            if (!tenant.isOwner) {
-                return TenantOpening.questions(tenant, medicationSnapshotProvider())
-            }
-            return DefaultQuestions
-        }
+        get() = PluginRegistry.suggestions(
+            SuggestionContext(
+                isEnabled = engineSettings::isPluginEnabled,
+                tenant = tenantProvider(),
+                focusMedication = _focusMedication.value,
+                medications = medicationSnapshotProvider,
+            ),
+        )
+
+    val medicationsEnabled: Boolean get() = engineSettings.isPluginEnabled(PluginIds.HEALTH_MEDICATIONS)
+
+    /** 欢迎语里「我能帮你……」那一段:哪些插件开着就提哪些。 */
+    val welcomeBody: String
+        get() = PluginRegistry.welcomeBody(engineSettings::isPluginEnabled)
 
     val supportsVision: Boolean get() = engineSettings.modelSupportsVision()
 
@@ -164,8 +235,23 @@ class ChatViewModel(
         }
 
     init {
-        refreshSummaries()
         refreshEngineAvailability()
+        viewModelScope.launch {
+            for (signal in persistSignal) persistNow()
+        }
+        if (!ephemeral) {
+            todayFeed?.start(
+                kotlinx.coroutines.flow.merge(
+                    tasksEnvironment!!.store.revision,
+                    threadWriter.revision,
+                ),
+            )
+            loadInitialHistory()
+            viewModelScope.launch {
+                // 后台来的主动消息(check-in、提醒、任务结果):等这一轮回复结束再并进列表。
+                threadWriter.revision.collect { if (it > 0) mergeBackgroundMessages() }
+            }
+        }
         viewModelScope.launch {
             if (locationProvider.isAuthorized) {
                 locationProvider.refresh()
@@ -173,23 +259,153 @@ class ChatViewModel(
         }
     }
 
+    // ------------------------------------------------------------------ 线程:读、持久化、往前翻
+
+    private fun loadInitialHistory() {
+        viewModelScope.launch {
+            val (page, windowPos) = withContext(Dispatchers.IO) {
+                threadWriter.write { store -> store.loadTail() to store.meta().windowStartPos }
+            }
+            var messages = page.messages
+            var oldest = page.oldestSegment
+            var hasOlder = page.hasOlder
+            // 窗口起点在更早的段里:往前读到能盖住它为止,不然「窗口」比读进来的还长。
+            if (windowPos != null) {
+                while (hasOlder && messages.isNotEmpty() &&
+                    (threadStore.positionOf(messages.first().id) ?: Double.MAX_VALUE) > windowPos
+                ) {
+                    val older = withContext(Dispatchers.IO) { threadWriter.write { it.loadOlder(oldest) } }
+                    messages = older.messages + messages
+                    oldest = older.oldestSegment
+                    hasOlder = older.hasOlder
+                }
+            }
+            windowStartId = windowPos
+                ?.let { pos -> messages.firstOrNull { (threadStore.positionOf(it.id) ?: -1.0) >= pos }?.id }
+                ?: messages.firstOrNull()?.id
+            oldestSegment = oldest
+            _hasOlder.value = hasOlder
+            syncedIds = messages.mapTo(HashSet()) { it.id }
+            val loaded = loadImagePayloads(_session.value.copy(messages = messages))
+            // 读盘期间他要是已经发了话(极少),别把它盖掉。
+            _session.update { current -> loaded.copy(messages = loaded.messages + current.messages) }
+            _historyLoaded.value = true
+        }
+    }
+
+    /** 滑到顶了,再往前读一页。 */
+    fun loadOlder() {
+        if (ephemeral || loadingOlder || !_hasOlder.value) return
+        loadingOlder = true
+        viewModelScope.launch {
+            try {
+                val page = withContext(Dispatchers.IO) { threadWriter.write { it.loadOlder(oldestSegment) } }
+                oldestSegment = page.oldestSegment
+                _hasOlder.value = page.hasOlder
+                if (page.messages.isNotEmpty()) {
+                    syncedIds = syncedIds + page.messages.map { it.id }
+                    updateSession { copy(messages = page.messages + messages) }
+                    _prepended.tryEmit(page.messages.size)
+                }
+            } finally {
+                loadingOlder = false
+            }
+        }
+    }
+
+    /** 后台追加的新消息并进来。回答还在写的时候不动——等这一轮结束。 */
+    private fun mergeBackgroundMessages() {
+        if (ephemeral || _isReplying.value) return
+        viewModelScope.launch {
+            val lastPos = _session.value.messages.lastOrNull()?.let { threadStore.positionOf(it.id) }
+            val fresh = withContext(Dispatchers.IO) {
+                threadWriter.write { it.messagesAfter(lastPos) }
+            }.map { it.second }.filter { it.id !in syncedIds }
+            if (fresh.isEmpty()) return@launch
+            syncedIds = syncedIds + fresh.map { it.id }
+            updateSession { copy(messages = messages + fresh) }
+        }
+    }
+
+    /** 请求落盘。多次请求合并成一次,由一个消费者按顺序做,顺序不会乱。 */
+    private fun persist() {
+        if (ephemeral) return
+        persistSignal.trySend(Unit)
+    }
+
+    private suspend fun persistNow() {
+        // 还在写的助手消息如果还是个空壳,先不落盘——崩了留下一个空气泡比什么都没有更糟。
+        val inFlightId = replyingMessageId.takeIf { _isReplying.value }
+        val messages = _session.value.messages.filterNot { message ->
+            message.id == inFlightId && !message.hasVisibleTurnContent && message.id !in syncedIds
+        }
+        val dirty = synchronized(dirtyIds) { dirtyIds.toSet().also { dirtyIds.clear() } }
+        val known = syncedIds
+        syncedIds = withContext(Dispatchers.IO) { threadWriter.write { it.sync(messages, dirty, known) } }
+    }
+
+    /** 删掉这一条(连同它引用的、别处没在用的照片)。 */
+    fun deleteMessage(id: String) {
+        if (_isReplying.value) return
+        updateSession { copy(messages = messages.filterNot { it.id == id }) }
+        if (windowStartId == id) windowStartId = _session.value.messages.firstOrNull()?.id
+        persist()
+    }
+
+    /** 删掉一条回答和它对应的那句提问。 */
+    fun deleteExchange(assistantId: String) {
+        if (_isReplying.value) return
+        val messages = _session.value.messages
+        val index = messages.indexOfFirst { it.id == assistantId }
+        if (index < 0) return
+        val userIndex = (index - 1 downTo 0).firstOrNull { messages[it].role == ChatMessage.Role.USER }
+        val doomed = setOfNotNull(assistantId, userIndex?.let { messages[it].id })
+        updateSession { copy(messages = this.messages.filterNot { it.id in doomed }) }
+        if (windowStartId in doomed) windowStartId = _session.value.messages.firstOrNull()?.id
+        persist()
+    }
+
+    /** 清空整条对话。设置里「对话历史」用。 */
+    fun clearHistory() {
+        if (_isReplying.value) return
+        stopReply()
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { threadWriter.write { it.deleteAll() } }
+            _session.value = ChatSession(id = THREAD_SESSION_ID, isPrivate = ephemeral)
+            syncedIds = emptySet()
+            dirtyIds.clear()
+            windowStartId = null
+            oldestSegment = Int.MAX_VALUE
+            _hasOlder.value = false
+            _focusMedication.value = null
+            resetFollowUps()
+            _draftAttachments.value = emptyList()
+        }
+    }
+
     fun setInput(value: String) {
         _input.value = value
     }
 
+    /**
+     * 点开早晚 check-in 的通知:Vana 开个场。以前只是把那句话预填进输入框——现在它是线程里一条
+     * Vana 主动说的话(不调模型),模型也知道自己问过。之后他回一句,就是对这个开场的回答。
+     */
     fun applyCheckIn(question: String?) {
-        if (!question.isNullOrBlank()) {
-            _input.value = question
-        }
+        val text = question?.trim().orEmpty()
+        if (text.isEmpty() || ephemeral) return
+        val opener = ChatMessage(role = ChatMessage.Role.ASSISTANT, text = text, origin = ChatMessage.Origin.CHECK_IN)
+        updateSession { copy(messages = messages + opener) }
+        persist()
     }
 
-    /** App Shortcut「问 Vana」:把问题带进新会话并自动发送。 */
+    /**
+     * App Shortcut「问 Vana」:把问题追加进这条对话并自动发送。
+     * 回答正在写的时候,`send` 会把它当成插话排队,**不会**像以前那样砍掉进行中的回复。
+     */
     fun applyAskAndSend(question: String?) {
         val trimmed = question?.trim().orEmpty()
         if (trimmed.isEmpty()) return
-        if (!_session.value.isEmpty || _isReplying.value) {
-            startNewSession()
-        }
         send(trimmed)
     }
 
@@ -225,27 +441,6 @@ class ChatViewModel(
         }
     }
 
-    fun refreshSummaries() {
-        viewModelScope.launch {
-            _summaries.value = sessionStore.listSummaries()
-            _goals.value = sessionStore.goals()
-            refreshFocusMedication()
-        }
-    }
-
-    private fun refreshFocusMedication() {
-        if (!engineSettings.medicationsEnabled) {
-            _focusMedication.value = null
-            return
-        }
-        val focusId = (_session.value.threadId)
-            ?.let { SessionThread.parse(it) }
-            ?.let { thread -> (thread as? SessionThread.Medication)?.medicationId }
-        _focusMedication.value = focusId?.let { id ->
-            medicationSnapshotProvider().items.firstOrNull { it.id == id }
-        }
-    }
-
     fun send(text: String? = null) {
         val trimmed = (text ?: _input.value).trim()
         val drafts = _draftAttachments.value
@@ -278,7 +473,7 @@ class ChatViewModel(
         }
         _input.value = ""
         _followUps.value = emptyList()
-        val persist = !_session.value.isPrivate
+        val persist = !ephemeral
         val store = TenantScope.currentStores.attachments
         val attachments = ready.map { draft ->
             draft.toChatAttachment(persist = persist, store = store)
@@ -291,6 +486,7 @@ class ChatViewModel(
             isQueued = true,
         )
         updateSession { copy(messages = messages + user) }
+        persist()
         if (!_isReplying.value) {
             startReply()
         }
@@ -483,6 +679,8 @@ class ChatViewModel(
                 },
             )
         }
+        markDirty(messageId)
+        persist()
         send(answer.messageText)
     }
 
@@ -493,7 +691,7 @@ class ChatViewModel(
         _retryNotice.value = null
         val id = replyingMessageId ?: return
         mutateMessage(id) { markStopped() }
-        saveSession()
+        persist()
     }
 
     fun retry(assistantId: String) {
@@ -510,157 +708,28 @@ class ChatViewModel(
         startReply()
     }
 
-    fun startNewSession(isPrivate: Boolean = false) {
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        _draftAttachments.value = emptyList()
-        _focusMedication.value = null
-        _session.value = ChatSession(isPrivate = isPrivate)
-        refreshEngineAvailability()
-    }
-
-    fun openSession(id: String) {
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        _draftAttachments.value = emptyList()
-        viewModelScope.launch {
-            val loaded = sessionStore.load(id) ?: return@launch
-            _session.value = loadImagePayloads(loaded)
-            refreshFocusMedication()
-            refreshEngineAvailability()
-        }
-    }
-
-    fun deleteSession(id: String) {
-        viewModelScope.launch {
-            sessionStore.delete(id)
-            if (_session.value.id == id) {
-                startNewSession()
-            }
-            refreshSummaries()
-        }
-    }
-
-    fun clearAllChats() {
-        if (_isReplying.value) return
-        stopReply()
-        viewModelScope.launch {
-            sessionStore.deleteAll()
-            _session.value = ChatSession()
-            _focusMedication.value = null
-            resetFollowUps()
-            _draftAttachments.value = emptyList()
-            refreshSummaries()
-        }
-    }
-
-    fun setPrivate(isPrivate: Boolean) {
-        if (!_session.value.isEmpty) return
-        updateSession { copy(isPrivate = isPrivate) }
-    }
-
+    /**
+     * 「问问这个药」:把它挂成下一轮回复的一次性上下文。以前这会切进一条专属的「用药线」会话;
+     * 现在只有一条对话,所以只是一个焦点——回复完就撤,输入框上方会露出它的名字和几个开场问题。
+     */
     fun openMedication(item: MedicationItem) {
-        if (_isReplying.value) return
-        val thread = SessionThread.medication(item.id)
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        _draftAttachments.value = emptyList()
-        viewModelScope.launch {
-            val continued = sessionStore.openThread(thread)
-            _session.value = continued?.let { loadImagePayloads(it) }
-                ?: ChatSession(threadId = thread.id, threadTitle = item.name)
-            _focusMedication.value = item
-            refreshEngineAvailability()
-            refreshSummaries()
-        }
-    }
-
-    fun startGoal(named: String) {
-        if (_isReplying.value) return
-        val title = named.trim()
-        if (title.isEmpty()) return
-        val thread = SessionThread.goal()
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        _draftAttachments.value = emptyList()
-        _focusMedication.value = null
-        _session.value = ChatSession(threadId = thread.id, threadTitle = title)
+        if (!medicationsEnabled) return
+        _focusMedication.value = item
         refreshEngineAvailability()
     }
 
-    fun openGoal(goal: GoalSummary) {
-        if (_isReplying.value) return
-        val thread = goal.thread ?: return
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        _draftAttachments.value = emptyList()
+    fun clearFocus() {
         _focusMedication.value = null
-        viewModelScope.launch {
-            val continued = sessionStore.openThread(thread)
-            _session.value = continued?.let { loadImagePayloads(it) }
-                ?: ChatSession(threadId = thread.id, threadTitle = goal.title)
-            refreshEngineAvailability()
-            refreshSummaries()
-        }
-    }
-
-    fun renameGoal(goal: GoalSummary, title: String) {
-        val thread = goal.thread ?: return
-        viewModelScope.launch {
-            sessionStore.renameThread(thread, title)
-            if (_session.value.threadId == thread.id) {
-                updateSession { copy(threadTitle = title.trim()) }
-            }
-            refreshSummaries()
-        }
-    }
-
-    fun deleteGoal(goal: GoalSummary) {
-        val thread = goal.thread ?: return
-        viewModelScope.launch {
-            sessionStore.deleteThread(thread)
-            if (_session.value.threadId == thread.id) {
-                startNewSession()
-            }
-            refreshSummaries()
-        }
-    }
-
-    fun branch(fromMessageId: String) {
-        if (_isReplying.value) return
-        val messages = _session.value.messages
-        val index = messages.indexOfFirst { it.id == fromMessageId }
-        if (index < 0) return
-        stopReply()
-        harvestIfNeeded(_session.value)
-        resetFollowUps()
-        val source = _session.value
-        val branched = ChatSession(
-            messages = messages.take(index + 1).map { it.copy(isQueued = false) },
-            isPrivate = source.isPrivate,
-            memoryHarvestedMessageCount = source.memoryHarvestedMessageCount
-                .coerceAtMost(index + 1),
-            // 分支不带走 thread——目标/用药线不能拆成两条
-        )
-        _session.value = branched
-        _focusMedication.value = null
-        saveSession()
-        refreshSummaries()
     }
 
     private fun resetFollowUps() {
         _followUps.value = emptyList()
         followUpHooks = null
-        followUpSessionId = null
     }
 
     private fun startReply() {
         if (_isReplying.value) return
+        idleHarvestJob?.cancel()
         replyJob = viewModelScope.launch {
             _isReplying.value = true
             try {
@@ -668,7 +737,7 @@ class ChatViewModel(
                     dequeueAll()
                     if (!hasQueuedInput() && _session.value.messages.none { it.role == ChatMessage.Role.USER }) break
                     beginAssistantMessage()
-                    runTurn()
+                    runTurnShrinkingOnOverflow()
                     if (!hasQueuedInput()) break
                 }
             } catch (_: kotlinx.coroutines.CancellationException) {
@@ -699,16 +768,37 @@ class ChatViewModel(
                 _isReplying.value = false
                 replyingMessageId = null
                 _retryNotice.value = null
-                saveSession()
-                refreshSummaries()
+                // 焦点只管这一轮;回复完就撤。
+                _focusMedication.value = null
+                persist()
+                mergeBackgroundMessages()
+                scheduleIdleHarvest()
+                todayFeed?.refresh()
             }
+        }
+    }
+
+    /**
+     * 撞上模型的上下文上限:以前是让用户「开一条新对话」——现在没有新对话可开。
+     * 改成强制把窗口砍到最近两轮,再原样跑一次;砍不动(本来就只剩两轮)才把错误报给用户。
+     */
+    private suspend fun runTurnShrinkingOnOverflow() {
+        try {
+            runTurn()
+        } catch (error: Throwable) {
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            val overflow = AgentError.wrapping(error) is AgentError.ContextWindowExceeded
+            if (overflow && advanceWindow(force = true, overheadTokens = 0)) runTurn() else throw error
         }
     }
 
     private suspend fun runTurn() {
         locationProvider.refresh()
-        val engine = resolveEngine()
-        val history = _session.value.messages.filterNot { it.isQueued }
+        var engine = resolveEngine()
+        // 请求之前先看窗口该不该滑:固定开销(system 段、工具定义)先从预算里扣掉。
+        // 滑动之后「有原文滑出去了」这件事变了,召回工具该不该挂也跟着变——所以要重新装配一次。
+        if (advanceWindow(force = false, overheadTokens = requestOverheadTokens(engine))) engine = resolveEngine()
+        val history = windowMessages().filterNot { it.isQueued }
         engine.reply(
             history = history,
             pendingInput = {
@@ -818,71 +908,133 @@ class ChatViewModel(
     private fun hasQueuedInput(): Boolean =
         _session.value.messages.any { it.isQueued && it.role == ChatMessage.Role.USER }
 
-    private fun resolveEngine(): CloudEngine {
-        val tenant = tenantProvider()
+    /**
+     * 装配要用的全部输入。聊天和抽记忆都从这里取——抽取器要遵守的「哪些话题别记」
+     * 得和聊天时实际挂出去的插件是同一份,不然两边各说各话。
+     */
+    private fun pluginEnvironment(): PluginEnvironment {
         val stores = TenantScope.currentStores
-        val webSearch = WebSearchClient.storedKey(secureKeyStore.serperApiKey)
         val location = if (locationProvider.isAuthorized) {
             locationProvider.snapshot
         } else {
             LocationSnapshot.unknown
         }
-        val memoryEnabled = engineSettings.memoryEnabled
-        val medicationsEnabled = engineSettings.medicationsEnabled
-        val measurementsEnabled = engineSettings.measurementsEnabled
-        val plugins = VanaPlugins.foreground(
-            exerciseLibrary = exerciseLibrary,
-            webSearch = webSearch,
-            medicationStore = if (medicationsEnabled) stores.medications else null,
-            medications = if (medicationsEnabled) medicationSnapshotProvider() else MedicationSnapshot.empty,
-            focusMedication = _focusMedication.value,
-            measurementStore = if (measurementsEnabled) stores.measurements else null,
-            measurements = if (measurementsEnabled) measurementSnapshotProvider() else MeasurementSnapshot.empty,
-            sessionStore = if (memoryEnabled) sessionStore else null,
-            currentSessionId = _session.value.id,
-            memoryStore = if (memoryEnabled) stores.memory else null,
-            memory = if (memoryEnabled) memorySnapshotProvider() else MemorySnapshot.empty,
+        return PluginEnvironment(
+            isEnabled = engineSettings::isPluginEnabled,
+            tenant = tenantProvider(),
+            // 召回读整条线程的档案;只有真的有原文滑出了窗口,PluginRegistry 才会把它挂上。
+            archive = threadWriter.archive,
+            hiddenBeforePos = ::hiddenBeforePos,
+            memoryStore = stores.memory,
+            memorySnapshot = memorySnapshotProvider,
             location = location,
+            webSearch = WebSearchClient.storedKey(secureKeyStore.serperApiKey),
+            webFetch = WebFetchClient.direct(),
+            exerciseLibrary = exerciseLibrary,
+            medicationStore = stores.medications,
+            medicationSnapshot = medicationSnapshotProvider,
+            focusMedication = _focusMedication.value,
+            tasks = tasksEnvironment,
+            noteStore = stores.notes.takeIf { engineSettings.notesEnabled },
+            measurementStore = stores.measurements,
+            measurementSnapshot = measurementSnapshotProvider,
         )
-        val context = VanaPlugins.foregroundContext(
-            isPrivate = _session.value.isPrivate,
-            recallUnlocked = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
+    }
+
+    private fun resolveEngine(): CloudEngine {
+        val plugins = PluginRegistry.agentPlugins(pluginEnvironment(), PluginRoute.FOREGROUND)
+        val context = PluginRegistry.foregroundContext(
+            isPrivate = ephemeral,
         )
-        val thread = SessionThread.parse(_session.value.threadId)
-        val goalTitle = if (thread?.isGoal == true) _session.value.threadTitle else null
         return CloudEngine.create(
             providerId = engineSettings.providerId,
             model = engineSettings.model,
             secureKeyStore = secureKeyStore,
-            tenant = tenant,
             plugins = plugins,
             pluginContext = context,
             thinkingEnabled = engineSettings.thinkingEnabled,
             persona = engineSettings.persona,
             hooks = followUpHooks(),
-            goal = goalTitle,
         )
     }
 
     private fun followUpHooks(): AgentHookDispatcher {
-        val sessionId = _session.value.id
-        followUpHooks?.let { existing ->
-            if (followUpSessionId == sessionId) return existing
-        }
+        followUpHooks?.let { return it }
         val key = secureKeyStore.apiKey?.trim().orEmpty()
         val hook = FollowUpSuggestionHook(
             providerId = engineSettings.providerId,
             model = engineSettings.model,
             apiKey = key,
             onSuggestions = { suggestions ->
-                if (_session.value.id != sessionId || _isReplying.value) return@FollowUpSuggestionHook
+                if (_isReplying.value) return@FollowUpSuggestionHook
                 _followUps.value = suggestions
             },
         )
         val dispatcher = AgentHookDispatcher(listOf(hook))
         followUpHooks = dispatcher
-        followUpSessionId = sessionId
         return dispatcher
+    }
+
+    // ------------------------------------------------------------------ 窗口
+
+    /**
+     * 窗口起点的位置——它**之前**的才是「滑出去了」的历史。没淘汰过就没有,召回不挂。
+     * 读的是线程 meta 里那个持久化的游标,所以重启之后依然对得上。
+     */
+    private fun hiddenBeforePos(): Double? {
+        if (ephemeral) return null
+        return windowStartId?.let { threadStore.positionOf(it) }?.takeIf { pos -> threadWriter.archive.hasRowsBefore(pos) }
+    }
+
+    private fun windowStartIndex(): Int =
+        windowStartId?.let { id -> _session.value.messages.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
+
+    /** 这一轮请求里带的历史:窗口起点往后的全部。窗口之外的原文不发。 */
+    private fun windowMessages(): List<ChatMessage> = _session.value.messages.drop(windowStartIndex())
+
+    /** system 段加工具定义占的位子。窗口预算按「整个请求」算,不是只算对话。 */
+    private fun requestOverheadTokens(engine: CloudEngine): Int =
+        ThreadWindow.estimateTokens(engine.systemInstruction()) +
+            engine.toolDefinitions().sumOf { ThreadWindow.estimateTokens((it.description ?: "") + it.inputSchema.toString()) }
+
+    /**
+     * 窗口滑不滑。涨到高水位才动,一次砍到低水位;[force] 是撞上上下文上限时的救援,只留最近两轮。
+     * 返回窗口起点有没有前移。淘汰只前移游标(存进线程 meta),消息本身一条不删。
+     */
+    private fun advanceWindow(force: Boolean, overheadTokens: Int): Boolean {
+        if (ephemeral && _session.value.messages.isEmpty()) return false
+        val messages = _session.value.messages
+        val start = windowStartIndex()
+        val newStart = if (force) {
+            ThreadWindow.forceEvict(messages, start, keepTurns = FORCED_KEEP_TURNS)
+        } else {
+            val contextWindow = CloudCatalog.model(engineSettings.model, engineSettings.providerId)?.contextWindow
+            ThreadWindow.evict(messages, start, WindowPolicy.forContext(contextWindow), overheadTokens)
+        }
+        if (newStart == start || newStart !in messages.indices) return false
+        windowStartId = messages[newStart].id
+        if (!ephemeral) {
+            val pos = threadStore.positionOf(messages[newStart].id)
+            viewModelScope.launch { threadWriter.write { store -> store.updateMeta { it.copy(windowStartPos = pos) } } }
+            // 有原文要离开窗口了:趁这时候把还没抽过的收割一遍(不等它,也不因此阻塞这一轮)。
+            harvestSoon()
+        }
+        return true
+    }
+
+    private fun harvestSoon() {
+        if (ephemeral) return
+        viewModelScope.launch { harvester.runIfDue() }
+    }
+
+    /** 一轮回复结束、他安静了半小时:抽一次记忆。切到后台那个触发点在 VanaApp 里。 */
+    private fun scheduleIdleHarvest() {
+        if (ephemeral) return
+        idleHarvestJob?.cancel()
+        idleHarvestJob = viewModelScope.launch {
+            delay(IDLE_HARVEST_DELAY)
+            harvester.runIfDue()
+        }
     }
 
     /**
@@ -917,50 +1069,8 @@ class ChatViewModel(
         return session.copy(messages = messages)
     }
 
-    private fun harvestIfNeeded(session: ChatSession) {
-        if (!MemoryHarvest.shouldHarvest(session, engineSettings.memoryEnabled)) return
-        val key = secureKeyStore.apiKey?.trim().orEmpty()
-        if (key.isEmpty()) return
-        // 没同意过发给这家的不抽。能走到这儿说明对话发生过,同意几乎必然在;
-        // 这一句兜的是「聊完之后换了 provider」那条缝。
-        if (!engineSettings.hasProviderConsent(engineSettings.providerId)) return
-        val snapshot = memorySnapshotProvider()
-        val messageCount = session.messages.size
-        val sessionId = session.id
-        harvestJob = viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                val ops = MemoryExtractor(
-                    providerId = engineSettings.providerId,
-                    model = engineSettings.model,
-                    apiKey = key,
-                    snapshot = snapshot,
-                ).operations(from = session)
-                TenantScope.currentStores.memory.apply(ops)
-                withContext(Dispatchers.Main) {
-                    if (_session.value.id == sessionId) {
-                        updateSession { copy(memoryHarvestedMessageCount = messageCount) }
-                        saveSession()
-                    } else {
-                        sessionStore.load(sessionId)?.let { loaded ->
-                            sessionStore.save(loaded.copy(memoryHarvestedMessageCount = messageCount))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    override fun onCleared() {
-        harvestIfNeeded(_session.value)
-        super.onCleared()
-    }
-
-    private fun saveSession() {
-        val session = _session.value
-        if (session.isPrivate || session.isEmpty) return
-        val updated = session.copy(updatedAt = Clock.System.now())
-        _session.value = updated
-        sessionStore.save(updated)
+    private fun markDirty(id: String) {
+        synchronized(dirtyIds) { dirtyIds += id }
     }
 
     private fun updateSession(transform: ChatSession.() -> ChatSession) {
@@ -968,6 +1078,7 @@ class ChatViewModel(
     }
 
     private fun mutateMessage(id: String, block: ChatMessage.() -> Unit) {
+        markDirty(id)
         updateSession {
             copy(
                 messages = messages.map { message ->
@@ -990,7 +1101,7 @@ class ChatViewModel(
     }
 
     class Factory(
-        private val sessionStore: SessionStore,
+        private val threadWriter: ThreadWriter,
         private val engineSettings: EngineSettings,
         private val secureKeyStore: SecureKeyStore,
         private val locationProvider: LocationProvider,
@@ -998,11 +1109,13 @@ class ChatViewModel(
         private val memorySnapshotProvider: () -> MemorySnapshot,
         private val medicationSnapshotProvider: () -> MedicationSnapshot,
         private val measurementSnapshotProvider: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
+        private val tasksEnvironment: TasksEnvironment? = null,
+        private val ephemeral: Boolean = false,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return ChatViewModel(
-                sessionStore = sessionStore,
+                threadWriter = threadWriter,
                 engineSettings = engineSettings,
                 secureKeyStore = secureKeyStore,
                 locationProvider = locationProvider,
@@ -1010,17 +1123,20 @@ class ChatViewModel(
                 memorySnapshotProvider = memorySnapshotProvider,
                 medicationSnapshotProvider = medicationSnapshotProvider,
                 measurementSnapshotProvider = measurementSnapshotProvider,
+                tasksEnvironment = tasksEnvironment,
+                ephemeral = ephemeral,
             ) as T
         }
     }
 
-    companion object {
-        private val DefaultQuestions: List<String>
-            get() = listOf(
-                L10n.text("帮我看看这张化验单", "Help me understand this lab report"),
-                L10n.text("最近总感觉不舒服是怎么回事？", "Why have I been feeling unwell lately?"),
-                L10n.text("帮我记下今天的体重", "Record today's weight for me"),
-            )
+    private companion object {
+        /** 内存里那一份线程视图的固定 id。 */
+        const val THREAD_SESSION_ID = "thread"
+
+        /** 撞上上下文上限时强制留下的最近轮数。 */
+        const val FORCED_KEEP_TURNS = 2
+
+        val IDLE_HARVEST_DELAY = 30.minutes
     }
 }
 

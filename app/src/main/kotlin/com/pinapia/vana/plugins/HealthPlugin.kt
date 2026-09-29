@@ -14,25 +14,58 @@ import com.pinapia.vana.medications.MedicationItem
 import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.medications.MedicationStore
 import com.pinapia.vana.medications.MedicationTools
+import com.pinapia.vana.tenant.Tenant
 
 /**
- * 健康插件:用药表、测量卡片、动作库三组。
+ * 健康插件:规则、用药表、测量卡片、动作库、家人身份五组。
  *
- * 可用性按组算,不按整个插件:设置里能单独关掉用药表或测量,后台派生只用得上其中几样。
- * Android 这一侧没有任何设备健康数据源,所以三组都是 [com.pinapia.vana.agentruntime.PluginDataScope.TENANT]。
+ * 可用性按组算,不按整个插件:设置里能单独关掉用药表或测量,后台派生只用得上规则那一组。
+ * Android 这一侧没有任何设备健康数据源,所以各组都是 [com.pinapia.vana.agentruntime.PluginDataScope.TENANT]。
  *
- * 急症规则、OCR 规则、动作库那段用法这一步还留在 `HealthAssistantInstructions` 里,
- * 拆提示词是下一步的事。
+ * 急症规则、化验单与影像的谨慎、动作库用法、对核心工具的健康补充,以前整段写在基础规则里
+ * (`HealthAssistantInstructions`),现在由这里按「健康开着」「那个工具真的挂出去了」两道门贡献。
  */
 object HealthPlugin {
     const val ID = "health"
+    const val EXERCISES = "$ID.exercises"
+    const val MEDICATIONS = "$ID.medications"
+    const val MEASUREMENTS = "$ID.measurements"
+}
+
+/**
+ * 健康的规则本身,加上它对核心工具(搜索、反问、召回、记忆)的补充。没有工具,所以前台和后台都挂。
+ * 记忆抽取器读这里的 [memoryGuidance]:什么算健康方面值得记的、什么不该记。
+ */
+class HealthRulesPlugin : AgentPlugin {
+    override val id = "${HealthPlugin.ID}.rules"
+    override val memoryGuidance = HealthInstructions.memoryGuidance
+
+    override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> = buildList {
+        add(PromptBlock(PromptOrder.HEALTH_RULES, HealthInstructions.rules()))
+        HealthInstructions.toolNotes(mountedTools)?.let { add(PromptBlock(PromptOrder.HEALTH_TOOL_NOTES, it)) }
+    }
+}
+
+/** 家人身份:用户在替家人问的时候,别把家人的情况和他自己的混在一起。 */
+class FamilyPlugin(private val tenant: Tenant) : AgentPlugin {
+    override val id = "${HealthPlugin.ID}.family"
+
+    override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> =
+        HealthInstructions.familyBlock(tenant)?.let { listOf(PromptBlock(PromptOrder.TENANT, it)) }.orEmpty()
 }
 
 class ExercisePlugin(private val library: ExerciseLibrary) : AgentPlugin {
-    override val id = "${HealthPlugin.ID}.exercises"
+    override val id = HealthPlugin.EXERCISES
 
     override fun tools(context: PluginContext): List<PluginTool> =
         PluginTool.from(ExerciseTools.registry(library)) { setOf(ToolEffect.READ) }
+
+    override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> =
+        if (ExerciseTools.SUGGEST_TOOL_NAME in mountedTools) {
+            listOf(PromptBlock(PromptOrder.GUIDE_EXERCISE, HealthInstructions.exerciseGuide))
+        } else {
+            emptyList()
+        }
 }
 
 /**
@@ -46,8 +79,10 @@ class MedicationPlugin(
     private val snapshot: MedicationSnapshot,
     private val focus: MedicationItem? = null,
 ) : AgentPlugin {
-    override val id = "${HealthPlugin.ID}.medications"
-    override val memoryExclusions = listOf("用药与补剂")
+    override val id = HealthPlugin.MEDICATIONS
+
+    // 只在用药表真的开着的时候让路:关了它,「我不能吃布洛芬」就该老老实实进记忆。
+    override val memoryExclusions get() = if (store != null) listOf("用药与补剂") else emptyList()
 
     override fun tools(context: PluginContext): List<PluginTool> {
         val store = store ?: return emptyList()
@@ -77,8 +112,8 @@ class MeasurementPlugin(
     private val store: MeasurementStore?,
     private val snapshot: MeasurementSnapshot,
 ) : AgentPlugin {
-    override val id = "${HealthPlugin.ID}.measurements"
-    override val memoryExclusions = listOf("测量数字")
+    override val id = HealthPlugin.MEASUREMENTS
+    override val memoryExclusions get() = if (store != null) listOf("测量数字") else emptyList()
 
     override fun tools(context: PluginContext): List<PluginTool> {
         val store = store ?: return emptyList()

@@ -3,26 +3,55 @@ package com.pinapia.vana.tenant
 import com.pinapia.vana.medications.MedicationStore
 import com.pinapia.vana.measurements.MeasurementStore
 import com.pinapia.vana.memory.MemoryStore
-import com.pinapia.vana.session.SessionStore
+import com.pinapia.vana.notes.NoteStore
+import com.pinapia.vana.tasks.TaskStore
+import com.pinapia.vana.thread.LegacySessions
+import com.pinapia.vana.thread.ThreadStore
+import com.pinapia.vana.thread.ThreadWriter
 import com.pinapia.vana.vision.AttachmentStore
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 data class TenantStores(
-    val sessions: SessionStore,
     val memory: MemoryStore,
     val medications: MedicationStore,
     val measurements: MeasurementStore,
     val attachments: AttachmentStore,
+    val thread: ThreadStore,
+    val threadWriter: ThreadWriter,
+    val tasks: TaskStore,
+    val notes: NoteStore,
 ) {
-    constructor(root: File) : this(
-        sessions = SessionStore(parent = root),
+    constructor(root: File) : this(root, prepare(root))
+
+    private constructor(root: File, attachments: AttachmentStore) : this(
         memory = MemoryStore(directory = root),
         medications = MedicationStore(directory = root),
         measurements = MeasurementStore(directory = root),
-        attachments = AttachmentStore(parent = root),
+        attachments = attachments,
+        thread = ThreadStore(directory = File(root, "thread"), attachments = attachments),
+        tasks = TaskStore(directory = root),
+        notes = NoteStore(directory = root),
     )
+
+    private constructor(
+        memory: MemoryStore,
+        medications: MedicationStore,
+        measurements: MeasurementStore,
+        attachments: AttachmentStore,
+        thread: ThreadStore,
+        tasks: TaskStore,
+        notes: NoteStore,
+    ) : this(memory, medications, measurements, attachments, thread, ThreadWriter(thread), tasks, notes)
+
+    private companion object {
+        /** 先清旧会话存储(只一次),再建照片仓库——顺序反了它会先把刚建好的目录当旧的删掉。 */
+        fun prepare(root: File): AttachmentStore {
+            LegacySessions.clearIfNeeded(root)
+            return AttachmentStore(parent = root)
+        }
+    }
 }
 
 /**

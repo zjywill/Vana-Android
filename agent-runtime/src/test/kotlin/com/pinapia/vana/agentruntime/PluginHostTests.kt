@@ -118,4 +118,74 @@ class PluginHostTests {
         val denied = filtered.execute(CapabilityInvocation(toolCallId = "2", name = "write_note", input = "{}"))
         assertTrue(denied.isError)
     }
+
+    // ---- 记忆排除项:各插件声明「我自己存着这个」,别的插件不必认识它就能读到 ----
+
+    private class MemoryAwarePlugin(
+        override val id: String,
+        override val memoryExclusions: List<String> = emptyList(),
+        override val memoryGuidance: List<String> = emptyList(),
+        override val dataScope: PluginDataScope = PluginDataScope.TENANT,
+    ) : AgentPlugin
+
+    /** 只看 context 的插件:模拟 `MemoryPlugin` 按别人的声明拼 `remember` 的描述。 */
+    private class ReadsExclusions : AgentPlugin {
+        override val id = "reader"
+        var seenByTools: List<String>? = null
+        var seenByBlocks: List<String>? = null
+
+        override fun tools(context: PluginContext): List<PluginTool> {
+            seenByTools = context.memoryExclusions
+            return emptyList()
+        }
+
+        override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> {
+            seenByBlocks = context.memoryExclusions
+            return emptyList()
+        }
+    }
+
+    @Test
+    fun hostHandsEveryPluginTheExclusionsDeclaredByTheOthers() {
+        val reader = ReadsExclusions()
+        val meds = MemoryAwarePlugin("meds", memoryExclusions = listOf("用药与补剂"))
+        val vitals = MemoryAwarePlugin("vitals", memoryExclusions = listOf("测量数字", "用药与补剂"))
+
+        PluginHost.assemble(listOf(reader, meds, vitals), PluginContext())
+
+        assertEquals(listOf("用药与补剂", "测量数字"), reader.seenByTools)
+        assertEquals(listOf("用药与补剂", "测量数字"), reader.seenByBlocks)
+    }
+
+    @Test
+    fun aPluginThatDeclaresNothingLeavesTheListEmpty() {
+        val reader = ReadsExclusions()
+        PluginHost.assemble(listOf(reader, notes), PluginContext())
+        assertEquals(emptyList<String>(), reader.seenByTools)
+    }
+
+    @Test
+    fun memoryPolicyCollectsExclusionsAndGuidanceFromActivePlugins() {
+        val a = MemoryAwarePlugin("a", memoryExclusions = listOf("X"), memoryGuidance = listOf("g1"))
+        val b = MemoryAwarePlugin("b", memoryExclusions = listOf("X", "Y"), memoryGuidance = listOf("g2"))
+
+        val policy = PluginHost.memoryPolicy(listOf(a, b))
+
+        assertEquals(listOf("X", "Y"), policy.exclusions)
+        assertEquals(listOf("g1", "g2"), policy.guidance)
+    }
+
+    @Test
+    fun memoryPolicySkipsDeviceOwnerPluginsForOtherMembers() {
+        val owner = MemoryAwarePlugin(
+            "owner",
+            memoryExclusions = listOf("机主的数据"),
+            dataScope = PluginDataScope.DEVICE_OWNER,
+        )
+        val tenant = MemoryAwarePlugin("tenant", memoryExclusions = listOf("成员的数据"))
+
+        val policy = PluginHost.memoryPolicy(listOf(owner, tenant), PluginContext(isDeviceOwner = false))
+
+        assertEquals(listOf("成员的数据"), policy.exclusions)
+    }
 }

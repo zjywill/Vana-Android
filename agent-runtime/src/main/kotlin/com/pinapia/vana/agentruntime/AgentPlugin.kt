@@ -11,7 +11,7 @@ enum class ToolEffect {
     /** 只读本机数据或打包资源。 */
     READ,
 
-    /** 往本机盘上写(记忆、用药表、测量卡片)。隐私会话和后台派生都不挂。 */
+    /** 往本机盘上写(记忆,以及各插件自己的数据)。隐私会话和后台派生都不挂。 */
     WRITE_LOCAL,
 
     /** 发到模型以外的第三方(网页搜索)。 */
@@ -22,7 +22,7 @@ enum class ToolEffect {
 }
 
 /**
- * 插件读的是谁的数据。iOS 上 HealthKit 属于机主、不属于当前选中的成员;
+ * 插件读的是谁的数据。iOS 上有属于机主、不属于当前选中的成员的系统数据源;
  * Android 没有这类数据源,现在全是 [TENANT],字段留着是为了两端清单同形。
  */
 enum class PluginDataScope { TENANT, DEVICE_OWNER }
@@ -80,6 +80,11 @@ data class PluginContext(
     val isDeviceOwner: Boolean = true,
     /** app 已经判定解锁的触发器(见 [MountPolicy.WhenUnlocked])。 */
     val unlockedTriggers: Set<String> = emptySet(),
+    /**
+     * 这一路上**所有生效插件**声明的「有专门存放处、别记进记忆」的话题。由 [PluginHost.assemble]
+     * 填进来,调用方不用管;`remember` 的工具描述照它拼。
+     */
+    val memoryExclusions: List<String> = emptyList(),
 )
 
 /**
@@ -93,11 +98,17 @@ interface AgentPlugin {
     val id: String
     val dataScope: PluginDataScope get() = PluginDataScope.TENANT
 
-    /** 平台权限声明(iOS 的 HealthKit 读权限一类)。Android 现在一个都没有。 */
+    /** 平台权限声明(iOS 的系统数据读权限一类)。Android 现在一个都没有。 */
     val permissions: List<String> get() = emptyList()
 
-    /** 抽记忆时要让路的话题:这个插件自己存着的东西,别在记忆里再存一份。 */
+    /**
+     * 抽记忆时要让路的话题(短标签):这个插件自己存着的东西,别在记忆里再存一份。
+     * **只在它真的存着的时候才声明**——用药表关了,「我不能吃布洛芬」就该进记忆。
+     */
     val memoryExclusions: List<String> get() = emptyList()
+
+    /** 给记忆抽取器的补充说明(整句):这个领域里什么值得记、什么不该记。 */
+    val memoryGuidance: List<String> get() = emptyList()
 
     fun tools(context: PluginContext): List<PluginTool> = emptyList()
 
@@ -107,6 +118,12 @@ interface AgentPlugin {
      */
     fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> = emptyList()
 }
+
+/** 记忆抽取器要看的、来自各插件的那部分规则。 */
+data class MemoryPolicy(
+    val exclusions: List<String> = emptyList(),
+    val guidance: List<String> = emptyList(),
+)
 
 class PluginAssembly(
     val registry: CapabilityRegistry,
@@ -121,6 +138,15 @@ class PluginAssembly(
 }
 
 object PluginHost {
+    /** 生效的插件(按数据归属过滤后)合起来要抽取器遵守的规则。 */
+    fun memoryPolicy(plugins: List<AgentPlugin>, context: PluginContext = PluginContext()): MemoryPolicy {
+        val active = plugins.filter { it.dataScope == PluginDataScope.TENANT || context.isDeviceOwner }
+        return MemoryPolicy(
+            exclusions = active.flatMap { it.memoryExclusions }.distinct(),
+            guidance = active.flatMap { it.memoryGuidance },
+        )
+    }
+
     /** 这个上下文里某个工具能不能挂出去。 */
     fun allows(tool: PluginTool, context: PluginContext): Boolean {
         if (context.isPrivate && ToolEffect.WRITE_LOCAL in tool.effects) return false
@@ -143,6 +169,8 @@ object PluginHost {
         val active = plugins.filter {
             it.dataScope == PluginDataScope.TENANT || context.isDeviceOwner
         }
+        // 每个插件都能看到「别的插件声明了哪些话题有专门存放处」,而不必互相认识。
+        val context = context.copy(memoryExclusions = active.flatMap { it.memoryExclusions }.distinct())
         val tools = active.flatMap { plugin -> plugin.tools(context).filter { allows(it, context) } }
         val byName = tools.associateBy { it.name }
         val registry = if (tools.isEmpty()) {

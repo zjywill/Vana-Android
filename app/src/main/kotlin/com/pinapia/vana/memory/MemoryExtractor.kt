@@ -3,16 +3,13 @@ package com.pinapia.vana.memory
 import com.pinapia.vana.agent.OpenAICompatibleModelClient
 import com.pinapia.vana.agentruntime.AgentModelProfile
 import com.pinapia.vana.agentruntime.AgentModelRequest
+import com.pinapia.vana.agentruntime.MemoryPolicy
 import com.pinapia.vana.agentruntime.AgentModelStreamEvent
 import com.pinapia.vana.agentruntime.AgentTranscript
 import com.pinapia.vana.session.ChatMessage
-import com.pinapia.vana.session.ChatSession
 import com.pinapia.vana.settings.CloudCatalog
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -28,12 +25,41 @@ sealed class MemoryOperation {
 }
 
 object MemoryHarvest {
+    /** 水位线之后至少攒到这么多条用户消息才值得叫模型抽一次。 */
     const val MINIMUM_USER_MESSAGES = 2
 
-    fun shouldHarvest(session: ChatSession, memoryEnabled: Boolean): Boolean {
-        if (session.isPrivate || !memoryEnabled) return false
-        if (session.messages.size <= session.memoryHarvestedMessageCount) return false
-        return session.messages.count { it.role == ChatMessage.Role.USER } >= MINIMUM_USER_MESSAGES
+    /** 一次喂给抽取器的转写上限(字符)。超了就分块,旧的先抽。 */
+    const val MAX_TRANSCRIPT_CHARACTERS = 6_000
+    const val MAX_MESSAGE_CHARACTERS = 400
+
+    fun userMessageCount(messages: List<ChatMessage>): Int =
+        messages.count { it.role == ChatMessage.Role.USER && !it.textIsPlaceholder && it.text.isNotBlank() }
+
+    /** 一条消息在转写里占几个字符(含角色前缀和换行)。 */
+    internal fun cost(message: ChatMessage): Int? {
+        if (message.textIsPlaceholder) return null
+        val text = message.text.trim()
+        if (text.isEmpty()) return null
+        return minOf(text.length, MAX_MESSAGE_CHARACTERS + 1) + 4
+    }
+
+    /**
+     * 从最旧的开始,取到转写字符数用完为止。**从头取**,不是取末尾:
+     * 以前是整段重发再丢掉最旧的,既会把抽过的又看一遍,又会漏掉更早还没抽的。
+     * 返回的是要抽的这一块;剩下的下一次再抽。至少取一条,免得一条超长的消息永远卡在水位线上。
+     */
+    fun chunk(messages: List<ChatMessage>): List<ChatMessage> {
+        val taken = ArrayList<ChatMessage>()
+        var used = 0
+        for (message in messages) {
+            val cost = cost(message)
+            if (cost != null) {
+                if (taken.isNotEmpty() && used + cost > MAX_TRANSCRIPT_CHARACTERS) break
+                used += cost
+            }
+            taken += message
+        }
+        return taken
     }
 }
 
@@ -42,8 +68,10 @@ class MemoryExtractor(
     private val model: String,
     private val apiKey: String,
     private val snapshot: MemorySnapshot,
+    /** 各插件声明的「有专门存放处」和领域补充,来自 `PluginHost.memoryPolicy`。 */
+    private val policy: MemoryPolicy = MemoryPolicy(),
 ) {
-    suspend fun operations(from: ChatSession): List<MemoryOperation> {
+    suspend fun operations(from: List<ChatMessage>): List<MemoryOperation> {
         val transcript = transcript(of = from)
         if (transcript.isEmpty()) return emptyList()
         val provider = CloudCatalog.provider(providerId) ?: return emptyList()
@@ -65,7 +93,7 @@ class MemoryExtractor(
             profile = client.profile,
             prompt = AgentTranscript(
                 messages = listOf(
-                    AgentTranscript.Message.system(INSTRUCTIONS),
+                    AgentTranscript.Message.system(instructions(policy)),
                     AgentTranscript.Message.user(
                         "已有记忆：\n${snapshot.handleListing}\n\n这次对话：\n$transcript",
                     ),
@@ -81,65 +109,64 @@ class MemoryExtractor(
     }
 
     companion object {
-        private const val MAX_TRANSCRIPT_CHARACTERS = 6_000
-        private const val MAX_MESSAGE_CHARACTERS = 400
-        private const val MAX_ITEM_CHARACTERS = 120
 
-        val INSTRUCTIONS = """
-            你在为一个健康分析 app 维护「关于这位用户」的长期记忆。这份记忆会放进之后每一次对话的系统提示里，
-            所以它必须是长期成立的，而且要少而准。
+        /**
+         * 通用规则 + 各插件贡献的排除项与领域补充。核心不认识任何一个领域:
+         * 「用药走用药表」「测量数字走测量卡片」这类话是健康插件在它真的存着那些东西时才带来的。
+         */
+        fun instructions(policy: MemoryPolicy = MemoryPolicy()): String {
+            val elsewhere = policy.exclusions.takeIf { it.isNotEmpty() }?.let {
+                "\n- ${it.joinToString("、")}：这些有专门的地方存（用户能在那儿直接编辑），" +
+                    "记进这里就是同一件事两份，改了一份另一份还是旧的。"
+            }.orEmpty()
+            val extra = policy.guidance.takeIf { it.isNotEmpty() }?.let {
+                "\n\n另外要注意：\n" + it.joinToString("\n") { line -> "- $line" }
+            }.orEmpty()
+            return """
+                你在为一个日常助手 app 维护「关于这位用户」的长期记忆。这份记忆会放进之后每一次对话的系统提示里，
+                所以它必须是长期成立的，而且要少而准。
 
-            只记这四类，查得到的一律不记：
-            - profile 长期情况：作息、工作安排、伤病或身体限制、正在进行的目标和训练计划。
-            - preference 表达偏好：他希望助手怎么说话，他自己看重哪个指标。
-            - interpretation 已有解释：对他而言某个指标的正常范围，或者某段异常已经查明的原因。
-            - followUp 待跟进：说好过一阵子再看的事，必须给出 days（几天后失效）。
+                只记这几类，查得到的一律不记：
+                - profile 长期情况：作息、工作或学习安排、身体或行动上的限制、家庭和重要的人、正在进行的目标和计划。
+                - preference 表达偏好：他希望助手怎么说话、怎么做事，他自己看重什么。一次性的要求不是偏好。
+                - episode 近况：最近发生、还没了结、接下来几天很可能还会被提起的事（「下周三面试」「最近在装修」），必须给出 days（几天后淡出，一般 7–30）。它过了这段时间会自己消失，所以不要把长期成立的事记成近况，也不要把近况记成长期情况。
+                - followUp 待跟进：说好过一阵子再看的事，必须给出 days（几天后失效）。
 
-            绝对不要记：
-            - 任何具体的健康数值和某一天的数据（步数、睡眠时长、心率、体重……）。
-              他自己口述的测量有专门的测量卡片（log_measurement），记进这里第二天就过期还和卡片打架。
-            - 他在吃什么药或补剂、对什么过敏、试过什么没用。这些有专门的地方存（用户能在那儿直接编辑），
-              记进这里就是同一件事两份，改了一份另一份还是旧的。
-            - 只在这次对话里成立的话题，或者一次性的提问。
-            - 诊断结论。可以记「他说自己有房颤」，不能记「他有房颤，需要重点关注」。
+                绝对不要记：
+                - 任何具体的数值和某一天的数据（价格、步数、体重、余额、比分……）。这些每次都该重新查，记进这里第二天就过期。$elsewhere
+                - 只在这次对话里成立的话题，或者一次性的提问。$extra
 
-            已有记忆每条前面有一个编号（M1、M2…）。你输出的是对这份记忆的**修改**，不是重写：
-            - 已经记过的事不要再 add。有更准确的说法就 update 那一条。
-            - 事实变了或者已经不成立，delete。
-            - 这次对话没有值得记的，就输出空数组。宁可什么都不记，也不要记一堆用不上的。
+                已有记忆每条前面有一个编号（M1、M2…）。你输出的是对这份记忆的**修改**，不是重写：
+                - 已经记过的事不要再 add。有更准确的说法就 update 那一条。
+                - 事实变了或者已经不成立，delete。
+                - 这次对话没有值得记的，就输出空数组。宁可什么都不记，也不要记一堆用不上的。
 
-            只输出 JSON，不要任何解释：
-            {"operations":[
-              {"op":"add","kind":"profile","text":"…"},
-              {"op":"add","kind":"followUp","text":"…","days":14},
-              {"op":"update","id":"M2","text":"…"},
-              {"op":"delete","id":"M5"}
-            ]}
+                只输出 JSON，不要任何解释：
+                {"operations":[
+                  {"op":"add","kind":"profile","text":"…"},
+                  {"op":"add","kind":"episode","text":"…","days":14},
+                  {"op":"add","kind":"followUp","text":"…","days":14},
+                  {"op":"update","id":"M2","text":"…"},
+                  {"op":"delete","id":"M5"}
+                ]}
 
-            每条 text 用中文第三人称写，一句话，不超过 40 个字。
-        """.trimIndent()
-
-        fun transcript(of: ChatSession): String {
-            val lines = mutableListOf<String>()
-            for (message in of.messages) {
-                if (message.textIsPlaceholder) continue
-                val text = message.text.trim()
-                if (text.isEmpty()) continue
-                val clipped = if (text.length <= MAX_MESSAGE_CHARACTERS) {
-                    text
-                } else {
-                    text.take(MAX_MESSAGE_CHARACTERS) + "…"
-                }
-                val role = if (message.role == ChatMessage.Role.USER) "用户" else "助手"
-                lines += "$role：$clipped"
-            }
-            var joined = lines.joinToString("\n")
-            while (joined.length > MAX_TRANSCRIPT_CHARACTERS && lines.isNotEmpty()) {
-                lines.removeAt(0)
-                joined = lines.joinToString("\n")
-            }
-            return joined
+                每条 text 用中文第三人称写，一句话，不超过 40 个字。
+            """.trimIndent()
         }
+
+        /**
+         * 转写只有**用户和助手说过的话**,工具输出一条都不给——抽取器无从记起会过期的数字。
+         * 每条最多 400 字。块的大小已经由 [MemoryHarvest.chunk] 定好,这里不再丢消息。
+         */
+        fun transcript(of: List<ChatMessage>): String =
+            of.mapNotNull { message ->
+                if (message.textIsPlaceholder) return@mapNotNull null
+                val text = message.text.trim()
+                if (text.isEmpty()) return@mapNotNull null
+                val clipped = if (text.length <= MemoryHarvest.MAX_MESSAGE_CHARACTERS) text else text.take(MemoryHarvest.MAX_MESSAGE_CHARACTERS) + "…"
+                val role = if (message.role == ChatMessage.Role.USER) "用户" else "助手"
+                "$role：$clipped"
+            }.joinToString("\n")
 
         fun parse(text: String, snapshot: MemorySnapshot): List<MemoryOperation> {
             val payload = jsonPayload(inText = text) ?: return emptyList()
@@ -154,18 +181,18 @@ class MemoryExtractor(
                                 it.serialNameEquals(raw.kind)
                         } ?: return@mapNotNull null
                         val body = raw.text?.trim().orEmpty()
-                        if (body.isEmpty() || body.length > MAX_ITEM_CHARACTERS) return@mapNotNull null
-                        val days = raw.days?.coerceIn(1, 180)
+                        if (body.isEmpty() || body.length > MemoryItem.MAX_TEXT_CHARS) return@mapNotNull null
                         MemoryOperation.Add(
                             kind = kind,
                             text = body,
-                            expiresInDays = if (kind == MemoryItem.Kind.FOLLOW_UP) days ?: 14 else null,
+                            // 带过期的种类缺 days 就按默认;上限由 MemoryItem.dueFor 按种类夹。
+                            expiresInDays = if (MemoryItem.expires(kind)) raw.days ?: MemoryItem.DEFAULT_EXPIRY_DAYS else null,
                         )
                     }
                     "update" -> {
                         val id = raw.id?.let { snapshot.resolve(handle = it) } ?: return@mapNotNull null
                         val body = raw.text?.trim().orEmpty()
-                        if (body.isEmpty() || body.length > MAX_ITEM_CHARACTERS) return@mapNotNull null
+                        if (body.isEmpty() || body.length > MemoryItem.MAX_TEXT_CHARS) return@mapNotNull null
                         MemoryOperation.Update(id = id, text = body)
                     }
                     "delete" -> {
@@ -189,6 +216,7 @@ class MemoryExtractor(
             val expected = when (this) {
                 MemoryItem.Kind.PROFILE -> "profile"
                 MemoryItem.Kind.PREFERENCE -> "preference"
+                MemoryItem.Kind.EPISODE -> "episode"
                 MemoryItem.Kind.INTERPRETATION -> "interpretation"
                 MemoryItem.Kind.FOLLOW_UP -> "followUp"
             }
@@ -213,7 +241,7 @@ val MemorySnapshot.handleListing: String
     get() {
         if (items.isEmpty()) return "（空）"
         return items.take(MemorySnapshot.MAX_ITEMS).mapIndexed { index, item ->
-            "M${index + 1}. [${item.kind.label}] ${item.text}"
+            "${MemorySnapshot.handle(index)}. [${item.kind.promptLabel}] ${item.text}"
         }.joinToString("\n")
     }
 
@@ -223,23 +251,29 @@ fun MemorySnapshot.resolve(handle: String): String? {
     return items.getOrNull(index)?.id
 }
 
+/**
+ * 读改写整个在 store 的锁里做:抽取、`remember`、手动编辑各自都是「读—改—写」,
+ * 不在同一把锁下并发就会互相顶掉对方的更新。
+ */
 fun MemoryStore.apply(
     operations: List<MemoryOperation>,
     now: Instant = Clock.System.now(),
+): List<MemoryItem> = synchronized(this) { applyLocked(operations, now) }
+
+private fun MemoryStore.applyLocked(
+    operations: List<MemoryOperation>,
+    now: Instant,
 ): List<MemoryItem> {
     if (operations.isEmpty()) return load(now)
     val items = load(now).toMutableList()
     for (op in operations) {
         when (op) {
             is MemoryOperation.Add -> {
-                val duplicate = items.any { it.text == op.text && it.kind == op.kind }
+                // 去掉空白和标点再比:「不吃香菜。」和「不吃 香菜」是同一句,以前会各记一条。
+                val key = MemoryItem.normalized(op.text)
+                val duplicate = items.any { it.kind == op.kind && MemoryItem.normalized(it.text) == key }
                 if (duplicate) continue
-                val dueAt = if (op.kind == MemoryItem.Kind.FOLLOW_UP) {
-                    val days = (op.expiresInDays ?: 14).coerceIn(1, 180)
-                    now.plus(days, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                } else {
-                    null
-                }
+                val dueAt = MemoryItem.dueFor(op.kind, op.expiresInDays, now)
                 items += MemoryItem(
                     text = op.text,
                     kind = op.kind,

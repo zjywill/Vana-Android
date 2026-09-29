@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
 import com.pinapia.vana.checkin.CheckInScheduler
 import com.pinapia.vana.location.LocationProvider
-import com.pinapia.vana.session.SessionStore
+import com.pinapia.vana.thread.ThreadWriter
 import com.pinapia.vana.update.CheckForUpdatesRow
 import com.pinapia.vana.vision.PhotoImagePolicy
 import com.pinapia.vana.voice.VoiceDictation
@@ -67,11 +67,10 @@ fun SettingsScreen(
     engineSettings: EngineSettings,
     secureKeyStore: SecureKeyStore,
     locationProvider: LocationProvider,
-    sessionStore: SessionStore,
+    threadWriter: ThreadWriter,
     onBack: () -> Unit,
     onOpenMemory: () -> Unit,
-    onOpenMeasurements: () -> Unit = {},
-    onOpenTenants: () -> Unit,
+    onOpenPlugins: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenDeveloper: () -> Unit = {},
     onChatsCleared: () -> Unit = {},
@@ -85,12 +84,18 @@ fun SettingsScreen(
     var photoPolicy by remember { mutableStateOf(engineSettings.photoImagePolicy) }
     var thinking by remember { mutableStateOf(engineSettings.thinkingEnabled) }
     var memory by remember { mutableStateOf(engineSettings.memoryEnabled) }
-    var medications by remember { mutableStateOf(engineSettings.medicationsEnabled) }
-    var measurements by remember { mutableStateOf(engineSettings.measurementsEnabled) }
     var checkIns by remember { mutableStateOf(engineSettings.checkInsEnabled) }
+    var autoStartTasks by remember { mutableStateOf(engineSettings.autoStartTasks) }
     var morningHour by remember { mutableStateOf(engineSettings.morningCheckInHour) }
     var eveningHour by remember { mutableStateOf(engineSettings.eveningCheckInHour) }
     var confirmClearChats by remember { mutableStateOf(false) }
+    var confirmClearOld by remember { mutableStateOf(false) }
+    var historyBytes by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(threadWriter, confirmClearChats, confirmClearOld) {
+        historyBytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            threadWriter.write { it.sizeBytes() }
+        }
+    }
     var showProviders by remember { mutableStateOf(false) }
     var showModels by remember { mutableStateOf(false) }
     var showPersonas by remember { mutableStateOf(false) }
@@ -274,9 +279,9 @@ fun SettingsScreen(
             Text(
                 uiText(
                     "填了 serper.dev 的密钥，Vana 遇到自己不知道的事就能上网查一下，并给出出处。" +
-                        "不填就只用它已有的知识回答。搜索词不会带上你的健康数据。密钥只保存在本机加密存储。",
+                        "不填就只用它已有的知识回答。搜索词不会带上你的个人数据。密钥只保存在本机加密存储。",
                     "Add a serper.dev key to let Vana search for current information and cite sources. " +
-                        "Without one, it answers from existing knowledge. Search terms exclude your personal situation and measurements.",
+                        "Without one, it answers from existing knowledge. Search terms exclude your personal data.",
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -294,6 +299,14 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                uiText(
+                    "只改语气和详略，不改数据口径——同样只引用工具返回或你记录的数字。",
+                    "This changes tone and detail only. Recorded values are still quoted as-is.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             SettingSwitch(uiText("回答前先思考", "Think before answering"), thinking) {
                 thinking = it
                 engineSettings.thinkingEnabled = it
@@ -302,22 +315,6 @@ fun SettingsScreen(
                 memory = it
                 engineSettings.memoryEnabled = it
             }
-            SettingSwitch(uiText("用药与补剂", "Medications and supplements"), medications) {
-                medications = it
-                engineSettings.medicationsEnabled = it
-            }
-            SettingSwitch(uiText("口述测量卡片", "Spoken measurement cards"), measurements) {
-                measurements = it
-                engineSettings.measurementsEnabled = it
-            }
-            Text(
-                uiText(
-                    "只改语气和详略，不改数据口径——同样只引用工具返回的数字，同样不做诊断。",
-                    "This changes tone and detail only. Recorded values are still quoted as-is, and Vana still does not diagnose.",
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             Text(
                 uiText("Vana 记住的事", "What Vana remembers"),
                 modifier = Modifier
@@ -327,23 +324,36 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                uiText("测量卡片", "Measurement cards"),
+                uiText("插件", "Plugins"),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onOpenMeasurements)
+                    .clickable(onClick = onOpenPlugins)
                     .padding(vertical = 8.dp),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                uiText("家庭成员", "Family members"),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenTenants)
-                    .padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyLarge,
+                uiText("健康等可以整个开关的能力。", "Capabilities such as Health that you can switch off entirely."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             HorizontalDivider()
-            Text(uiText("对话", "Conversations"), style = MaterialTheme.typography.titleMedium)
+            Text(uiText("对话历史", "Conversation history"), style = MaterialTheme.typography.titleMedium)
+            Text(
+                uiText(
+                    "Vana 只有这一条对话，打开就接着上次。更早的内容不会一直发给模型——它们留在本机，需要时才被翻出来。" +
+                        (historyBytes?.let { "目前占用 ${formatBytes(it)}。" } ?: ""),
+                    "Vana has a single conversation that picks up where you left off. Older content is not sent to the model every time; it stays on this device and is looked up when needed." +
+                        (historyBytes?.let { " Currently using ${formatBytes(it)}." } ?: ""),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(
+                onClick = { confirmClearOld = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(uiText("清除 30 天前的对话", "Clear conversations older than 30 days"))
+            }
             TextButton(
                 onClick = { confirmClearChats = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -351,7 +361,7 @@ fun SettingsScreen(
                 Text(uiText("清空全部对话", "Clear all conversations"), color = MaterialTheme.colorScheme.error)
             }
             Text(
-                uiText("清空会删除本机保存的所有消息，无法撤销。", "This permanently deletes all messages saved on this device."),
+                uiText("清除会删除本机保存的消息（连同其中的照片），无法撤销。", "Clearing permanently deletes messages saved on this device, along with their photos."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -460,6 +470,27 @@ fun SettingsScreen(
             )
 
             HorizontalDivider()
+            Text(uiText("后台任务", "Background tasks"), style = MaterialTheme.typography.titleMedium)
+            SettingSwitch(uiText("只读任务自动开始", "Start read-only tasks automatically"), autoStartTasks) { enabled ->
+                autoStartTasks = enabled
+                engineSettings.autoStartTasks = enabled
+            }
+            Text(
+                uiText(
+                    "Vana 可以把要花几分钟的独立事务（比如查资料、比较方案）放到后台去做。默认每一件都先给你一张确认卡，" +
+                        "你点了「开始」才会跑；打开这一项后，只读的任务会直接开始。后台任务只读：它不会改动你的任何数据，" +
+                        "想让你做的事只会作为建议放在结果里，由你决定。它会把任务说明、用到的记忆和搜到的内容发给你选的模型服务。",
+                    "Vana can hand a self-contained job that takes a few minutes — researching, comparing options — to the background. " +
+                        "By default every job shows a confirmation card and only starts when you tap Start; with this on, " +
+                        "read-only jobs start right away. Background jobs are read-only: they never change your data, and anything " +
+                        "they want you to do appears as a suggestion for you to accept. A job sends its brief, the memory it needs " +
+                        "and what it finds to your chosen model service.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider()
             Text(uiText("位置", "Location"), style = MaterialTheme.typography.titleMedium)
             if (locationProvider.isAuthorized) {
                 Text(
@@ -502,9 +533,9 @@ fun SettingsScreen(
             }
             Text(
                 uiText(
-                    "给了之后 Vana 每次回答都知道你大概在哪个城市，季节气候、时差、当地饮食和就医方式才答得准。" +
+                    "给了之后 Vana 每次回答都知道你大概在哪个城市，季节气候、时差、当地饮食和当地的服务才答得准。" +
                         "只取到城市，不取街道地址，也不会保存在本机；不给就完全不带位置，其余功能照常。",
-                    "Approximate location lets Vana account for season, climate, time zone and local care. " +
+                    "Approximate location lets Vana account for season, climate, time zone and local services. " +
                         "Only the city is used, never a street address, and it is not saved. Everything else works without it.",
                 ),
                 style = MaterialTheme.typography.bodySmall,
@@ -590,13 +621,48 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    sessionStore.deleteAll()
                     confirmClearChats = false
-                    onChatsCleared()
+                    scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            threadWriter.write { it.deleteAll() }
+                        }
+                        onChatsCleared()
+                    }
                 }) { Text(uiText("清空对话", "Clear conversations")) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmClearChats = false }) { Text(uiText("取消", "Cancel")) }
+            },
+        )
+    }
+
+    if (confirmClearOld) {
+        AlertDialog(
+            onDismissRequest = { confirmClearOld = false },
+            title = { Text(uiText("清除 30 天前的对话？", "Clear conversations older than 30 days?")) },
+            text = {
+                Text(
+                    uiText(
+                        "30 天前的消息会从本机删掉（连同其中的照片），近 30 天的不动，无法撤销。",
+                        "Messages older than 30 days are deleted from this device along with their photos. Newer ones stay. This cannot be undone.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearOld = false
+                    scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            threadWriter.write {
+                                it.deleteOlderThan(kotlinx.datetime.Clock.System.now() - kotlin.time.Duration.parse("30d"))
+                            }
+                        }
+                        onChatsCleared()
+                    }
+                }) { Text(uiText("清除", "Clear")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearOld = false }) { Text(uiText("取消", "Cancel")) }
             },
         )
     }
@@ -875,4 +941,10 @@ private fun voiceStatusMessage(
         L10n.text("这台设备用不了本机语音识别。", "Speech recognition is unavailable on this device.")
     VoiceDictation.Availability.UNKNOWN ->
         L10n.text("正在检查…", "Checking…")
+}
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes < 1_024 -> "$bytes B"
+    bytes < 1_048_576 -> "%.0f KB".format(bytes / 1_024.0)
+    else -> "%.1f MB".format(bytes / 1_048_576.0)
 }

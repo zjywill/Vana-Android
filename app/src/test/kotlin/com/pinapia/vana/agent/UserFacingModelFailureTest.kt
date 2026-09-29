@@ -12,13 +12,13 @@ class UserFacingModelFailureTest {
         withLocale(Locale.SIMPLIFIED_CHINESE) {
             assertTrue(UserFacingModelFailure.message("Error code: 401").contains("API 密钥"))
             assertTrue(UserFacingModelFailure.message("insufficient quota").contains("额度"))
-            assertTrue(UserFacingModelFailure.message("prompt is too long").contains("新对话"))
+            assertTrue(UserFacingModelFailure.message("prompt is too long").contains("少附几张图"))
             assertTrue(UserFacingModelFailure.message("server overloaded").contains("暂时"))
         }
         withLocale(Locale.ENGLISH) {
             assertTrue(UserFacingModelFailure.message("Error code: 401").contains("API key"))
             assertTrue(UserFacingModelFailure.message("insufficient quota").contains("quota"))
-            assertTrue(UserFacingModelFailure.message("prompt is too long").contains("new conversation"))
+            assertTrue(UserFacingModelFailure.message("prompt is too long").contains("fewer photos"))
             assertTrue(UserFacingModelFailure.message("server overloaded").contains("temporarily"))
         }
     }

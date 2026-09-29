@@ -34,16 +34,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pinapia.vana.plugins.PluginRegistry
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.datetime.until
 
 private val FollowUpDayOptions = listOf(3, 7, 14, 30, 60, 90)
+
+/** 条数到这个数才出现搜索框。 */
+private const val SEARCH_THRESHOLD = 8
 
 data class MemoryDraft(
     val id: String? = null,
@@ -64,22 +67,32 @@ fun MemoryListScreen(
     var enabled by remember { mutableStateOf(engineSettings.memoryEnabled) }
     var editing by remember { mutableStateOf<MemoryDraft?>(null) }
     var confirmClear by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
 
     fun reload() {
         items = store.load()
     }
 
+    /** 这一类记忆的主人(插件)现在关着吗。关着的不会带进对话,但数据还在,所以照样列出来。 */
+    fun isDormant(kind: MemoryItem.Kind): Boolean =
+        !PluginRegistry.isMemoryVisible(kind, engineSettings::isPluginEnabled)
+
     if (editing != null) {
         MemoryEditorSheet(
             draft = editing!!,
+            // 已经是某个种类的条目要能留在原种类里;新选的种类只列现在生效的。
+            kinds = MemoryItem.Kind.entries.filter { !isDormant(it) || it == editing!!.kind },
             onCancel = { editing = null },
+            onDelete = editing!!.id?.let { id ->
+                {
+                    store.delete(id)
+                    editing = null
+                    reload()
+                }
+            },
             onSave = { draft ->
                 val now = Clock.System.now()
-                val dueAt = if (draft.kind == MemoryItem.Kind.FOLLOW_UP) {
-                    now.plus(draft.days.coerceIn(1, 180), DateTimeUnit.DAY, TimeZone.currentSystemDefault())
-                } else {
-                    null
-                }
+                val dueAt = MemoryItem.dueFor(draft.kind, draft.days, now)
                 if (draft.id != null) {
                     val existing = items.firstOrNull { it.id == draft.id }
                     if (existing != null) {
@@ -98,7 +111,7 @@ fun MemoryListScreen(
                         text = draft.text,
                         kind = draft.kind,
                         origin = MemoryItem.Origin.MANUAL,
-                        days = if (draft.kind == MemoryItem.Kind.FOLLOW_UP) draft.days else null,
+                        days = if (MemoryItem.expires(draft.kind)) draft.days else null,
                         now = now,
                     )
                 }
@@ -159,6 +172,16 @@ fun MemoryListScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                // 条数多了才要搜:十来条一眼看得完,搜索框只会占地方。
+                if (items.size >= SEARCH_THRESHOLD) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(uiText("搜索记忆", "Search memories")) },
+                    )
+                }
             }
             if (items.isEmpty()) {
                 item {
@@ -174,8 +197,19 @@ fun MemoryListScreen(
                     )
                 }
             } else {
+                val shown = if (query.isBlank()) items else items.filter { it.text.contains(query.trim(), ignoreCase = true) }
+                if (shown.isEmpty()) {
+                    item(key = "no-match") {
+                        Text(
+                            uiText("没有匹配的记忆", "No matching memories"),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 12.dp),
+                        )
+                    }
+                }
                 for (kind in MemorySnapshot.KindOrder) {
-                    val group = items.filter { it.kind == kind }
+                    val group = shown.filter { it.kind == kind }
                     if (group.isEmpty()) continue
                     item(key = "kind-${kind.name}") {
                         Text(
@@ -216,6 +250,18 @@ fun MemoryListScreen(
                                     append(mem.originLabel)
                                     append(" · ")
                                     append(relativeTime(mem.updatedAt.toEpochMilliseconds()))
+                                    if (mem.kind == MemoryItem.Kind.EPISODE && mem.dueAt != null) {
+                                        append(" · ")
+                                        val d = Clock.System.now()
+                                            .until(mem.dueAt!!, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
+                                            .toInt()
+                                            .coerceAtLeast(1)
+                                        append(uiText("${d} 天后淡出", "Fades out in $d days"))
+                                    }
+                                    if (isDormant(mem.kind)) {
+                                        append(" · ")
+                                        append(uiText("对应插件已关，暂不使用", "Its plugin is off; not used for now"))
+                                    }
                                     if (mem.kind == MemoryItem.Kind.FOLLOW_UP && mem.dueAt != null) {
                                         append(" · ")
                                         append(
@@ -288,13 +334,16 @@ fun MemoryListScreen(
 @Composable
 private fun MemoryEditorSheet(
     draft: MemoryDraft,
+    kinds: List<MemoryItem.Kind>,
     onCancel: () -> Unit,
+    onDelete: (() -> Unit)?,
     onSave: (MemoryDraft) -> Unit,
 ) {
     var text by remember { mutableStateOf(draft.text) }
     var kind by remember { mutableStateOf(draft.kind) }
     var days by remember { mutableIntStateOf(draft.days) }
     var showKinds by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -349,7 +398,7 @@ private fun MemoryEditorSheet(
                 style = MaterialTheme.typography.titleSmall,
             )
             if (showKinds) {
-                MemoryItem.Kind.entries.forEach { option ->
+                kinds.forEach { option ->
                     Text(
                         option.label,
                         modifier = Modifier
@@ -367,8 +416,11 @@ private fun MemoryEditorSheet(
                     )
                 }
             }
-            if (kind == MemoryItem.Kind.FOLLOW_UP) {
-                Text(uiText("多久后回头看", "Follow up after"), style = MaterialTheme.typography.titleSmall)
+            if (MemoryItem.expires(kind)) {
+                Text(
+                    if (kind == MemoryItem.Kind.EPISODE) uiText("多久后淡出", "Fade out after") else uiText("多久后回头看", "Follow up after"),
+                    style = MaterialTheme.typography.titleSmall,
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FollowUpDayOptions.forEach { option ->
                         FilterChip(
@@ -379,7 +431,37 @@ private fun MemoryEditorSheet(
                     }
                 }
             }
+            if (onDelete != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                TextButton(onClick = { confirmDelete = true }) {
+                    Text(uiText("删除这条", "Delete this memory"), color = MaterialTheme.colorScheme.error)
+                }
+            }
         }
+    }
+
+    if (confirmDelete && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(uiText("删除这条记忆？", "Delete this memory?")) },
+            text = {
+                Text(
+                    uiText(
+                        "删掉之后 Vana 不会再带着这句话回答你，无法撤销。",
+                        "Vana will stop using it in answers. This cannot be undone.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) { Text(uiText("删除", "Delete")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text(uiText("取消", "Cancel")) }
+            },
+        )
     }
 }
 

@@ -87,6 +87,7 @@ object CheckInScheduler {
             val morning = content(
                 period = DayPeriod.MORNING,
                 dueFollowUps = dueFollowUps,
+                remindersToday = remindersOnMorning(settings.morningCheckInHour),
             )
             val evening = content(
                 period = DayPeriod.EVENING,
@@ -95,6 +96,26 @@ object CheckInScheduler {
             schedule(app, MORNING_REQ, MORNING_ID, settings.morningCheckInHour, morning, "morning")
             schedule(app, EVENING_REQ, EVENING_ID, settings.eveningCheckInHour, evening, "evening")
         }
+    }
+
+    /** 早上那条 check-in 响的那一天,已经设好的提醒有哪些。用它把通知从一句空邀请变成一句今天的概览。 */
+    private fun remindersOnMorning(hour: Int): List<com.pinapia.vana.tasks.Task> {
+        val zone = java.time.ZoneId.systemDefault()
+        val next = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour.coerceIn(0, 23))
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
+        }.timeInMillis
+        val fireAt = kotlinx.datetime.Instant.fromEpochMilliseconds(next)
+        val endOfDay = com.pinapia.vana.tasks.ReminderRules.endOfDay(fireAt, zone)
+        return runCatching {
+            TenantScope.ownerStores.tasks.active().filter { task ->
+                task.kind == com.pinapia.vana.tasks.TaskKind.REMINDER &&
+                    task.dueAt?.let { it >= fireAt && it < endOfDay } == true
+            }.sortedBy { it.dueAt }
+        }.getOrDefault(emptyList())
     }
 
     fun cancel(context: Context) {
@@ -131,12 +152,13 @@ object CheckInScheduler {
     suspend fun content(
         period: DayPeriod,
         dueFollowUps: List<com.pinapia.vana.memory.MemoryItem> = emptyList(),
+        remindersToday: List<com.pinapia.vana.tasks.Task> = emptyList(),
     ): CheckInContent {
         if (period == DayPeriod.MORNING && dueFollowUps.isNotEmpty()) {
             val followUp = dueFollowUps.first()
             val conclusion = com.pinapia.vana.recall.FollowUpRunner.conclusion(
                 forFollowUp = followUp,
-                inStore = TenantScope.ownerStores.sessions,
+                writer = TenantScope.ownerStores.threadWriter,
             )
             return CheckInContent(
                 title = if (conclusion == null) {
@@ -145,7 +167,16 @@ object CheckInScheduler {
                     L10n.text("说好今天回头看的，看过了", "Today's follow-up reviewed")
                 },
                 body = conclusion ?: followUp.text,
-                question = followUp.text,
+                // 有结论:它已经作为一条主动消息躺在对话末尾了,点开通知直接落在那儿,不再另开一句。
+                // 没结论:Vana 用这句开场,他的回答就是对它的回应。
+                question = if (conclusion == null) {
+                    L10n.text(
+                        "说好今天回头看的：${followUp.text}。现在怎么样了？",
+                        "We agreed to check on this today: ${followUp.text}. How is it going?",
+                    )
+                } else {
+                    null
+                },
                 followUpId = followUp.id,
             )
         }
@@ -153,7 +184,16 @@ object CheckInScheduler {
         return when (period) {
             DayPeriod.MORNING -> CheckInContent(
                 title = L10n.text("早上好", "Good morning"),
-                body = L10n.text("今天有什么想关注的？", "What would you like to focus on today?"),
+                body = if (remindersToday.isEmpty()) {
+                    L10n.text("今天有什么想关注的？", "What would you like to focus on today?")
+                } else {
+                    val names = remindersToday.take(3).joinToString(L10n.text("、", ", ")) { it.title }
+                    val more = remindersToday.size - 3
+                    L10n.text(
+                        "今天有 ${remindersToday.size} 条提醒：$names" + if (more > 0) " 等" else "",
+                        "${remindersToday.size} reminder(s) today: $names" + if (more > 0) " and more" else "",
+                    )
+                },
                 question = L10n.text("今天有什么想关注的？", "What would you like to focus on today?"),
             )
             DayPeriod.AFTERNOON, DayPeriod.EVENING -> CheckInContent(
@@ -263,6 +303,8 @@ class CheckInBootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             CheckInScheduler.reschedule(context)
+            // 重启之后系统闹钟全没了:提醒也要一起重新排。
+            com.pinapia.vana.tasks.ReminderScheduler.rescheduleAll(context)
         }
     }
 }

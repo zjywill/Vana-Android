@@ -77,6 +77,9 @@
             android:name=".checkin.CheckInAlarmReceiver"
             android:exported="false" />
         <receiver
+            android:name=".tasks.ReminderAlarmReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".checkin.CheckInBootReceiver"
             android:exported="false">
             <intent-filter>

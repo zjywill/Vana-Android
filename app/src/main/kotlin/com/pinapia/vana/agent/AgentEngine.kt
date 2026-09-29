@@ -27,7 +27,7 @@ sealed class AgentError(message: String) : Exception(message) {
         private fun readResolve(): Any = IncompleteResponse
     }
 
-    data object ContextWindowExceeded : AgentError("当前对话过长，超出模型上下文限制，请开启新对话或缩小问题范围") {
+    data object ContextWindowExceeded : AgentError("这一轮内容太多，超出了模型一次能看完的范围") {
         private fun readResolve(): Any = ContextWindowExceeded
     }
 
@@ -54,18 +54,18 @@ interface AgentEngine {
     ): Flow<AgentTurnEvent>
 }
 
-fun ModelSummarizer.Companion.healthChat(client: com.pinapia.vana.agentruntime.AgentModelClient): ModelSummarizer {
+fun ModelSummarizer.Companion.chat(client: com.pinapia.vana.agentruntime.AgentModelClient): ModelSummarizer {
     val sections = """
         ## 用户目标
-        ## 身体情况与偏好（用户说过的限制、习惯、在意的指标）
-        ## 已有结论（连同支撑它的具体数字：步数、时长、心率、体重等）
+        ## 用户情况与偏好（用户说过的限制、习惯、在意的事）
+        ## 已有结论（连同支撑它的具体数字、日期、名称）
         ## 查询轨迹（调用过哪个工具、参数是什么、返回了什么）
         ## 待跟进（用户接下来大概要问什么）
     """.trimIndent()
     return ModelSummarizer(
         client = client,
         instruction = """
-            你在压缩一段健康助手的对话，好让它能在更小的上下文窗口里继续。
+            你在压缩一段助手与用户的对话，好让它能在更小的上下文窗口里继续。
             只输出两段，各自用标签包起来：
 
             <visible>一句话给用户看的回顾：到目前为止聊过什么。</visible>
@@ -76,7 +76,7 @@ fun ModelSummarizer.Companion.healthChat(client: com.pinapia.vana.agentruntime.A
             不要编造对话里没有的事实。
         """.trimIndent(),
         updateInstruction = """
-            你在维护一份健康助手对话的滚动摘要。给你的是上一版摘要，和它之后新发生的对话。
+            你在维护一份助手与用户对话的滚动摘要。给你的是上一版摘要，和它之后新发生的对话。
             只输出两段，各自用标签包起来：
 
             <visible>一句话给用户看的回顾：到目前为止聊过什么。</visible>
@@ -100,21 +100,21 @@ fun ModelSummarizer.Companion.healthChat(client: com.pinapia.vana.agentruntime.A
     )
 }
 
-val ContextPolicy.Companion.healthChat: ContextPolicy
+val ContextPolicy.Companion.chat: ContextPolicy
     get() = ContextPolicy(
-        toolOutputTruncationNotice = "…（结果过长已截断：省略 %d 字，原文共 %d 字。需要更细可以缩小时间范围再查一次）",
+        toolOutputTruncationNotice = "…（结果过长已截断：省略 %d 字，原文共 %d 字。需要更细可以缩小范围再查一次）",
     )
 
-val healthChatTruncatedToolCallNotice =
+val chatTruncatedToolCallNotice =
     "这次调用没有执行：上一条回复达到了输出长度上限，参数可能不完整。请用完整的参数重新调用一次。"
 
-val TranscriptCompactor.Companion.healthChat: TranscriptCompactor
+val TranscriptCompactor.Companion.chat: TranscriptCompactor
     get() = TranscriptCompactor(
         maxCharactersPerToolCall = 180,
         maxToolCallsInDigest = 6,
-        digestHeaderFormat = "[这一轮折叠了 %d 次健康查询，只保留要点]",
+        digestHeaderFormat = "[这一轮折叠了 %d 次工具调用，只保留要点]",
         truncationSuffix = "…（已截断）",
         overflowFormat = "（另有 %d 次查询未列出）",
     )
 
-fun List<ChatMessage>.toAgentDTOs(): List<AgentChatMessageDTO> = map { it.toDTO() }
+fun List<ChatMessage>.toAgentDTOs(): List<AgentChatMessageDTO> = HistoryMarkers.apply(this)

@@ -8,7 +8,6 @@ import com.pinapia.vana.agentruntime.AgentPendingInputProvider
 import com.pinapia.vana.agentruntime.AgentTurnEvent
 import com.pinapia.vana.agentruntime.CapabilityDefinition
 import com.pinapia.vana.agentruntime.ContextPolicy
-import com.pinapia.vana.agentruntime.ModelSummarizer
 import com.pinapia.vana.agentruntime.PluginAssembly
 import com.pinapia.vana.agentruntime.PluginContext
 import com.pinapia.vana.agentruntime.PluginHost
@@ -20,7 +19,6 @@ import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.AssistantPersona
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.settings.SecureKeyStore
-import com.pinapia.vana.tenant.Tenant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -28,17 +26,16 @@ class CloudEngine(
     private val providerId: String,
     private val model: String,
     private val apiKey: String,
-    private val tenant: Tenant,
     private val plugins: List<AgentPlugin>,
     private val pluginContext: PluginContext = PluginContext(),
     private val thinkingEnabled: Boolean = true,
     private val persona: AssistantPersona = AssistantPersona.BALANCED,
     private val hooks: AgentHookDispatcher? = null,
-    private val goal: String? = null,
+    private val maxToolRounds: Int = DEFAULT_TOOL_ROUNDS,
 ) : AgentEngine {
     override val name: String = "云端模型"
 
-    /** 挂哪些工具、拼哪几段,整个由插件决定;引擎只补自己那几段(基础规则、成员身份、目标、插话、人格)。 */
+    /** 挂哪些工具、拼哪几段,整个由插件决定;引擎只补自己那几段(基础规则、今天、目标、插话、人格)。 */
     private fun assemble(acceptsInterjections: Boolean): PluginAssembly =
         PluginHost.assemble(
             plugins = plugins,
@@ -77,12 +74,14 @@ class CloudEngine(
             client = client,
             capabilities = assembly.registry,
             systemInstruction = assembly.instruction(),
-            compactor = TranscriptCompactor.healthChat,
-            summarizer = ModelSummarizer.healthChat(client),
-            policy = ContextPolicy.healthChat,
-            maxToolRounds = MAX_TOOL_ROUNDS,
+            compactor = TranscriptCompactor.chat,
+            // 聊天路径不主动叫模型写摘要:历史靠「窗口 + 记忆 + 可检索的档案」,递归摘要会漂,还多花一路钱。
+            // 摘要器只留给别处(见 AgentEngine.kt),这里给 null 就退回纯机械压缩。
+            summarizer = null,
+            policy = ContextPolicy.chat,
+            maxToolRounds = maxToolRounds,
             pendingInput = pendingInput,
-            truncatedToolCallNotice = healthChatTruncatedToolCallNotice,
+            truncatedToolCallNotice = chatTruncatedToolCallNotice,
             hooks = hooks,
         )
         try {
@@ -99,23 +98,18 @@ class CloudEngine(
     fun toolDefinitions(): List<CapabilityDefinition> =
         assemble(acceptsInterjections = false).registry.definitions
 
+    /**
+     * 引擎自己的几段。今天是易变的,排在最后那一片;其余是静态的。目标由任务插件贡献。
+     * 成员身份(替家人问)不在这里:那是健康插件的事,由 `FamilyPlugin` 贡献。
+     */
     private fun coreBlocks(acceptsInterjections: Boolean): List<PromptBlock> = buildList {
-        add(PromptBlock(PromptOrder.BASE, HealthAssistantInstructions.text()))
-        tenant.instructionBlock?.let { add(PromptBlock(PromptOrder.TENANT, it)) }
-        goal?.trim()?.takeIf { it.isNotEmpty() }?.let {
-            add(
-                PromptBlock(
-                    PromptOrder.GOAL,
-                    "这条对话围绕他定下的长期目标「$it」。" +
-                        "结合当前对话、记忆、用药和用户记录的测量，把变化和这件事挂上钩，不要另开一个无关的话题。",
-                ),
-            )
-        }
+        add(PromptBlock(PromptOrder.BASE, CoreInstructions.text()))
+        add(PromptBlock(PromptOrder.TODAY, CoreInstructions.today()))
         if (acceptsInterjections) {
             add(
                 PromptBlock(
                     PromptOrder.INTERJECTION,
-                    "用户可能在你查数据或回答的中途补一句。那是接着当前话题说的，不要当成一个全新的问题从头讲一遍。",
+                    "用户可能在你查资料或回答的中途补一句。那是接着当前话题说的，不要当成一个全新的问题从头讲一遍。",
                 ),
             )
         }
@@ -125,19 +119,17 @@ class CloudEngine(
     }
 
     companion object {
-        private const val MAX_TOOL_ROUNDS = 6
+        const val DEFAULT_TOOL_ROUNDS = 6
 
         fun create(
             providerId: String,
             model: String,
             secureKeyStore: SecureKeyStore,
-            tenant: Tenant,
             plugins: List<AgentPlugin>,
             pluginContext: PluginContext,
             thinkingEnabled: Boolean,
             persona: AssistantPersona,
             hooks: AgentHookDispatcher? = null,
-            goal: String? = null,
         ): CloudEngine {
             val normalized = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
             when {
@@ -151,13 +143,11 @@ class CloudEngine(
                 providerId = providerId,
                 model = model,
                 apiKey = normalized.value,
-                tenant = tenant,
                 plugins = plugins,
                 pluginContext = pluginContext,
                 thinkingEnabled = thinkingEnabled,
                 persona = persona,
                 hooks = hooks,
-                goal = goal,
             )
         }
     }

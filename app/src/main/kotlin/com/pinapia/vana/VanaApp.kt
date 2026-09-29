@@ -1,6 +1,10 @@
 package com.pinapia.vana
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,16 +38,45 @@ import com.pinapia.vana.memory.MemoryListScreen
 import com.pinapia.vana.recall.BackgroundDigest
 import com.pinapia.vana.settings.DeveloperScreen
 import com.pinapia.vana.settings.SettingsScreen
+import com.pinapia.vana.memory.MemoryHarvester
+import com.pinapia.vana.plugins.PluginSurface
+import com.pinapia.vana.plugins.PluginsScreen
+import com.pinapia.vana.settings.CloudCatalog
+import com.pinapia.vana.notes.NotesScreen
+import com.pinapia.vana.tasks.AppJobControls
+import com.pinapia.vana.tasks.LocalJobControls
+import com.pinapia.vana.tasks.LocalTasksEnvironment
+import com.pinapia.vana.tasks.ReminderScheduler
+import com.pinapia.vana.tasks.SubagentScheduler
+import com.pinapia.vana.tasks.TaskDetailScreen
+import com.pinapia.vana.tasks.TasksEnvironment
+import com.pinapia.vana.tasks.TasksScreen
 import com.pinapia.vana.tenant.TenantListScreen
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.ui.uiText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** 插件页和「今天」卡片上的入口 id 对到路由。插件只说「是什么」,去哪儿由外壳定。 */
+private fun surfaceRoute(surfaceId: String): String? = when (surfaceId) {
+    PluginSurface.MEDICATIONS -> Routes.MEDICATIONS
+    PluginSurface.MEASUREMENTS -> Routes.MEASUREMENTS
+    PluginSurface.FAMILY -> Routes.TENANTS
+    PluginSurface.NOTES -> Routes.NOTES
+    else -> null
+}
 
 private object Routes {
     const val NOTICE = "notice"
     const val CHAT = "chat"
     const val SETTINGS = "settings"
     const val MEMORY = "memory"
+    const val PLUGINS = "plugins"
+    const val NOTES = "notes"
+    const val TASKS = "tasks"
+    const val TASK = "task/{id}"
+    fun task(id: String) = "task/$id"
+    const val EPHEMERAL = "ephemeral"
     const val MEDICATIONS = "medications"
     const val MEASUREMENTS = "measurements"
     const val TENANTS = "tenants"
@@ -68,15 +102,32 @@ fun VanaApp(
 
     LaunchedEffect(Unit) {
         CheckInScheduler.reschedule(app)
+        ReminderScheduler.rescheduleAll(app)
+        SubagentScheduler.resume(app)
     }
+
+    val jobControls = remember { AppJobControls(app) }
+
+    /** 当前成员的提醒/目标存储,加上把提醒排到系统闹钟上的那一头、派后台任务的那一头。 */
+    fun tasksEnvironment() = TasksEnvironment(
+        store = TenantScope.currentStores.tasks,
+        scheduling = ReminderScheduler.scheduling(app, TenantScope.current.id),
+        jobs = jobControls,
+    )
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_STOP) {
                 CheckInScheduler.reschedule(app)
+                ReminderScheduler.rescheduleAll(app)
+                SubagentScheduler.resume(app)
                 scope.launch {
                     BackgroundDigest.runIfDue(app)
                 }
+            }
+            if (event == Lifecycle.Event.ON_STOP) {
+                // 切到后台:把还没抽过的对话收割进记忆(水位线之后的,一次一块)。
+                scope.launch { MemoryHarvester.forCurrentTenant(app).runIfDue() }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -85,6 +136,36 @@ fun VanaApp(
 
     val start = if (accepted) Routes.CHAT else Routes.NOTICE
 
+    val pendingJobConsent by jobControls.pendingConsent.collectAsStateWithLifecycle()
+    pendingJobConsent?.let { pending ->
+        val providerName = CloudCatalog.providerName(pending.providerId)
+        AlertDialog(
+            onDismissRequest = jobControls::declineConsent,
+            title = { Text(uiText("发送给 $providerName？", "Send to $providerName?")) },
+            text = {
+                Text(
+                    uiText(
+                        "后台任务会把任务说明、它要用到的长期记忆和它搜到的内容，发送给第三方模型服务 $providerName 来完成，" +
+                            "由对方按它自己的隐私政策处理。这台设备上发给这家服务的请求只问这一次；换用其他服务时会再次询问。",
+                        "A background task sends its brief, the long-term memory it needs and what it finds to the third-party model " +
+                            "service $providerName, handled under its own privacy policy. On this device you will only be asked once " +
+                            "for this service; switching to another service will ask again.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = jobControls::confirmConsent) { Text(uiText("同意并开始", "Agree and Start")) }
+            },
+            dismissButton = {
+                TextButton(onClick = jobControls::declineConsent) { Text(uiText("取消", "Cancel")) }
+            },
+        )
+    }
+
+    CompositionLocalProvider(
+        LocalJobControls provides jobControls,
+        LocalTasksEnvironment provides remember(tenantId) { tasksEnvironment() },
+    ) {
     NavHost(navController = navController, startDestination = start) {
         composable(Routes.NOTICE) {
             DataUseNoticeScreen(
@@ -102,7 +183,7 @@ fun VanaApp(
                 val chatViewModel: ChatViewModel = viewModel(
                     key = "chat-$tenantId",
                     factory = ChatViewModel.Factory(
-                        sessionStore = TenantScope.currentStores.sessions,
+                        threadWriter = TenantScope.currentStores.threadWriter,
                         engineSettings = app.engineSettings,
                         secureKeyStore = app.secureKeyStore,
                         locationProvider = app.locationProvider,
@@ -110,6 +191,7 @@ fun VanaApp(
                         memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
                         medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
                         measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
+                        tasksEnvironment = tasksEnvironment(),
                     ),
                 )
                 LaunchedEffect(checkInQuestion) {
@@ -135,22 +217,50 @@ fun VanaApp(
                     viewModel = chatViewModel,
                     exerciseLibrary = exerciseLibrary,
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    onOpenMedications = { navController.navigate(Routes.MEDICATIONS) },
-                    onOpenMeasurements = { navController.navigate(Routes.MEASUREMENTS) },
-                    onOpenTenants = { navController.navigate(Routes.TENANTS) },
+                    onOpenMemory = { navController.navigate(Routes.MEMORY) },
+                    onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
+                    onOpenEphemeral = { navController.navigate(Routes.EPHEMERAL) },
+                    onOpenTasks = { navController.navigate(Routes.TASKS) },
+                    onOpenTask = { navController.navigate(Routes.task(it)) },
+                    onOpenSurface = { surface -> surfaceRoute(surface)?.let { navController.navigate(it) } },
                 )
             }
+        }
+        composable(Routes.EPHEMERAL) {
+            // 「不留痕」浮层:一个只活在内存里的聊天,离开这一页它的 ViewModel 就被回收,内容跟着没。
+            val ephemeralViewModel: ChatViewModel = viewModel(
+                key = "ephemeral",
+                factory = ChatViewModel.Factory(
+                    threadWriter = TenantScope.currentStores.threadWriter,
+                    engineSettings = app.engineSettings,
+                    secureKeyStore = app.secureKeyStore,
+                    locationProvider = app.locationProvider,
+                    exerciseLibrary = exerciseLibrary,
+                    memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
+                    medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
+                    measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
+                    tasksEnvironment = tasksEnvironment(),
+                    ephemeral = true,
+                ),
+            )
+            ChatScreen(
+                viewModel = ephemeralViewModel,
+                exerciseLibrary = exerciseLibrary,
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenMemory = { navController.navigate(Routes.MEMORY) },
+                onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 engineSettings = app.engineSettings,
                 secureKeyStore = app.secureKeyStore,
                 locationProvider = app.locationProvider,
-                sessionStore = TenantScope.currentStores.sessions,
+                threadWriter = TenantScope.currentStores.threadWriter,
                 onBack = { navController.popBackStack() },
                 onOpenMemory = { navController.navigate(Routes.MEMORY) },
-                onOpenMeasurements = { navController.navigate(Routes.MEASUREMENTS) },
-                onOpenTenants = { navController.navigate(Routes.TENANTS) },
+                onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
                 onOpenAbout = { navController.navigate(Routes.ABOUT) },
                 onOpenDeveloper = {
                     if (BuildConfig.DEBUG) {
@@ -170,6 +280,34 @@ fun VanaApp(
             composable(Routes.DEVELOPER) {
                 DeveloperScreen(onBack = { navController.popBackStack() })
             }
+        }
+        composable(Routes.PLUGINS) {
+            PluginsScreen(
+                engineSettings = app.engineSettings,
+                onBack = { navController.popBackStack() },
+                // 插件只说「是什么」,去哪儿由外壳定。
+                onOpenSurface = { surfaceId -> surfaceRoute(surfaceId)?.let { navController.navigate(it) } },
+            )
+        }
+        composable(Routes.NOTES) {
+            NotesScreen(
+                store = TenantScope.currentStores.notes,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.TASKS) {
+            TasksScreen(
+                env = tasksEnvironment(),
+                onOpenTask = { navController.navigate(Routes.task(it)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.TASK) { entry ->
+            TaskDetailScreen(
+                env = tasksEnvironment(),
+                taskId = entry.arguments?.getString("id").orEmpty(),
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.MEMORY) {
             MemoryListScreen(
@@ -224,5 +362,5 @@ fun VanaApp(
             )
         }
     }
-
+    }
 }

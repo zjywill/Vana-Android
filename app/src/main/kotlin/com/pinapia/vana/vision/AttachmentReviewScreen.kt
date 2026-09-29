@@ -59,6 +59,8 @@ fun AttachmentReviewScreen(
     onChangeSendsImage: ((Boolean) -> Unit)?,
     onRemove: () -> Unit,
     onSaveMedication: (MedicationItem, onSaved: (String) -> Unit) -> Unit,
+    /** 用药表开着才提供「记入用药与补剂」——那是健康插件的动作,不该在健康关掉之后还挂在附件页上。 */
+    canSaveMedication: Boolean = true,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -206,11 +208,13 @@ fun AttachmentReviewScreen(
                 enabled = !draft.isRecognizing && !draft.isLoading,
             )
 
-            TextButton(
-                onClick = { medicationDraft = MedicationDraft.fromRecognizedText(text) },
-                enabled = draft.hasText || text.isNotBlank(),
-            ) {
-                Text(uiText("记入用药与补剂", "Save to medications and supplements"))
+            if (canSaveMedication) {
+                TextButton(
+                    onClick = { medicationDraft = MedicationDraft.fromRecognizedText(text) },
+                    enabled = draft.hasText || text.isNotBlank(),
+                ) {
+                    Text(uiText("记入用药与补剂", "Save to medications and supplements"))
+                }
             }
             savedMedication?.let { name ->
                 Text(

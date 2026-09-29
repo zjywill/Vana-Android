@@ -200,8 +200,8 @@ fun ModelPickerSheet(
                 }
                 Text(
                     uiText(
-                        "只列出支持工具调用的模型——不支持的模型无法使用用药、测量和记忆能力。",
-                        "Only models with tool calling are shown; other models cannot use medications, measurements or memory.",
+                        "只列出支持工具调用的模型——不支持的模型无法使用记忆和各类记录工具。",
+                        "Only models with tool calling are shown; other models cannot use memory or the record-keeping tools.",
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

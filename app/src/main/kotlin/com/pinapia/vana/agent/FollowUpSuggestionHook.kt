@@ -102,7 +102,7 @@ class FollowUpSuggester(
         }
         val toolsLine = if (toolNames.isEmpty()) "（无）" else toolNames.joinToString("、")
         val prompt = """
-            根据下面这段健康对话，写出 3 条用户可能接着问的短句。
+            根据下面这段对话，写出 3 条用户可能接着问的短句。
             每条 3–12 个字，只要问句本身，不要编号，不要解释。
             显式关闭思考，直接给出三行。
 

@@ -14,8 +14,7 @@ import com.pinapia.vana.agentruntime.TurnContextSnapshotDTO
 import com.pinapia.vana.ask.AskUserAnswer
 import com.pinapia.vana.ask.AskUserQuestion
 import com.pinapia.vana.ask.AskUserTools
-import com.pinapia.vana.exercises.ExerciseSelection
-import com.pinapia.vana.exercises.ExerciseTools
+import com.pinapia.vana.agentruntime.RuntimeJSONValue
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.vision.ChatAttachment
 import java.util.UUID
@@ -33,7 +32,12 @@ data class ToolCallRecord(
     var output: String? = null,
     var askQuestion: AskUserQuestion? = null,
     var askAnswer: AskUserAnswer? = null,
-    var exerciseIDs: List<String> = emptyList(),
+    /**
+     * 工具输出里给界面看的结构化负载(动作库挑了哪几个动作……)。**通用的**:消息模型不认识任何一个
+     * 插件,谁的卡片谁去解码(比如 `ToolCallRecord.exerciseIDs` 是动作库包里的扩展)。
+     * `ask_user` 那张卡是核心的,有自己的字段 [askQuestion]。
+     */
+    var metadata: RuntimeJSONValue? = null,
     var isError: Boolean = false,
     var textOffset: Int? = null,
     var reasoningOffset: Int? = null,
@@ -51,10 +55,7 @@ data class ToolCallRecord(
                 text = it,
                 metadata = when {
                     askQuestion != null -> AskUserQuestion.encodeForToolMetadata(askQuestion!!)
-                    exerciseIDs.isNotEmpty() -> ExerciseSelection.encodeForToolMetadata(
-                        ExerciseSelection(moveIDs = exerciseIDs),
-                    )
-                    else -> null
+                    else -> metadata
                 },
             )
         },
@@ -68,7 +69,7 @@ data class ToolCallRecord(
             input = dto.input,
             output = dto.output?.text,
             askQuestion = AskUserQuestion.decode(dto.output?.metadata),
-            exerciseIDs = ExerciseSelection.decode(dto.output?.metadata)?.moveIDs.orEmpty(),
+            metadata = dto.output?.metadata?.takeIf { AskUserQuestion.decode(it) == null },
             isError = dto.isError,
         )
     }
@@ -87,12 +88,35 @@ data class ChatMessage(
     @Transient var isQueued: Boolean = false,
     var errorDescription: String? = null,
     val createdAt: Instant = Clock.System.now(),
+    /** 这条消息从哪来。除了 [Origin.NORMAL],都是 Vana **主动**说的(不是回答某一句提问)。 */
+    var origin: Origin = Origin.NORMAL,
+    /** [Origin.TASK] 的消息指向哪条任务:气泡上的「查看详情」凭它跳过去。 */
+    var refTaskId: String? = null,
 ) : AgentTurnSink {
     @Serializable
     enum class Role {
         @SerialName("user") USER,
         @SerialName("assistant") ASSISTANT,
     }
+
+    @Serializable
+    enum class Origin {
+        @SerialName("normal") NORMAL,
+
+        /** 早晚 check-in 点开后 Vana 开的场。 */
+        @SerialName("checkIn") CHECK_IN,
+
+        /** 说好回头看的事,后台看过之后的结论。 */
+        @SerialName("followUp") FOLLOW_UP,
+
+        @SerialName("reminder") REMINDER,
+
+        /** 后台任务的结果(P5/P6)。 */
+        @SerialName("task") TASK,
+    }
+
+    /** 主动消息:模型要知道自己说过,但它不是对某句提问的回答。 */
+    val isProactive: Boolean get() = origin != Origin.NORMAL
 
     val uuid: UUID get() = UUID.fromString(id)
 
@@ -157,11 +181,7 @@ data class ChatMessage(
                     } else {
                         it.askQuestion
                     },
-                    exerciseIDs = if (it.name == ExerciseTools.SUGGEST_TOOL_NAME) {
-                        ExerciseSelection.decode(output.metadata)?.moveIDs.orEmpty()
-                    } else {
-                        it.exerciseIDs
-                    },
+                    metadata = if (it.name == AskUserTools.ASK_TOOL_NAME) it.metadata else output.metadata ?: it.metadata,
                 )
             }
         }
@@ -336,42 +356,19 @@ private object TurnSegmenter {
     }
 }
 
+/**
+ * 界面持有的「这条对话的末尾一段」。不再是用户能管理的「会话」——只有一条线程,
+ * 这里只是它加载进内存的那部分(向上滑再往前翻),盘上的样子见 `thread/ThreadStore`。
+ */
 @Serializable
 data class ChatSession(
     val id: String = UUID.randomUUID().toString(),
     var messages: List<ChatMessage> = emptyList(),
-    var threadId: String? = null,
-    var isDerived: Boolean = false,
-    var threadTitle: String? = null,
+    /** 「不留痕」浮层:内存里聊,不进盘。 */
     @Transient var isPrivate: Boolean = false,
-    var memoryHarvestedMessageCount: Int = 0,
-    val createdAt: Instant = Clock.System.now(),
     var updatedAt: Instant = Clock.System.now(),
 ) {
     val isEmpty: Boolean get() = messages.isEmpty()
-
-    val title: String
-        get() {
-            val firstUser = messages.firstOrNull { it.role == ChatMessage.Role.USER }
-            return SessionTitle.make(
-                threadId = threadId,
-                threadTitle = threadTitle,
-                firstUserText = firstUser?.text,
-                firstUserHasAttachments = firstUser?.attachments?.isNotEmpty() == true,
-                createdAt = createdAt,
-            )
-        }
-}
-
-data class SessionSummary(
-    val id: String,
-    val title: String,
-    val updatedAt: Instant,
-    val messageCount: Int,
-    val threadId: String? = null,
-    val isDerived: Boolean = false,
-) {
-    val thread: SessionThread? get() = SessionThread.parse(threadId)
 }
 
 val ChatMessage.foldedSpan: Int?

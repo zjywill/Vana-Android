@@ -41,6 +41,12 @@ class AttachmentStore(parent: File) {
         }
     }
 
+    /** 清空全部对话时用:磁盘上的和内存缓存里的原图都不留。 */
+    fun removeAll() {
+        memory.clear()
+        directory.listFiles()?.forEach { it.delete() }
+    }
+
     companion object {
         fun fileName(id: String): String = "$id.jpg"
     }

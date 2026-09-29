@@ -2,6 +2,7 @@ package com.pinapia.vana.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.pinapia.vana.plugins.PluginIds
 import com.pinapia.vana.vision.PhotoImagePolicy
 
 /**
@@ -35,6 +36,15 @@ class EngineSettings(context: Context) {
         get() = if (prefs.contains(MEMORY_KEY)) prefs.getBoolean(MEMORY_KEY, true) else true
         set(value) = prefs.edit().putBoolean(MEMORY_KEY, value).apply()
 
+    var notesEnabled: Boolean
+        get() = if (prefs.contains(NOTES_KEY)) prefs.getBoolean(NOTES_KEY, true) else true
+        set(value) = prefs.edit().putBoolean(NOTES_KEY, value).apply()
+
+    /** 健康插件整个的开关。默认开;关掉之后用药表和测量的子开关也一并不生效。 */
+    var healthEnabled: Boolean
+        get() = if (prefs.contains(HEALTH_KEY)) prefs.getBoolean(HEALTH_KEY, true) else true
+        set(value) = prefs.edit().putBoolean(HEALTH_KEY, value).apply()
+
     var medicationsEnabled: Boolean
         get() = if (prefs.contains(MEDICATIONS_KEY)) prefs.getBoolean(MEDICATIONS_KEY, true) else true
         set(value) = prefs.edit().putBoolean(MEDICATIONS_KEY, value).apply()
@@ -54,6 +64,14 @@ class EngineSettings(context: Context) {
     var eveningCheckInHour: Int
         get() = prefs.getInt(EVENING_HOUR_KEY, DEFAULT_EVENING_HOUR)
         set(value) = prefs.edit().putInt(EVENING_HOUR_KEY, value.coerceIn(18, 23)).apply()
+
+    /**
+     * 「只读任务自动开始」:开着,`start_task` 派出去的后台任务不再先弹确认卡、直接开跑。
+     * 默认关——后台任务会把任务说明和它要用的记忆发给模型服务,每一件先让用户点头是默认值。
+     */
+    var autoStartTasks: Boolean
+        get() = prefs.getBoolean(AUTO_START_TASKS_KEY, false)
+        set(value) = prefs.edit().putBoolean(AUTO_START_TASKS_KEY, value).apply()
 
     var hasAcceptedDataUseNotice: Boolean
         get() = prefs.getBoolean(DATA_USE_KEY, false)
@@ -85,6 +103,27 @@ class EngineSettings(context: Context) {
         prefs.edit().putStringSet(CONSENTED_PROVIDERS_KEY, next).apply()
     }
 
+    /** 插件装配问的是这一个:某个插件(或子开关)现在开着吗。没登记的一律算开。 */
+    fun isPluginEnabled(id: String): Boolean = when (id) {
+        PluginIds.HEALTH -> healthEnabled
+        PluginIds.HEALTH_MEDICATIONS -> healthEnabled && medicationsEnabled
+        PluginIds.HEALTH_MEASUREMENTS -> healthEnabled && measurementsEnabled
+        PluginIds.MEMORY -> memoryEnabled
+        PluginIds.NOTES -> notesEnabled
+        else -> true
+    }
+
+    /** 插件页的开关写在这里。没登记的 id 什么都不做(核心不可关)。 */
+    fun setPluginEnabled(id: String, enabled: Boolean) {
+        when (id) {
+            PluginIds.HEALTH -> healthEnabled = enabled
+            PluginIds.HEALTH_MEDICATIONS -> medicationsEnabled = enabled
+            PluginIds.HEALTH_MEASUREMENTS -> measurementsEnabled = enabled
+            PluginIds.MEMORY -> memoryEnabled = enabled
+            PluginIds.NOTES -> notesEnabled = enabled
+        }
+    }
+
     fun isConfigured(secureKeyStore: SecureKeyStore): Boolean {
         val key = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
         return key.isValid && providerId.isNotBlank() && model.isNotBlank()
@@ -101,9 +140,12 @@ class EngineSettings(context: Context) {
         const val PHOTO_POLICY_KEY = "photoImagePolicy"
         const val THINKING_KEY = "thinkingEnabled"
         const val MEMORY_KEY = "memoryEnabled"
+        const val HEALTH_KEY = "healthEnabled"
+        const val NOTES_KEY = "notesEnabled"
         const val MEDICATIONS_KEY = "medicationsEnabled"
         const val MEASUREMENTS_KEY = "measurementsEnabled"
         const val CHECKINS_KEY = "checkInsEnabled"
+        const val AUTO_START_TASKS_KEY = "autoStartTasks"
         const val MORNING_HOUR_KEY = "morningCheckInHour"
         const val EVENING_HOUR_KEY = "eveningCheckInHour"
         const val DATA_USE_KEY = "hasAcceptedDataUseNotice"

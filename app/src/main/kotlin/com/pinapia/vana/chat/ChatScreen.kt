@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -94,12 +95,14 @@ import com.pinapia.vana.exercises.ExerciseCards
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.exercises.ExerciseTools
 import com.pinapia.vana.session.ChatMessage
-import com.pinapia.vana.session.GoalSummary
-import com.pinapia.vana.session.SessionSummary
 import com.pinapia.vana.session.TurnSegment
 import com.pinapia.vana.session.compactionSummary
 import com.pinapia.vana.session.foldedSpan
+import com.pinapia.vana.tasks.TaskCard
+import com.pinapia.vana.tasks.taskId
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.today.TodayAction
+import com.pinapia.vana.today.TodayStrip
 import com.pinapia.vana.vision.AttachmentImporter
 import com.pinapia.vana.vision.ChatAttachment
 import com.pinapia.vana.vision.DraftAttachment
@@ -114,6 +117,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
@@ -140,6 +145,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import com.pinapia.vana.vision.AttachmentReviewScreen
 import com.pinapia.vana.vision.CapturePhoto
+import com.pinapia.vana.exercises.exerciseIDs
+import com.pinapia.vana.plugins.HealthTopics
+import com.pinapia.vana.plugins.PluginRegistry
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
@@ -149,20 +157,33 @@ fun ChatScreen(
     viewModel: ChatViewModel,
     exerciseLibrary: ExerciseLibrary,
     onOpenSettings: () -> Unit,
-    onOpenMedications: () -> Unit,
-    onOpenMeasurements: () -> Unit = {},
-    onOpenTenants: () -> Unit = {},
+    onOpenMemory: () -> Unit,
+    onOpenPlugins: () -> Unit,
+    /** 进「不留痕」浮层。浮层自己(ephemeral)没有这个入口。 */
+    onOpenEphemeral: () -> Unit = {},
+    onOpenTasks: () -> Unit = {},
+    onOpenTask: (String) -> Unit = {},
+    /** 「今天」卡片上指向插件入口的那种(用药到期回访)。 */
+    onOpenSurface: (String) -> Unit = {},
+    /** 只有浮层需要:退出并丢掉这一页里的全部内容。 */
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val session by viewModel.session.collectAsStateWithLifecycle()
-    val summaries by viewModel.summaries.collectAsStateWithLifecycle()
+    val historyLoaded by viewModel.isHistoryLoaded.collectAsStateWithLifecycle()
+    val hasOlderHistory by viewModel.hasOlderHistory.collectAsStateWithLifecycle()
+    val focusMedication by viewModel.focusMedication.collectAsStateWithLifecycle()
+    val todayCards by viewModel.todayCards.collectAsStateWithLifecycle()
+    val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
+    var todayExpanded by rememberSaveable { mutableStateOf(false) }
+    var pendingDeleteAssistantId by remember { mutableStateOf<String?>(null) }
     val input by viewModel.input.collectAsStateWithLifecycle()
     val isReplying by viewModel.isReplying.collectAsStateWithLifecycle()
     val engineGuidance by viewModel.engineGuidance.collectAsStateWithLifecycle()
     val retryNotice by viewModel.retryNotice.collectAsStateWithLifecycle()
     val followUps by viewModel.followUps.collectAsStateWithLifecycle()
     val drafts by viewModel.draftAttachments.collectAsStateWithLifecycle()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    var showOverflowMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     // SSE 贴底：用户没滑开时跟着最后一条长高；一旦手势离开底部就停在用户位置。
@@ -220,11 +241,11 @@ fun ChatScreen(
             text = {
                 Text(
                     uiText(
-                        "你的问题，连同它需要用到的内容（这条对话的往来、长期记忆和用药表里的条目、识别出的文字），" +
+                        "你的问题，连同它需要用到的内容（这条对话的往来、长期记忆、你记录的用药和测量、识别出的文字），" +
                             "会发送给第三方模型服务 $providerName 来生成回答，由对方按它自己的隐私政策处理。" +
                             "这台设备上发给这家服务的请求只问这一次；换用其他服务时会再次询问。",
-                        "Your question, along with what it needs (this conversation, entries from long-term memory " +
-                            "and the medication list, and recognized text), will be sent to the third-party model " +
+                        "Your question, along with what it needs (this conversation, long-term memory, the medications " +
+                            "and measurements you recorded, and recognized text), will be sent to the third-party model " +
                             "service $providerName to generate the answer, handled under its own privacy policy. " +
                             "On this device you will only be asked once for this service; switching to another " +
                             "service will ask again.",
@@ -322,10 +343,26 @@ fun ChatScreen(
 
     // 新消息 / 换会话：回到底部并重新贴底。流式长高用 layout overflow 跟，
     // 不要对每个 token animateScroll，否则动画互相取消，看起来像整段蹦出。
-    LaunchedEffect(session.id, session.messages.size) {
+    // 只在「最后一条」换了的时候回到底部(新消息、后台追加的消息):往前翻出更早的历史会让条数变多,
+    // 那不该把用户拽回底部。打开 app 读完历史那一下直接落在末尾,不要从头一路动画滚过整条线程。
+    var scrolledToEndOnce by remember { mutableStateOf(false) }
+    LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id) {
+        if (!historyLoaded) return@LaunchedEffect
         followOutput.value = true
         if (session.messages.isNotEmpty()) {
-            listState.animateScrollToItem(session.messages.lastIndex)
+            if (scrolledToEndOnce) {
+                listState.animateScrollToItem(session.messages.lastIndex)
+            } else {
+                listState.scrollToItem(session.messages.lastIndex)
+            }
+        }
+        scrolledToEndOnce = true
+    }
+    // 滑到顶就再往前读一页。LazyColumn 按 key 记着第一条可见项,往前塞进内容不会把用户正看的那条顶走。
+    LaunchedEffect(listState, hasOlderHistory) {
+        if (!hasOlderHistory) return@LaunchedEffect
+        snapshotFlow { listState.firstVisibleItemIndex }.collect { index ->
+            if (index <= 3) viewModel.loadOlder()
         }
     }
     LaunchedEffect(isReplying, followOutput.value) {
@@ -348,56 +385,7 @@ fun ChatScreen(
         !isRecognizingAttachments &&
         drafts.none { it.isLoading }
 
-    BackHandler(enabled = drawerState.isOpen) {
-        scope.launch { drawerState.close() }
-    }
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            // ModalDrawerSheet 默认 maxWidth=360dp，会话列表按全屏页处理。
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                shape = RectangleShape,
-                color = MaterialTheme.colorScheme.surface,
-            ) {
-                val goals by viewModel.goals.collectAsStateWithLifecycle()
-                SessionDrawer(
-                    summaries = summaries,
-                    goals = goals,
-                    currentId = session.id,
-                    onClose = { scope.launch { drawerState.close() } },
-                    onNew = {
-                        viewModel.startNewSession(isPrivate = false)
-                        scope.launch { drawerState.close() }
-                    },
-                    onNewPrivate = {
-                        viewModel.startNewSession(isPrivate = true)
-                        scope.launch { drawerState.close() }
-                    },
-                    onNewGoal = { name ->
-                        viewModel.startGoal(name)
-                        scope.launch { drawerState.close() }
-                    },
-                    onOpen = {
-                        viewModel.openSession(it)
-                        scope.launch { drawerState.close() }
-                    },
-                    onOpenGoal = {
-                        viewModel.openGoal(it)
-                        scope.launch { drawerState.close() }
-                    },
-                    onDelete = viewModel::deleteSession,
-                    onDeleteGoal = viewModel::deleteGoal,
-                    onOpenTenants = {
-                        scope.launch { drawerState.close() }
-                        onOpenTenants()
-                    },
-                )
-            }
-        },
-        modifier = modifier,
-    ) {
+    Box(modifier = modifier) {
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -406,7 +394,7 @@ fun ChatScreen(
                             Text("Vana")
                             val subtitle = buildList {
                                 if (!TenantScope.current.isOwner) add(TenantScope.current.displayName)
-                                if (session.isPrivate) add(uiText("隐私对话 · 不保存", "Private · not saved"))
+                                if (session.isPrivate) add(uiText("不留痕 · 关掉就没", "Off the record · gone when closed"))
                             }.joinToString(" · ")
                             if (subtitle.isNotEmpty()) {
                                 Text(
@@ -418,20 +406,62 @@ fun ChatScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(VanaIcons.Bars, contentDescription = uiText("会话列表", "Conversations"))
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(VanaIcons.ArrowLeft, contentDescription = uiText("关闭", "Close"))
+                            }
                         }
                     },
                     actions = {
-                        IconButton(onClick = onOpenMeasurements) {
-                            Icon(VanaIcons.Heart, contentDescription = uiText("测量卡片", "Measurements"))
+                      if (!viewModel.ephemeral) {
+                        IconButton(onClick = onOpenTasks) {
+                            BadgedBox(
+                                badge = { if (attentionCount > 0) Badge { Text(attentionCount.toString()) } },
+                            ) {
+                                Icon(VanaIcons.CheckCircle, contentDescription = uiText("任务", "Tasks"))
+                            }
                         }
-                        IconButton(onClick = onOpenMedications) {
-                            Icon(VanaIcons.Beaker, contentDescription = uiText("用药与补剂", "Medications and supplements"))
+                        // 顶栏不再替某一个插件占位(以前是心形=测量、烧瓶=用药):
+                        // 插件的入口都在「插件」页里,这里只留通用的几样。
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(VanaIcons.EllipsisVertical, contentDescription = uiText("更多", "More"))
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(uiText("Vana 记住的事", "What Vana remembers")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOpenMemory()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(uiText("插件", "Plugins")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOpenPlugins()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(uiText("不留痕聊天", "Off-the-record chat")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOpenEphemeral()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(uiText("设置", "Settings")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOpenSettings()
+                                    },
+                                )
+                            }
                         }
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(VanaIcons.Cog, contentDescription = uiText("设置", "Settings"))
-                        }
+                      }
                     },
                 )
             },
@@ -444,6 +474,25 @@ fun ChatScreen(
                     .imePadding(),
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    if (!viewModel.ephemeral) {
+                        TodayStrip(
+                            cards = todayCards,
+                            expanded = todayExpanded,
+                            onToggle = { todayExpanded = !todayExpanded },
+                            onAction = { action ->
+                                when (action) {
+                                    TodayAction.OpenTasks -> onOpenTasks()
+                                    TodayAction.OpenMemory -> onOpenMemory()
+                                    is TodayAction.OpenTask -> onOpenTask(action.id)
+                                    is TodayAction.OpenSurface -> onOpenSurface(action.surfaceId)
+                                    is TodayAction.Ask -> {
+                                        todayExpanded = false
+                                        viewModel.send(action.prompt)
+                                    }
+                                }
+                            },
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -457,12 +506,12 @@ fun ChatScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            if (session.isEmpty) {
+                            if (session.isEmpty && historyLoaded) {
                                 item {
                                     WelcomeCard(
                                         isOwner = TenantScope.current.isOwner,
                                         isPrivate = session.isPrivate,
-                                        onTogglePrivate = { viewModel.setPrivate(!session.isPrivate) },
+                                        ownerBody = viewModel.welcomeBody,
                                         suggestions = viewModel.suggestedQuestions,
                                         onSuggestion = viewModel::send,
                                         setupGuidance = engineGuidance,
@@ -470,9 +519,15 @@ fun ChatScreen(
                                     )
                                 }
                             }
-                            items(session.messages, key = { it.id }) { message ->
+                            itemsIndexed(session.messages, key = { _, message -> message.id }) { index, message ->
+                              Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (index == 0 || !sameDay(session.messages[index - 1], message)) {
+                                    DayDivider(message)
+                                }
                                 MessageBubble(
                                     message = message,
+                                    precedingUserText = session.messages.getOrNull(index - 1)
+                                        ?.takeIf { it.role == ChatMessage.Role.USER }?.text,
                                     isLiveReply = isReplying && message.id == lastAssistantId,
                                     isAskLive = !isReplying && message.id == lastAssistantId,
                                     isReplying = isReplying,
@@ -480,11 +535,13 @@ fun ChatScreen(
                                     recovery = viewModel.errorRecovery(message.id),
                                     onRetry = { viewModel.retry(message.id) },
                                     onOpenSettings = onOpenSettings,
-                                    onBranch = { viewModel.branch(message.id) },
+                                    onDelete = { pendingDeleteAssistantId = message.id },
                                     onAnswerAsk = { callId, answer ->
                                         viewModel.answerAsk(message.id, callId, answer)
                                     },
+                                    onOpenTask = onOpenTask,
                                 )
+                              }
                             }
                         }
 
@@ -571,6 +628,16 @@ fun ChatScreen(
                     visible = isVoiceListening,
                 )
 
+                focusMedication?.let { medication ->
+                    FocusStrip(
+                        name = medication.name,
+                        questions = medication.openingQuestions,
+                        enabled = !isReplying,
+                        onQuestion = viewModel::send,
+                        onClear = viewModel::clearFocus,
+                    )
+                }
+
                 if (!session.isEmpty) {
                     FollowUpChips(
                         chips = FollowUpSuggester.displayChips(followUps),
@@ -628,6 +695,30 @@ fun ChatScreen(
         }
     }
 
+    pendingDeleteAssistantId?.let { assistantId ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteAssistantId = null },
+            title = { Text(uiText("删除这一问一答？", "Delete this exchange?")) },
+            text = {
+                Text(
+                    uiText(
+                        "这条回答和它对应的那句提问会从这条对话里删掉，连同只用在它们里面的照片，无法撤销。",
+                        "This answer and the question it replies to will be removed from the conversation, along with photos used only by them. This cannot be undone.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteExchange(assistantId)
+                    pendingDeleteAssistantId = null
+                }) { Text(uiText("删除", "Delete")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteAssistantId = null }) { Text(uiText("取消", "Cancel")) }
+            },
+        )
+    }
+
     val reviewing = drafts.firstOrNull { it.id == reviewingId && !it.isLoading }
     LaunchedEffect(reviewingId, drafts) {
         if (reviewingId != null && drafts.none { it.id == reviewingId }) {
@@ -658,6 +749,7 @@ fun ChatScreen(
                         reviewingId = null
                     },
                     onSaveMedication = viewModel::saveMedicationFromDraft,
+                    canSaveMedication = viewModel.medicationsEnabled,
                     onDismiss = { reviewingId = null },
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -837,6 +929,36 @@ private fun DraftStrip(
     }
 }
 
+/** 「问问这个药」带进来的一次性上下文:露出名字和开场问题,回复完自己撤,也可以手动撤。 */
+@Composable
+private fun FocusStrip(
+    name: String,
+    questions: List<String>,
+    enabled: Boolean,
+    onQuestion: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                uiText("正在聊：$name", "Asking about: $name"),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onClear) { Text(uiText("不聊这个了", "Dismiss")) }
+        }
+        if (questions.isNotEmpty()) {
+            FollowUpChips(chips = questions, enabled = enabled, onChip = onQuestion)
+        }
+    }
+}
+
 @Composable
 private fun FollowUpChips(
     chips: List<String>,
@@ -864,7 +986,8 @@ private fun FollowUpChips(
 private fun WelcomeCard(
     isOwner: Boolean,
     isPrivate: Boolean,
-    onTogglePrivate: () -> Unit,
+    /** 机主看到的那段话,由当前开着的插件拼出来(健康关掉就不提健康)。 */
+    ownerBody: String,
     suggestions: List<String>,
     onSuggestion: (String) -> Unit,
     setupGuidance: String? = null,
@@ -879,13 +1002,7 @@ private fun WelcomeCard(
         )
     }
     val body = if (isOwner) {
-        uiText(
-            "拍化验单或药盒、聊症状与用药习惯，或记下你想跟进的事。" +
-                "文字识别在本机完成；要回答问题时才会把必要内容发给你配置的模型。",
-            "Photograph a lab report or medicine package, discuss symptoms and medication habits, " +
-                "or record something to follow up. Text recognition runs on-device; only the content " +
-                "needed to answer is sent to the model you configure.",
-        )
+        ownerBody
     } else {
         uiText(
             "拍一张${TenantScope.current.displayName}的化验单、报告或药盒，文字在本机识别后再帮你看；" +
@@ -894,15 +1011,6 @@ private fun WelcomeCard(
                 "Vana recognizes the text on-device. You can also record medications, measurements and follow-ups.",
         )
     }
-    val privateConversationDescription = uiText(
-        "当前为隐私对话，不会保存。点按切换为普通对话",
-        "Private conversation, not saved. Tap to switch to a regular conversation.",
-    )
-    val regularConversationDescription = uiText(
-        "当前为普通对话。点按切换为隐私对话，不会保存",
-        "Regular conversation. Tap to switch to a private conversation that is not saved.",
-    )
-
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -937,36 +1045,15 @@ private fun WelcomeCard(
         if (isPrivate) {
             Text(
                 uiText(
-                    "这条对话不会被保存。不进会话列表，不写进记忆。" +
+                    "这里的对话只留在内存里：不写盘、不记进记忆，关掉这一页就没了。" +
                         "问题仍要发给你配置的模型才能回答。",
-                    "This conversation will not be saved or added to memory. " +
+                    "This conversation lives only in memory: nothing is saved or added to memory, and it is gone when you close this page. " +
                         "Your question still has to be sent to the model you configure.",
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-
-        FilterChip(
-            selected = isPrivate,
-            onClick = onTogglePrivate,
-            label = {
-                Text(
-                    if (isPrivate) {
-                        uiText("隐私对话（不保存）", "Private conversation (not saved)")
-                    } else {
-                        uiText("普通对话", "Regular conversation")
-                    },
-                )
-            },
-            modifier = Modifier.semantics {
-                contentDescription = if (isPrivate) {
-                    privateConversationDescription
-                } else {
-                    regularConversationDescription
-                }
-            },
-        )
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(uiText("试着问", "Try asking"), style = MaterialTheme.typography.titleSmall)
@@ -985,15 +1072,6 @@ private fun WelcomeCard(
                 }
             }
         }
-
-        Text(
-            uiText(
-                "健康分析仅供参考，不能替代专业医疗建议。",
-                "Health information is for reference only and cannot replace professional medical advice.",
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -1023,6 +1101,8 @@ private suspend fun LazyListState.animateToConversationBottom(): Boolean {
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    /** 这条回答对应的那句用户的话,判断它算不算健康话题用。 */
+    precedingUserText: String?,
     isLiveReply: Boolean,
     isAskLive: Boolean,
     isReplying: Boolean,
@@ -1030,8 +1110,9 @@ private fun MessageBubble(
     recovery: ErrorRecovery?,
     onRetry: () -> Unit,
     onOpenSettings: () -> Unit,
-    onBranch: () -> Unit,
+    onDelete: () -> Unit,
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
+    onOpenTask: (String) -> Unit = {},
 ) {
     val isUser = message.role == ChatMessage.Role.USER
     var openReasoningId by remember(message.id) { mutableStateOf<String?>(null) }
@@ -1073,6 +1154,13 @@ private fun MessageBubble(
                     }
                 }
             } else {
+                if (message.isProactive) {
+                    Text(
+                        proactiveLabel(message.origin),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 segments.forEach { segment ->
                     key(segment.stableId) {
                         when (segment) {
@@ -1121,7 +1209,7 @@ private fun MessageBubble(
                                                 Spacer(modifier = Modifier.width(6.dp))
                                             }
                                             Text(
-                                                toolCallLabel(call) +
+                                                PluginRegistry.toolLabel(call) +
                                                     if (call.isError) uiText("（失败）", " (failed)") else "",
                                             )
                                         }
@@ -1188,6 +1276,9 @@ private fun MessageBubble(
                     ExerciseCards(moves = exerciseLibrary.moves(exerciseIds))
                 }
                 message.toolCalls.forEach { call ->
+                    call.taskId?.let { TaskCard(taskId = it, onOpen = onOpenTask) }
+                }
+                message.toolCalls.forEach { call ->
                     val question = call.askQuestion ?: return@forEach
                     AskUserCard(
                         question = question,
@@ -1219,18 +1310,30 @@ private fun MessageBubble(
             }
             if (!isUser && !isLiveReply && !message.textIsPlaceholder && message.text.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(onClick = onBranch, enabled = !isReplying) {
-                        Text(uiText("在新对话里分支", "Branch into a new conversation"))
+                    // 主动说的话不是对哪句提问的回答,「重新回答」没有可重来的那句。
+                    if (!message.isProactive) {
+                        TextButton(onClick = onRetry, enabled = !isReplying) {
+                            Text(uiText("重新回答", "Answer again"))
+                        }
                     }
-                    TextButton(onClick = onRetry, enabled = !isReplying) {
-                        Text(uiText("重新回答", "Answer again"))
+                    message.refTaskId?.let { taskId ->
+                        TextButton(onClick = { onOpenTask(taskId) }) {
+                            Text(uiText("查看详情", "View details"))
+                        }
+                    }
+                    TextButton(onClick = onDelete, enabled = !isReplying) {
+                        Text(uiText("删除", "Delete"))
                     }
                 }
-                Text(
-                    text = uiText(
-                        "以上由 AI 生成，可能有误。不构成诊断或用药建议，关键数值请对照原始记录核对。",
-                        "AI-generated content may be wrong. It is not a diagnosis or medication advice. " +
-                            "Check important values against the original record.",
+                // 到点的提醒是本机写的一句话,不是模型生成的,不该挂「AI 生成」。
+                if (message.origin != ChatMessage.Origin.REMINDER) Text(
+                    // 「AI 生成」每条都有;医疗那半句只在话题沾上健康时才补(见 HealthTopics)。
+                    text = HealthTopics.disclaimer(
+                        healthRelated = HealthTopics.applies(
+                            message.toolCalls.map { it.name },
+                            precedingUserText,
+                            message.text,
+                        ),
                     ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1404,25 +1507,6 @@ private fun MessageAttachments(attachments: List<ChatAttachment>) {
     }
 }
 
-private fun toolCallLabel(call: com.pinapia.vana.session.ToolCallRecord): String = when (call.name) {
-    "remember" -> L10n.text("记住了", "Saved to memory")
-    "list_medications" -> L10n.text("查看了用药表", "Viewed medications")
-    "log_medication", "update_medication" -> L10n.text("更新了用药表", "Updated medications")
-    "list_measurements" -> L10n.text("查看了测量卡片", "Viewed measurements")
-    "log_measurement" -> L10n.text("记下了测量", "Recorded a measurement")
-    AskUserTools.ASK_TOOL_NAME -> L10n.text("问了你一句", "Asked a question")
-    "web_search" -> L10n.text("搜索了网页", "Searched the web")
-    "search_sessions" -> L10n.text("查找了过往对话", "Searched past conversations")
-    "read_session" -> L10n.text("读了一次过往对话", "Read a past conversation")
-    ExerciseTools.SUGGEST_TOOL_NAME ->
-        if (call.exerciseIDs.isEmpty()) {
-            L10n.text("没找到合适的动作", "No suitable exercise found")
-        } else {
-            L10n.text("挑了 ${call.exerciseIDs.size} 个动作", "Selected ${call.exerciseIDs.size} exercises")
-        }
-    else -> L10n.text("调用了 ${call.name}", "Used ${call.name}")
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ComposerBar(
@@ -1590,7 +1674,7 @@ private fun ComposerBar(
                     AttachSheetRow(
                         icon = VanaIcons.Camera,
                         title = uiText("拍照", "Take photo"),
-                        subtitle = uiText("化验单、药盒、报告", "Lab report, medicine package or report"),
+                        subtitle = uiText("票据、说明书、报告", "Receipts, manuals or reports"),
                         onClick = {
                             showAttachSheet = false
                             onAddCamera()
@@ -1688,421 +1772,41 @@ private fun ComposerCircleButton(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun sameDay(a: ChatMessage, b: ChatMessage): Boolean {
+    val zone = java.time.ZoneId.systemDefault()
+    fun day(m: ChatMessage) = java.time.Instant.ofEpochMilli(m.createdAt.toEpochMilliseconds()).atZone(zone).toLocalDate()
+    return day(a) == day(b)
+}
+
+/** 一天的分隔:今天 / 昨天 / M月d日。一条永远的对话靠它让「哪天说的」看得见。 */
 @Composable
-private fun SessionDrawer(
-    summaries: List<SessionSummary>,
-    goals: List<GoalSummary>,
-    currentId: String,
-    onClose: () -> Unit,
-    onNew: () -> Unit,
-    onNewPrivate: () -> Unit,
-    onNewGoal: (String) -> Unit,
-    onOpen: (String) -> Unit,
-    onOpenGoal: (GoalSummary) -> Unit,
-    onDelete: (String) -> Unit,
-    onDeleteGoal: (GoalSummary) -> Unit,
-    onOpenTenants: () -> Unit,
-) {
-    var showGoalDialog by remember { mutableStateOf(false) }
-    var showNewMenu by remember { mutableStateOf(false) }
-    var goalName by remember { mutableStateOf("") }
-    var pendingDeleteSessionId by remember { mutableStateOf<String?>(null) }
-    var pendingDeleteGoal by remember { mutableStateOf<GoalSummary?>(null) }
-
-    // 目标线已在上方单独列出，时间分组里再出现同一条会当成两条。
-    val goalThreads = remember(goals) { goals.map { it.threadId }.toSet() }
-    val looseSummaries = remember(summaries, goalThreads) {
-        summaries.filter { summary ->
-            summary.threadId == null || summary.threadId !in goalThreads
+private fun DayDivider(message: ChatMessage) {
+    val zone = java.time.ZoneId.systemDefault()
+    val date = java.time.Instant.ofEpochMilli(message.createdAt.toEpochMilliseconds()).atZone(zone).toLocalDate()
+    val today = java.time.LocalDate.now(zone)
+    val label = when (date) {
+        today -> uiText("今天", "Today")
+        today.minusDays(1) -> uiText("昨天", "Yesterday")
+        else -> if (date.year == today.year) {
+            uiText("${date.monthValue}月${date.dayOfMonth}日", "${date.month.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH)} ${date.dayOfMonth}")
+        } else {
+            uiText("${date.year}年${date.monthValue}月${date.dayOfMonth}日", date.toString())
         }
     }
-    val groups = remember(looseSummaries) { SessionTimeSection.group(looseSummaries) }
-    val currentThreadId = remember(currentId, summaries) {
-        summaries.firstOrNull { it.id == currentId }?.threadId
-    }
-    val closeDescription = uiText("关闭会话列表", "Close conversation list")
-    val newDescription = uiText("新建", "New")
-    val familyDescription = uiText(
-        "家庭成员，当前 ${TenantScope.current.displayName}",
-        "Family members. Current: ${TenantScope.current.displayName}",
-    )
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(uiText("会话", "Conversations")) },
-            navigationIcon = {
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.semantics {
-                        contentDescription = closeDescription
-                    },
-                ) {
-                    Icon(VanaIcons.ArrowLeft, contentDescription = null)
-                }
-            },
-            actions = {
-                Box {
-                    IconButton(
-                        onClick = { showNewMenu = true },
-                        modifier = Modifier.semantics {
-                            contentDescription = newDescription
-                        },
-                    ) {
-                        Icon(VanaIcons.PencilSquare, contentDescription = null)
-                    }
-                    DropdownMenu(
-                        expanded = showNewMenu,
-                        onDismissRequest = { showNewMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(uiText("新对话", "New conversation")) },
-                            onClick = {
-                                showNewMenu = false
-                                onNew()
-                            },
-                            leadingIcon = {
-                                Icon(VanaIcons.PencilSquare, contentDescription = null)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(uiText("隐私对话（不保存）", "Private conversation (not saved)")) },
-                            onClick = {
-                                showNewMenu = false
-                                onNewPrivate()
-                            },
-                            leadingIcon = {
-                                Icon(VanaIcons.EyeSlash, contentDescription = null)
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(uiText("新目标", "New goal")) },
-                            onClick = {
-                                showNewMenu = false
-                                showGoalDialog = true
-                            },
-                            leadingIcon = {
-                                Icon(VanaIcons.Plus, contentDescription = null)
-                            },
-                        )
-                    }
-                }
-            },
-        )
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            if (TenantScope.isolationAvailable) {
-                item(key = "tenant") {
-                    ListItem(
-                        headlineContent = { Text(uiText("家庭成员", "Family members")) },
-                        supportingContent = {
-                            Text(
-                                TenantScope.current.displayName,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        leadingContent = {
-                            Icon(
-                                VanaIcons.User,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        trailingContent = {
-                            Icon(
-                                VanaIcons.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onOpenTenants)
-                            .semantics {
-                                contentDescription = familyDescription
-                            },
-                    )
-                    HorizontalDivider()
-                }
-            }
-
-            if (goals.isNotEmpty()) {
-                item(key = "section-goals") { SessionSectionLabel(uiText("目标", "Goals")) }
-                items(goals, key = { "goal-${it.threadId}" }) { goal ->
-                    val selected = goal.threadId == currentThreadId
-                    SessionListRow(
-                        title = goal.title,
-                        subtitle = buildString {
-                            append(SessionTimeSection.rowTimeLabel(goal.updatedAt.toEpochMilliseconds()))
-                            append(uiText(" · ${goal.messageCount} 条", " · ${goal.messageCount} messages"))
-                            if (goal.segmentCount > 1) {
-                                append(uiText(" · ${goal.segmentCount} 段", " · ${goal.segmentCount} segments"))
-                            }
-                        },
-                        selected = selected,
-                        pendingDelete = pendingDeleteGoal?.threadId == goal.threadId,
-                        onOpen = { onOpenGoal(goal) },
-                        onRequestDelete = { pendingDeleteGoal = goal },
-                        deleteLabel = uiText(
-                            "左滑删除目标 ${goal.title}",
-                            "Swipe left to delete goal ${goal.title}",
-                        ),
-                    )
-                }
-            }
-
-            if (looseSummaries.isEmpty() && goals.isEmpty()) {
-                item(key = "empty") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 48.dp),
-                    ) {
-                        Text(
-                            uiText("还没有会话", "No conversations yet"),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            uiText(
-                                "问一个健康问题，这里就会出现记录。",
-                                "Ask a health question and the conversation will appear here.",
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            } else {
-                groups.forEach { group ->
-                    item(key = "section-${group.bucket}") {
-                        SessionSectionLabel(group.bucket.title)
-                    }
-                    items(group.sessions, key = { it.id }) { summary ->
-                        val selected = summary.id == currentId
-                        SessionListRow(
-                            title = summary.title,
-                            subtitle = "${SessionTimeSection.rowTimeLabel(summary.updatedAt.toEpochMilliseconds())}" +
-                                uiText(" · ${summary.messageCount} 条", " · ${summary.messageCount} messages"),
-                            selected = selected,
-                            pendingDelete = pendingDeleteSessionId == summary.id,
-                            onOpen = { onOpen(summary.id) },
-                            onRequestDelete = { pendingDeleteSessionId = summary.id },
-                            deleteLabel = uiText(
-                                "左滑删除对话 ${summary.title}",
-                                "Swipe left to delete conversation ${summary.title}",
-                            ),
-                        )
-                    }
-                }
-            }
-
-            item(key = "bottom-spacer") {
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
-    }
-
-    if (showGoalDialog) {
-        AlertDialog(
-            onDismissRequest = { showGoalDialog = false },
-            title = { Text(uiText("新目标", "New goal")) },
-            text = {
-                Column {
-                    Text(
-                        uiText(
-                            "目标是一件要聊很久的事。之后每次回到它，都接着上次说。",
-                            "A goal is a long-running topic. Each time you return, the conversation continues.",
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = goalName,
-                        onValueChange = { goalName = it },
-                        label = { Text(uiText("目标名称", "Goal name")) },
-                        placeholder = {
-                            Text(uiText("比如：减脂、备半马、把作息掰回来", "For example: lose weight, train for a race, improve sleep"))
-                        },
-                        singleLine = true,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onNewGoal(goalName)
-                        goalName = ""
-                        showGoalDialog = false
-                    },
-                    enabled = goalName.isNotBlank(),
-                ) { Text(uiText("开始", "Start")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showGoalDialog = false }) { Text(uiText("取消", "Cancel")) }
-            },
-        )
-    }
-    pendingDeleteSessionId?.let { sessionId ->
-        val title = summaries.firstOrNull { it.id == sessionId }?.title ?: uiText("此对话", "This conversation")
-        AlertDialog(
-            onDismissRequest = { pendingDeleteSessionId = null },
-            title = { Text(uiText("删除此对话？", "Delete this conversation?")) },
-            text = {
-                Text(uiText("「$title」会被删掉，无法撤销。", "\"$title\" will be deleted and cannot be restored."))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(sessionId)
-                        pendingDeleteSessionId = null
-                    },
-                ) { Text(uiText("删除对话", "Delete conversation")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDeleteSessionId = null }) { Text(uiText("取消", "Cancel")) }
-            },
-        )
-    }
-    pendingDeleteGoal?.let { goal ->
-        AlertDialog(
-            onDismissRequest = { pendingDeleteGoal = null },
-            title = { Text(uiText("删除此目标？", "Delete this goal?")) },
-            text = {
-                Text(
-                    uiText(
-                        "「${goal.title}」会被删掉，无法撤销。",
-                        "\"${goal.title}\" will be deleted and cannot be restored.",
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteGoal(goal)
-                        pendingDeleteGoal = null
-                    },
-                ) { Text(uiText("删除目标", "Delete goal")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDeleteGoal = null }) { Text(uiText("取消", "Cancel")) }
-            },
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 4.dp),
         )
     }
 }
 
-@Composable
-private fun SessionSectionLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SessionListRow(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    pendingDelete: Boolean,
-    onOpen: () -> Unit,
-    onRequestDelete: () -> Unit,
-    deleteLabel: String,
-) {
-    val requestDelete by rememberUpdatedState(onRequestDelete)
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                requestDelete()
-                true
-            } else {
-                false
-            }
-        },
-        positionalThreshold = { distance -> distance * 0.35f },
-    )
-
-    // 取消确认后把行滑回来；确认删除则条目会从列表消失。
-    LaunchedEffect(pendingDelete) {
-        if (!pendingDelete && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
-            dismissState.reset()
-        }
-    }
-
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.error)
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Icon(
-                    VanaIcons.Trash,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onError,
-                )
-            }
-        },
-        content = {
-            ListItem(
-                headlineContent = {
-                    Text(
-                        title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                supportingContent = {
-                    Text(
-                        subtitle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                trailingContent = if (selected) {
-                    {
-                        Icon(
-                            VanaIcons.Check,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                } else {
-                    null
-                },
-                colors = ListItemDefaults.colors(
-                    containerColor = if (selected) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-                    headlineColor = if (selected) {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    supportingColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpen)
-                    .semantics(mergeDescendants = true) {
-                        this.selected = selected
-                        contentDescription = deleteLabel
-                    },
-            )
-        },
-        modifier = Modifier.fillMaxWidth(),
-    )
+private fun proactiveLabel(origin: ChatMessage.Origin): String = when (origin) {
+    ChatMessage.Origin.CHECK_IN -> L10n.text("Vana 主动问 · check-in", "Vana asked · check-in")
+    ChatMessage.Origin.FOLLOW_UP -> L10n.text("Vana 主动说 · 回头看了一眼", "Vana followed up")
+    ChatMessage.Origin.REMINDER -> L10n.text("Vana 提醒", "Vana reminder")
+    ChatMessage.Origin.TASK -> L10n.text("Vana 主动说 · 任务结果", "Vana reported · task result")
+    ChatMessage.Origin.NORMAL -> ""
 }

@@ -23,11 +23,38 @@ object DataUseNotice {
                 "对方是一家由你选定的第三方模型服务——默认预选的是 DeepSeek（深度求索），可以在设置里换成目录里的其他家。第一次真的要发给某一家之前，Vana 还会点名问你一次",
                 "The recipient is a third-party model service you choose — DeepSeek is pre-selected by default, and you can switch to any other provider in Settings. The first time Vana is about to send to a given service, it names that service and asks you once more",
             ),
-            L10n.text("你打的字，以及这条对话里的往来", "What you type and the earlier messages in this conversation"),
-            L10n.text("化验单、报告、药盒在本机识别出来的文字", "Text recognized on this device from reports and medicine packaging"),
+            L10n.text(
+                "你打的字，以及最近一段对话里的往来（更早的原文只在需要回顾时才按需取出相关片段）",
+                "What you type and the recent part of the conversation (older text is retrieved only when a recall is needed)",
+            ),
+            L10n.text("票据、报告、说明书、药盒、化验单等在本机识别出来的文字", "Text recognized on this device from receipts, reports, manuals, medicine packaging and lab reports"),
             L10n.text("照片原图——默认不发；本机认不出文字的那些会问你一句，你点了才发", "Original photos are not sent by default; Vana asks before sending a photo when no text was recognized"),
             L10n.text("你所在的城市（授权了位置的话）", "Your city, if you allow approximate location"),
-            L10n.text("长期记忆和用药表里的内容（没关掉的话）", "Long-term memory and medication-list content, if enabled"),
+            L10n.text("长期记忆，以及用药表、测量卡片里的内容（没关掉的话）", "Long-term memory, and medication-list and measurement-card content, if enabled"),
+            L10n.text(
+                "目标的名称和进展；你让 Vana 去读的笔记的内容（笔记不常驻，读的那一次才发出）",
+                "The names and progress of your goals, and the content of a note only when you ask Vana to read it",
+            ),
+            L10n.text(
+                "为了记住长期成立的事，离开 app 或对话空闲一段时间后，还没处理过的对话片段（开着记忆才做）",
+                "To remember things that stay true, not-yet-processed parts of the conversation after you leave the app or it goes idle (only when Memory is on)",
+            ),
+            L10n.text(
+                "你点了「开始」的后台任务：任务说明、它用到的记忆和过往对话片段、它搜索或读取到的网页内容。后台任务只读，不会改动你的数据",
+                "Background tasks you start: the brief, the memory and past-conversation excerpts it uses, and the web content it finds. Background tasks are read-only and never change your data",
+            ),
+        ),
+    )
+
+    val direct: Group
+        get() = Group(
+        title = L10n.text("由这台设备直接访问", "Fetched directly by this device"),
+        points = listOf(
+            L10n.text(
+                "你发来的链接、或搜索结果里值得细看的网页——由这台设备直接访问该网站，不经过中转；对方网站能看到你的 IP 地址和请求的网址。本机和内网地址一律不读",
+                "Links you send or search results worth reading — this device visits the site directly with no relay, so the site can see your IP address and the URL. Localhost and private-network addresses are refused",
+            ),
+            L10n.text("网页搜索（填了搜索 key 才有）——搜索词发给 serper.dev，不含你的个人情况", "Web search, only if you add a search key — search terms go to serper.dev and never include your personal situation"),
         ),
     )
 
@@ -38,7 +65,7 @@ object DataUseNotice {
             L10n.text("照片和文件原件——识别在本机做，发出去的默认只有文字；原图发不发在设置里定，每一张发送前还能单独改", "Photo and file originals; recognition runs on-device and each photo can be reviewed before sending"),
             L10n.text("经纬度坐标——只发城市名，坐标一个字都不发", "Latitude and longitude; only the city name may be sent"),
             L10n.text("你的 API key——只在本机加密存储里", "Your API key; it stays in encrypted storage on this device"),
-            L10n.text("对话记录、记忆、用药表——存在本机，没有云端副本，也不进设备备份", "Conversation history, memory and medication lists; they have no cloud copy and are excluded from backup"),
+            L10n.text("对话记录、记忆、笔记、提醒、目标、用药表和测量卡片——存在本机，没有云端副本，也不进设备备份", "Conversation history, memory, notes, reminders, goals, medication lists and measurement cards; they have no cloud copy and are excluded from backup"),
         ),
     )
 
@@ -47,7 +74,7 @@ object DataUseNotice {
         title = L10n.text("由 Android 系统服务处理", "Handled by Android system services"),
         points = listOf(
             L10n.text("按住说话的录音——Vana 请求优先离线识别，也不保存录音；具体是否联网由手机上的语音识别服务决定", "Hold-to-talk audio; Vana requests offline recognition and never saves the recording, but the installed speech service controls network use"),
-            L10n.text("通知和相机权限只在你打开对应功能时使用，不经过 Vana 的服务器", "Notification and camera permissions are used only for features you open and never pass through a Vana server"),
+            L10n.text("通知（含你设的提醒，到点只发通知、不联网也不调用模型）和相机权限只在你打开对应功能时使用，不经过 Vana 的服务器", "Notifications (including reminders you set, which only post a notification and never use the network or a model) and camera permission are used only for features you open and never pass through a Vana server"),
         ),
     )
 
@@ -61,7 +88,7 @@ object DataUseNotice {
         ),
     )
 
-    val groups: List<Group> get() = listOf(leaves, stays, systemServices, noServer)
+    val groups: List<Group> get() = listOf(leaves, direct, stays, systemServices, noServer)
 
     val intro: String
         get() = L10n.text(

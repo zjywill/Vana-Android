@@ -41,20 +41,24 @@
 </div>
 
 <h2>Where data is stored</h2>
-<p>Conversation history, long-term memory, medication and supplement lists, manual measurement cards, and files or photos you choose are stored in Vana's private app directory on this device. Your API key is stored separately in encrypted storage protected by Android Keystore.</p>
+<p>The conversation (there is now a single ongoing conversation, kept on this device until you clear it), long-term memory, reminders, goals and the background tasks you confirmed with their results, notes and lists, medication and supplement lists, manual measurement cards, and files or photos you choose are stored in Vana's private app directory on this device. Your API key is stored separately in encrypted storage protected by Android Keystore.</p>
 <p><strong>This data is excluded from cloud backup and device transfer.</strong> When you move to a new phone, it does not move automatically.</p>
 
 <h2>What leaves this device</h2>
 <p><strong>To whom: a third-party model service that you choose.</strong> In Settings you pick one from a built-in catalog (DeepSeek is pre-selected by default; you can switch to any other provider in the catalog) and enter your own API key. Vana sends requests from this device directly to that provider’s API — nothing passes through any other server in between.</p>
 <p><strong>Nothing is sent without your explicit consent.</strong> The first-launch notice lists everything below, and you enter the app only by tapping “Agree and continue”. In addition, the first time Vana is actually about to send to a given service, it names that service and asks for your permission once more — if you decline, nothing is sent and your text stays in the input box. Switching to a different service asks again. A request may include:</p>
 <ul>
-  <li>What you type and earlier messages in the current conversation</li>
-  <li>Text recognized on this device from lab reports, medical reports, medicine packaging and selected documents</li>
+  <li>What you type and the recent part of the conversation. Older conversation text is not sent with every question; relevant excerpts are retrieved only when a recall is needed</li>
+  <li>Text recognized on this device from receipts, reports, manuals, medicine packaging, lab reports and selected documents</li>
   <li>An original photo only when you agree to send that specific photo, or choose a photo policy that allows it</li>
   <li>Your city, if you allowed approximate location</li>
-  <li>Relevant long-term memory, medication-list and manual-measurement content, if those features are enabled</li>
+  <li>Relevant long-term memory, medication-list and manual-measurement content, if those features are enabled (turning the Health plugin off stops the medication list and measurements from being sent with your questions)</li>
+  <li>The names and progress of your active goals, and the content of a note or list only when you ask Vana to read it (notes are never attached to every request)</li>
+  <li><strong>To remember things that stay true:</strong> after you leave the app or the conversation has been idle for a while, Vana sends not-yet-processed parts of the conversation to the same model service to extract what is worth remembering (only when Memory is on, and subject to the same consent)</li>
 </ul>
-<p>If you add a serper.dev key, general search terms may be sent to that service. Search terms must not contain your personal situation or measurements.</p>
+<p><strong>Background tasks.</strong> Vana can hand a self-contained job that takes a few minutes (researching, comparing options) to the background. By default every job first shows a confirmation card and only starts when you tap Start. Once started it sends <strong>the task brief, the memory and past-conversation excerpts it needs, and the web content it searches or reads</strong> to the same model service, under the same consent. Background tasks are <strong>read-only</strong>: they never change your data, and anything they want you to do (set a reminder, save a goal, remember something) appears only as a suggestion for you to accept one by one. “Start read-only tasks automatically” in Settings › Background tasks and “Weekly review” on a goal are switches you turn on yourself; once on, those background calls are no longer confirmed one by one, still require that you have already consented to the current service, and stop when you turn them off. Daily counts and each job's duration and usage are capped.</p>
+<p><strong>Reading web pages.</strong> When you send a link, or a search result is worth reading in full, this device fetches the page directly (through no relay server), so <em>the website can see your IP address and the requested URL</em>; the page text is sent to the model service as material for the answer. Only public http/https pages are read; localhost, private-network addresses and URLs containing credentials are refused. Text on a page is treated as material, not as instructions.</p>
+<p>If you add a serper.dev key, general search terms may be sent to that service. Search terms must not contain your personal situation or private data, including health data.</p>
 <p>The model service and the search service are third parties. How they handle what they receive is governed by <strong>their own privacy policies</strong> (for example, DeepSeek’s privacy policy is available on its website) and is outside Vana’s control — we cannot make promises on their behalf. Which provider to use is your choice; if you are not comfortable with one, switch to another or don’t use it. Everything listed above is used solely to answer the question you just asked; Vana uses it for no other purpose and never sells it.</p>
 
 <h2>What does not leave this device</h2>
@@ -71,17 +75,22 @@
 <h2>Camera and photos</h2>
 <p>Camera and photo access is used only for a capture or selection you start. Recognition runs on this device. An original photo is sent to your model provider only when you agree, and can be reviewed individually before sending.</p>
 
-<h2>Notifications</h2>
-<p>Morning and evening check-ins are local notifications scheduled on this device. They do not pass through a push server.</p>
+<h2>Plugins</h2>
+<p>Capabilities that can be switched off as a whole are called plugins. Today that is Notes and lists, and Health (medications and supplements, measurement cards, the exercise library and the rules for reading lab reports). The switch is in Settings › Plugins. When it is off, its data is no longer added to requests sent to the model and its tools are no longer offered; data you already recorded stays on this device, can be used again if you switch it back on, and can be deleted item by item.</p>
 
-<h2>Conversations that are not saved</h2>
-<p>A private conversation is not written to disk, does not appear in the conversation list, does not update memory, and keeps photos in memory only. The question still has to be sent to the model provider you configured in order to receive an answer.</p>
+<h2>Notifications and reminders</h2>
+<p>Morning and evening check-ins, reminders you set, and “task finished” notices are local notifications scheduled on this device. They do not pass through a push server. <strong>When a reminder fires it only posts a notification — no network and no model call.</strong> To save battery, Android may deliver a reminder a few minutes late; after a restart Vana schedules your reminders again.</p>
+
+<h2>Off-the-record chat</h2>
+<p>An off-the-record chat, opened from the menu, lives only in memory: it is not written to disk, does not join the ongoing conversation, does not update memory, cannot set reminders, create goals or start background tasks, and keeps photos in memory only; it is gone when you leave the page. The question still has to be sent to the model provider you configured in order to receive an answer — off-the-record cannot prevent that.</p>
 
 <h2>Deleting data</h2>
 <ul>
-  <li>Delete one conversation from the conversation list.</li>
-  <li>Clear all conversations from Settings.</li>
-  <li>Delete memory, medications, supplements and measurements from their respective lists.</li>
+  <li>Conversation: there is a single ongoing conversation. “Delete” under a reply removes that question and answer (with its photos); Settings › Conversation history clears conversations older than 30 days or clears everything (photos included).</li>
+  <li>Memory: delete items one by one in “What Vana remembers”, or forget everything at once.</li>
+  <li>Reminders, goals and background tasks: delete them one by one on the Tasks page.</li>
+  <li>Notes and lists: delete them one by one in Notes and lists.</li>
+  <li>Medications, supplements and measurements: delete them from their respective lists.</li>
   <li>Delete a family member to delete that member's isolated local directory.</li>
   <li>Delete the app to delete all remaining app data.</li>
 </ul>

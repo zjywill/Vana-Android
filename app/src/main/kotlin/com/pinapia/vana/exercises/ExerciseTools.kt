@@ -7,6 +7,10 @@ import com.pinapia.vana.agentruntime.CapabilityInvocation
 import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.agentruntime.RuntimeJSONValue
 
+/** 这一次工具调用挑出来的动作 id。消息模型只带通用的 metadata,动作库自己来解。 */
+val com.pinapia.vana.session.ToolCallRecord.exerciseIDs: List<String>
+    get() = ExerciseSelection.decode(metadata)?.moveIDs.orEmpty()
+
 data class ExerciseSelection(val moveIDs: List<String>) {
     companion object {
         fun encodeForToolMetadata(selection: ExerciseSelection): RuntimeJSONValue =

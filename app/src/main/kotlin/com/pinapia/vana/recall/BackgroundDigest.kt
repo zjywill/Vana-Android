@@ -7,7 +7,7 @@ import com.pinapia.vana.tenant.TenantScope
 import kotlinx.datetime.Clock
 
 /**
- * App 切前后台时替用户跑的后台活：一次只跑一件（待跟进优先于目标周报）。
+ * App 切前后台时替用户跑的后台活：一次只跑一件（到期的待跟进）。
  */
 object BackgroundDigest {
     suspend fun runIfDue(context: Context): Boolean {
@@ -27,36 +27,21 @@ object BackgroundDigest {
 
     private suspend fun runOnce(app: VanaApplication): Boolean {
         val now = Clock.System.now()
-        val memoryStore = TenantScope.ownerStores.memory
-        val sessionStore = TenantScope.ownerStores.sessions
-        val tenant = TenantScope.owner
+        val stores = TenantScope.ownerStores
         val followUp = FollowUpRunner.pending(
             now = now,
-            memoryStore = memoryStore,
-            sessionStore = sessionStore,
+            memoryStore = stores.memory,
+            writer = stores.threadWriter,
             memoryEnabled = app.engineSettings.memoryEnabled,
-        )
-        if (followUp != null) {
-            return FollowUpRunner.run(
-                followUp = followUp,
-                now = now,
-                memoryStore = memoryStore,
-                sessionStore = sessionStore,
-                engineSettings = app.engineSettings,
-                secureKeyStore = app.secureKeyStore,
-                tenant = tenant,
-            )
-        }
-
-        val goal = GoalDigest.pending(now = now, sessionStore = sessionStore) ?: return false
-        return GoalDigest.run(
-            goal = goal,
+        ) ?: return false
+        return FollowUpRunner.run(
+            followUp = followUp,
             now = now,
-            memoryStore = memoryStore,
-            sessionStore = sessionStore,
+            memoryStore = stores.memory,
+            writer = stores.threadWriter,
             engineSettings = app.engineSettings,
             secureKeyStore = app.secureKeyStore,
-            tenant = tenant,
+            tenant = TenantScope.owner,
         )
     }
 }

@@ -24,10 +24,10 @@ enum class AssistantPersona(val raw: String) {
 
     val instruction: String
         get() = when (this) {
-            BALANCED -> L10n.text("语气均衡：清楚、克制，结论先行，再给关键数据。", "Balanced: clear and restrained, with the conclusion first and key details after.")
-            DATA -> L10n.text("偏数据：多引用工具返回的数字和趋势，少做主观评价。", "Data-focused: cite recorded values and trends, with less subjective commentary.")
-            COACH -> L10n.text("像教练：给出可执行的下一步，但不要下诊断或剂量建议。", "Coach: offer practical next steps without diagnosis or dosage advice.")
-            COMPANION -> L10n.text("偏陪伴：语气更温和，先回应感受，再给数据与建议。", "Companion: respond warmly to feelings before giving information and suggestions.")
+            BALANCED -> L10n.text("语气均衡：清楚、克制，结论先行，再给关键依据。", "Balanced: clear and restrained, with the conclusion first and key support after.")
+            DATA -> L10n.text("偏数据：多引用工具返回或用户记录的数字和趋势，少做主观评价。", "Data-focused: cite recorded values and trends, with less subjective commentary.")
+            COACH -> L10n.text("像教练：给出可执行的下一步，少讲空话。", "Coach: offer practical next steps and skip the generalities.")
+            COMPANION -> L10n.text("偏陪伴：语气更温和，先回应感受，再给信息与建议。", "Companion: respond warmly to feelings before giving information and suggestions.")
             DIRECT -> L10n.text("直说：少铺垫，先给结论，再补必要依据。", "Direct: minimal preamble, conclusion first, then only necessary support.")
         }
 
