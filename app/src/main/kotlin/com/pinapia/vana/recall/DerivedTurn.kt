@@ -1,14 +1,11 @@
 package com.pinapia.vana.recall
 
 import com.pinapia.vana.agent.CloudEngine
-import com.pinapia.vana.agent.healthChat
 import com.pinapia.vana.agentruntime.AgentTurnEvent
-import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.agentruntime.apply
-import com.pinapia.vana.location.LocationSnapshot
-import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.memory.MemorySnapshot
 import com.pinapia.vana.memory.MemoryStore
+import com.pinapia.vana.plugins.VanaPlugins
 import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.ChatSession
 import com.pinapia.vana.session.SessionStore
@@ -62,30 +59,21 @@ object DerivedTurn {
         } else {
             MemorySnapshot.empty
         }
-        val registry = CapabilityRegistry.healthChat(
-            allowsMemoryWrites = false,
-            allowsMedicationWrites = false,
-            allowsRecall = SessionRecallTrigger.mentionsPast(question),
-            asksUser = false,
-            memoryStore = memoryStore,
-            medicationStore = null,
-            sessionStore = sessionStore,
+        val plugins = VanaPlugins.background(
+            sessionStore = if (engineSettings.memoryEnabled) sessionStore else null,
             currentSessionId = session.id,
-            webSearch = null,
-            exerciseLibrary = null,
-            memoryEnabled = engineSettings.memoryEnabled,
-            medicationsEnabled = false,
+            memoryStore = if (engineSettings.memoryEnabled) memoryStore else null,
+            memory = memory,
         )
+        val context = VanaPlugins.backgroundContext(recallUnlocked = SessionRecallTrigger.mentionsPast(question))
 
         val engine = CloudEngine(
             providerId = provider,
             model = model,
             apiKey = key,
             tenant = tenant,
-            memory = memory,
-            medications = MedicationSnapshot.empty,
-            location = LocationSnapshot.unknown,
-            capabilityRegistry = registry,
+            plugins = plugins,
+            pluginContext = context,
             thinkingEnabled = false,
             persona = AssistantPersona.BALANCED,
             goal = if (thread.isGoal) threadTitle else null,

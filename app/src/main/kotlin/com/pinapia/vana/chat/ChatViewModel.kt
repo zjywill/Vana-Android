@@ -7,11 +7,9 @@ import com.pinapia.vana.agent.AgentError
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agent.FollowUpSuggestionHook
 import com.pinapia.vana.agent.UserFacingModelFailure
-import com.pinapia.vana.agent.healthChat
 import com.pinapia.vana.agentruntime.AgentHookDispatcher
 import com.pinapia.vana.agentruntime.AgentPendingInput
 import com.pinapia.vana.agentruntime.AgentTurnEvent
-import com.pinapia.vana.agentruntime.CapabilityRegistry
 import com.pinapia.vana.agentruntime.apply
 import com.pinapia.vana.ask.AskUserAnswer
 import com.pinapia.vana.exercises.ExerciseLibrary
@@ -25,6 +23,7 @@ import com.pinapia.vana.memory.MemoryHarvest
 import com.pinapia.vana.memory.MemorySnapshot
 import com.pinapia.vana.memory.apply
 import com.pinapia.vana.recall.SessionRecallTrigger
+import com.pinapia.vana.plugins.VanaPlugins
 import com.pinapia.vana.search.WebSearchClient
 import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.ChatSession
@@ -823,28 +822,32 @@ class ChatViewModel(
         val tenant = tenantProvider()
         val stores = TenantScope.currentStores
         val webSearch = WebSearchClient.storedKey(secureKeyStore.serperApiKey)
-        val registry = CapabilityRegistry.healthChat(
-            allowsMemoryWrites = !_session.value.isPrivate,
-            allowsMedicationWrites = !_session.value.isPrivate,
-            allowsMeasurementWrites = !_session.value.isPrivate,
-            allowsRecall = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
-            asksUser = true,
-            memoryStore = stores.memory,
-            medicationStore = stores.medications,
-            measurementStore = stores.measurements,
-            sessionStore = sessionStore,
-            currentSessionId = _session.value.id,
-            webSearch = webSearch,
-            exerciseLibrary = exerciseLibrary,
-            memoryEnabled = engineSettings.memoryEnabled,
-            medicationsEnabled = engineSettings.medicationsEnabled,
-            measurementsEnabled = engineSettings.measurementsEnabled,
-        )
         val location = if (locationProvider.isAuthorized) {
             locationProvider.snapshot
         } else {
             LocationSnapshot.unknown
         }
+        val memoryEnabled = engineSettings.memoryEnabled
+        val medicationsEnabled = engineSettings.medicationsEnabled
+        val measurementsEnabled = engineSettings.measurementsEnabled
+        val plugins = VanaPlugins.foreground(
+            exerciseLibrary = exerciseLibrary,
+            webSearch = webSearch,
+            medicationStore = if (medicationsEnabled) stores.medications else null,
+            medications = if (medicationsEnabled) medicationSnapshotProvider() else MedicationSnapshot.empty,
+            focusMedication = _focusMedication.value,
+            measurementStore = if (measurementsEnabled) stores.measurements else null,
+            measurements = if (measurementsEnabled) measurementSnapshotProvider() else MeasurementSnapshot.empty,
+            sessionStore = if (memoryEnabled) sessionStore else null,
+            currentSessionId = _session.value.id,
+            memoryStore = if (memoryEnabled) stores.memory else null,
+            memory = if (memoryEnabled) memorySnapshotProvider() else MemorySnapshot.empty,
+            location = location,
+        )
+        val context = VanaPlugins.foregroundContext(
+            isPrivate = _session.value.isPrivate,
+            recallUnlocked = SessionRecallTrigger.unlocksRecall(inMessages = _session.value.messages),
+        )
         val thread = SessionThread.parse(_session.value.threadId)
         val goalTitle = if (thread?.isGoal == true) _session.value.threadTitle else null
         return CloudEngine.create(
@@ -852,20 +855,12 @@ class ChatViewModel(
             model = engineSettings.model,
             secureKeyStore = secureKeyStore,
             tenant = tenant,
-            memory = if (engineSettings.memoryEnabled) memorySnapshotProvider() else MemorySnapshot.empty,
-            medications = if (engineSettings.medicationsEnabled) medicationSnapshotProvider() else MedicationSnapshot.empty,
-            measurements = if (engineSettings.measurementsEnabled) {
-                measurementSnapshotProvider()
-            } else {
-                MeasurementSnapshot.empty
-            },
-            location = location,
-            capabilityRegistry = registry,
+            plugins = plugins,
+            pluginContext = context,
             thinkingEnabled = engineSettings.thinkingEnabled,
             persona = engineSettings.persona,
             hooks = followUpHooks(),
             goal = goalTitle,
-            focusMedication = _focusMedication.value,
         )
     }
 
