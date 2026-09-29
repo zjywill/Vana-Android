@@ -46,6 +46,21 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 它只该认两个抽象：「一个能估 token、能流式跑一轮的模型」和「一组 JSON Schema 加一个执行闭包」。
 工具循环、四档上下文降级、预算记账都在这一层，测试是秒级的。
 
+## 插件（`AgentPlugin`，`:agent-runtime`）
+
+方向是「通用手机 agent + 健康插件」，两端共用同一套形状（方案在项目共享目录
+`plugin-architecture/`）。第一步只是搬家：模型看到的 system 段和工具定义和插件化之前**逐字相同**，
+`PluginAssemblyEquivalenceTest` 拿搬进测试里的旧装配逐个组合比对。第二步拆提示词时有意打破它，
+那时连同 `LegacyHealthChatAssembly.kt` 一起删。
+
+- **工具自己声明副作用**（`ToolEffect`），隐私会话和后台派生由 `PluginContext` 统一过滤：
+  隐私会话丢掉全部 `WRITE_LOCAL`，后台派生再丢掉 `NEEDS_USER`。别再加 `allowsXWrites` 这类参数——
+  「隐私会话按写入路径定义」从此是机制，加一个会写盘的工具只要声明对。
+- **常驻段和按需挂载是两回事**。用药名单、急症规则只能是常驻段（`PromptBlock`），不能做成要
+  模型自己想起来去查的东西。
+- 开关在调用方兑现成「给不给 store」，关掉就不挂，不是挂了返回空。
+- Android 不和其他 app 做连接，以后的插件只在 Vana 内部自足。
+
 ## `minSdk 28`
 
 `minSdk` 当前为 28。它不代表设备健康协议下限，只是当前应用兼容性基线。
@@ -80,6 +95,7 @@ intents/      App Shortcuts deep link
 legal/        告知屏、隐私说明、急症规则
 location/     粗定位 + 反地理编码
 medications/  用药与补剂
+plugins/      插件装配（`VanaPlugins`：哪条路挂哪些插件；`PromptOrder`：system 段每块排在哪）
 memory/       长期记忆
 recall/       跨会话召回
 search/       网页搜索
