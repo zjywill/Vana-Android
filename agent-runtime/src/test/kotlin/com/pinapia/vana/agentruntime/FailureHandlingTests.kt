@@ -215,6 +215,36 @@ class FailureHandlingTests {
         assertTrue(outcome.events.retries.isEmpty())
     }
 
+    private fun overflowTurn() = ScriptedModelClient.Turn(
+        finishReason = AgentFinishReason(unified = AgentFinishReason.Unified.ERROR),
+        failureMessage = "prompt is too long: 210000 tokens",
+    )
+
+    @Test
+    fun contextOverflowIsRetriedOnceWhenWindowIsKnown() = runBlocking {
+        val client = ScriptedModelClient(
+            profile = profile,
+            turns = listOf(overflowTurn(), overflowTurn()),
+        )
+
+        val outcome = record(loop(client), question)
+        assertTrue(outcome.error is AgentLoopError.ContextWindowExceeded)
+        assertEquals(2, client.requests.size)
+    }
+
+    @Test
+    fun contextOverflowGoesStraightUpWhenWindowIsUnknown() = runBlocking {
+        // 没有预算就压不动,重发的是同一份 prompt:不该再花一次整轮的钱。
+        val client = ScriptedModelClient(
+            profile = profile.copy(contextWindow = null),
+            turns = listOf(overflowTurn(), overflowTurn()),
+        )
+
+        val outcome = record(loop(client), question)
+        assertTrue(outcome.error is AgentLoopError.ContextWindowExceeded)
+        assertEquals(1, client.requests.size)
+    }
+
     @Test
     fun failureKindsSeparateUserActions() {
         assertEquals(ModelFailure.Kind.AUTHENTICATION, ModelFailure.kind("Error code: 401"))

@@ -245,7 +245,10 @@ class AgentLoop(
                         // "prompt is too long: 210000 tokens" 甩给上层——怎么收场由 app 定:一条永远的
                         // 对话里没有「开新对话」可劝,聊天层会强制把窗口砍到最近两轮再跑一次
                         // (ChatViewModel.runTurnShrinkingOnOverflow),砍不动才报给用户。
-                        if (overflowRecoveryUsed) {
+                        //
+                        // 不知道上下文多大时,这一层的恢复是空转:没有预算就没有水位线,规划器和摘要都
+                        // 无从压起,重发的是同一份 prompt——白花一次整轮的钱再撞一次墙。直接交给上层。
+                        if (overflowRecoveryUsed || profile.contextWindow == null) {
                             throw AgentLoopError.ContextWindowExceeded
                         }
                         overflowRecoveryUsed = true
