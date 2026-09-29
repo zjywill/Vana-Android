@@ -12,6 +12,7 @@ import com.pinapia.vana.agentruntime.PluginAssembly
 import com.pinapia.vana.agentruntime.PluginContext
 import com.pinapia.vana.agentruntime.PluginHost
 import com.pinapia.vana.agentruntime.PromptBlock
+import com.pinapia.vana.agentruntime.TokenEstimate
 import com.pinapia.vana.agentruntime.TranscriptCompactor
 import com.pinapia.vana.plugins.PromptOrder
 import com.pinapia.vana.session.ChatMessage
@@ -97,6 +98,19 @@ class CloudEngine(
     /** 这一轮会挂出去的工具定义,按发出去的顺序。 */
     fun toolDefinitions(): List<CapabilityDefinition> =
         assemble(acceptsInterjections = false).registry.definitions
+
+    /**
+     * 每一轮请求都要带的固定开销:system 段加全部工具定义的 token 估计。窗口预算按整个请求算,先把它扣掉。
+     *
+     * 只装配一次;按聊天路径的实际情况算(会接受插话,所以有那一小段插话说明)。工具的参数说明按**发出去的
+     * JSON** 计,不是 Kotlin 的 `toString()`——后者带着 `ObjectValue(value={…StringValue(value=…` 这类
+     * 外壳,比真实大小长得多,会把窗口无谓地挤窄。
+     */
+    fun requestOverheadTokens(): Int {
+        val assembly = assemble(acceptsInterjections = true)
+        return TokenEstimate.text(assembly.instruction()) +
+            assembly.registry.definitions.sumOf(TokenEstimate::definition)
+    }
 
     /**
      * 引擎自己的几段。今天是易变的,排在最后那一片;其余是静态的。目标由任务插件贡献。

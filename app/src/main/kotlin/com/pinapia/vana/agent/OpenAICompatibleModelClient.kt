@@ -11,6 +11,7 @@ import com.pinapia.vana.agentruntime.AgentUsage
 import com.pinapia.vana.agentruntime.CapabilityDefinition
 import com.pinapia.vana.agentruntime.CapabilityInvocation
 import com.pinapia.vana.agentruntime.RuntimeJSONValue
+import com.pinapia.vana.agentruntime.TokenEstimate
 import com.pinapia.vana.settings.ApiKeyNormalizer
 import com.pinapia.vana.settings.CloudCatalog
 import java.util.UUID
@@ -62,19 +63,18 @@ class OpenAICompatibleModelClient(
 ) : AgentModelClient {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
+    /**
+     * 估算口径见 [TokenEstimate]:认得中文一字一 token,工具定义把发出去的 JSON Schema 也算上。
+     * Anthropic 协议不回放历史里的思考(见 [anthropicBody]),这里也就不算。
+     */
     override fun estimateTokens(request: AgentModelRequest): Int {
-        val chars = request.prompt.messages.sumOf { message ->
+        val replaysReasoning = replaysReasoning(wireProtocol)
+        val messages = request.prompt.messages.sumOf { message ->
             message.parts.sumOf { part ->
-                when (part) {
-                    is AgentTranscript.Part.Text -> part.text.length
-                    is AgentTranscript.Part.Reasoning -> part.text.length
-                    is AgentTranscript.Part.ToolCallPart -> part.toolCall.input.length + part.toolCall.toolName.length
-                    is AgentTranscript.Part.ToolResultPart -> part.toolResult.result.encodedString().length
-                    is AgentTranscript.Part.File -> 100
-                }
+                if (part is AgentTranscript.Part.Reasoning && !replaysReasoning) 0 else TokenEstimate.part(part)
             }
-        } + request.capabilities.sumOf { it.name.length + (it.description?.length ?: 0) + 80 }
-        return (chars / 4).coerceAtLeast(1)
+        }
+        return (messages + request.capabilities.sumOf(TokenEstimate::definition)).coerceAtLeast(1)
     }
 
     override fun stream(request: AgentModelRequest): Flow<AgentModelStreamEvent> = callbackFlow {
@@ -944,6 +944,14 @@ class OpenAICompatibleModelClient(
                 "$trimmed/$path"
             }
         }
+
+        /**
+         * 历史里助手消息的思考,这条协议会不会原样发回去。OpenAI 兼容走 `reasoning_content`,Gemini 走 thought 段,
+         * Anthropic 的 [anthropicBody] 直接丢掉。窗口估算([com.pinapia.vana.thread.ThreadWindow])按它算:
+         * 回放的要计入,没回放的不该白白挤占窗口。**改动任何一条协议的回放口径都要同步这里。**
+         */
+        fun replaysReasoning(wire: CloudCatalog.WireProtocol?): Boolean =
+            wire != CloudCatalog.WireProtocol.ANTHROPIC
 
         internal fun geminiEndpoint(base: String, model: String): String {
             val trimmed = base.trimEnd('/').removeSuffix("/v1beta")

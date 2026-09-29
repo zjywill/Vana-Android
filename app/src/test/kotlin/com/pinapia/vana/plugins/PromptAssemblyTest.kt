@@ -2,6 +2,7 @@ package com.pinapia.vana.plugins
 
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agentruntime.PluginContext
+import com.pinapia.vana.agentruntime.TokenEstimate
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.location.LocationSnapshot
 import com.pinapia.vana.measurements.MeasurementCard
@@ -157,6 +158,31 @@ class PromptAssemblyTest {
     private fun CloudEngine.everythingTheModelReads(): String =
         systemInstruction(acceptsInterjections = true) + "\n" +
             toolDefinitions().joinToString("\n") { "${it.name}\n${it.description}\n${it.inputSchema}" }
+
+    // ================= 0. 固定开销(窗口预算要先扣它) =================
+
+    @Test
+    fun requestOverheadIsTheSystemTextPlusTheToolDefinitionsAsTheyAreSent() {
+        val e = engine(env())
+        val expected = TokenEstimate.text(e.systemInstruction(acceptsInterjections = true)) +
+            e.toolDefinitions().sumOf(TokenEstimate::definition)
+        assertEquals(expected, e.requestOverheadTokens())
+    }
+
+    @Test
+    fun requestOverheadMeasuresTheSentJsonNotKotlinsDebugString() {
+        // inputSchema.toString() 是 ObjectValue(value={…StringValue(value=…这种外壳,比真正发出去的 JSON 长得多;
+        // 用它算会把窗口无谓地挤窄。
+        val e = engine(env())
+        val debugStyle = TokenEstimate.text(e.systemInstruction(acceptsInterjections = true)) +
+            e.toolDefinitions().sumOf { TokenEstimate.text((it.description ?: "") + it.inputSchema.toString()) }
+        assertTrue("按发出去的 JSON 算应当更小：${e.requestOverheadTokens()} vs $debugStyle", e.requestOverheadTokens() < debugStyle)
+    }
+
+    @Test
+    fun turningHealthOffShrinksTheFixedOverheadSoTheWindowCanHoldMoreConversation() {
+        assertTrue(engine(env(health = false)).requestOverheadTokens() < engine(env()).requestOverheadTokens())
+    }
 
     // ================= 1. 结构 =================
 

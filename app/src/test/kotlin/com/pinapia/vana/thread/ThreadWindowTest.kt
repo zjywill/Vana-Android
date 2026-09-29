@@ -1,5 +1,7 @@
 package com.pinapia.vana.thread
 
+import com.pinapia.vana.agentruntime.AgentTranscript
+import com.pinapia.vana.agentruntime.StoredAgentTurn
 import com.pinapia.vana.agentruntime.WindowPolicy
 import com.pinapia.vana.session.ChatMessage
 import org.junit.Assert.assertEquals
@@ -69,6 +71,52 @@ class ThreadWindowTest {
         val policy = WindowPolicy(budgetTokens = 1_000, minTailTurns = 4)
         val newStart = ThreadWindow.evict(messages, 0, policy)
         assertEquals("最近四轮必须留下", 4, ThreadWindow.turns(messages, newStart).size)
+    }
+
+    /** 一条带 exact transcript 的助手回答:回放给模型的思考在 transcript 里,界面上的 `reasoning` 是同一段的副本。 */
+    private fun assistantWithReasoning(answer: String, reasoning: String): ChatMessage {
+        val message = assistant(answer)
+        message.reasoning = reasoning
+        message.storedTurn = StoredAgentTurn(
+            exactTranscript = AgentTranscript(
+                messages = listOf(
+                    AgentTranscript.Message(
+                        role = AgentTranscript.Role.ASSISTANT,
+                        parts = listOf(AgentTranscript.Part.Reasoning(reasoning), AgentTranscript.Part.Text(answer)),
+                    ),
+                ),
+            ),
+        )
+        return message
+    }
+
+    @Test
+    fun replayedReasoningCountsTowardAMessageButOnlyOnceAndOnlyWhenTheProtocolReplaysIt() {
+        val plain = assistant("答")
+        val thoughtful = assistantWithReasoning("答", "想".repeat(300))
+        assertEquals(ThreadWindow.estimate(plain), ThreadWindow.estimate(thoughtful, replaysReasoning = false))
+        assertEquals(
+            "多出来的正好是思考那一份,界面上那份副本不能再算一遍",
+            ThreadWindow.estimate(plain) + 300,
+            ThreadWindow.estimate(thoughtful, replaysReasoning = true),
+        )
+    }
+
+    @Test
+    fun aTurnWithoutAnExactTranscriptHasNoReplayedReasoning() {
+        // 被停掉、失败的那轮回放走重建,里面没有思考——只有界面上那份副本,不该计入。
+        val stopped = assistant("答").also { it.reasoning = "想".repeat(300) }
+        assertEquals(ThreadWindow.estimate(assistant("答")), ThreadWindow.estimate(stopped))
+    }
+
+    @Test
+    fun reasoningModelsFillTheWindowSoonerAndTheWindowSlidesForIt() {
+        val messages = (1..12).flatMap {
+            listOf(user("问$it"), assistantWithReasoning("答$it", "想".repeat(400)))
+        }
+        val policy = WindowPolicy(budgetTokens = 3_000, minTailTurns = 3)
+        assertEquals("不回放思考的协议:12 轮还没满", 0, ThreadWindow.evict(messages, 0, policy, replaysReasoning = false))
+        assertTrue("回放思考的协议:同样的对话早就该滑了", ThreadWindow.evict(messages, 0, policy, replaysReasoning = true) > 0)
     }
 
     @Test

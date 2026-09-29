@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.pinapia.vana.agent.AgentError
 import com.pinapia.vana.agent.CloudEngine
 import com.pinapia.vana.agent.FollowUpSuggestionHook
+import com.pinapia.vana.agent.OpenAICompatibleModelClient
 import com.pinapia.vana.agent.UserFacingModelFailure
 import com.pinapia.vana.agentruntime.AgentHookDispatcher
 import com.pinapia.vana.agentruntime.AgentPendingInput
@@ -797,7 +798,7 @@ class ChatViewModel(
         var engine = resolveEngine()
         // 请求之前先看窗口该不该滑:固定开销(system 段、工具定义)先从预算里扣掉。
         // 滑动之后「有原文滑出去了」这件事变了,召回工具该不该挂也跟着变——所以要重新装配一次。
-        if (advanceWindow(force = false, overheadTokens = requestOverheadTokens(engine))) engine = resolveEngine()
+        if (advanceWindow(force = false, overheadTokens = engine.requestOverheadTokens())) engine = resolveEngine()
         val history = windowMessages().filterNot { it.isQueued }
         engine.reply(
             history = history,
@@ -992,11 +993,6 @@ class ChatViewModel(
     /** 这一轮请求里带的历史:窗口起点往后的全部。窗口之外的原文不发。 */
     private fun windowMessages(): List<ChatMessage> = _session.value.messages.drop(windowStartIndex())
 
-    /** system 段加工具定义占的位子。窗口预算按「整个请求」算,不是只算对话。 */
-    private fun requestOverheadTokens(engine: CloudEngine): Int =
-        ThreadWindow.estimateTokens(engine.systemInstruction()) +
-            engine.toolDefinitions().sumOf { ThreadWindow.estimateTokens((it.description ?: "") + it.inputSchema.toString()) }
-
     /**
      * 窗口滑不滑。涨到高水位才动,一次砍到低水位;[force] 是撞上上下文上限时的救援,只留最近两轮。
      * 返回窗口起点有没有前移。淘汰只前移游标(存进线程 meta),消息本身一条不删。
@@ -1009,7 +1005,11 @@ class ChatViewModel(
             ThreadWindow.forceEvict(messages, start, keepTurns = FORCED_KEEP_TURNS)
         } else {
             val contextWindow = CloudCatalog.model(engineSettings.model, engineSettings.providerId)?.contextWindow
-            ThreadWindow.evict(messages, start, WindowPolicy.forContext(contextWindow), overheadTokens)
+            // 历史里的思考会不会原样发回去,看当前这条协议。
+            val replaysReasoning = OpenAICompatibleModelClient.replaysReasoning(
+                CloudCatalog.provider(engineSettings.providerId)?.wireProtocol,
+            )
+            ThreadWindow.evict(messages, start, WindowPolicy.forContext(contextWindow), overheadTokens, replaysReasoning)
         }
         if (newStart == start || newStart !in messages.indices) return false
         windowStartId = messages[newStart].id

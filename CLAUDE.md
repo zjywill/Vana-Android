@@ -68,6 +68,12 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
   不逐条丢**——涨到高水位（预算 = 上下文的三成半，夹在 12k–32k）才动，一次砍到 40%；逐条丢会让请求前缀每轮都变，
   prompt 缓存整个失效。只在**轮边界**切，最近几轮不动，system 段和工具定义占的位子先从预算里扣。游标存在
   `meta.json`，淘汰只前移游标，**一条消息都不删**。撞上模型上下文上限时强制留最近两轮再试一次，不再说「开新对话」。
+  **估 token 只有一把尺子**（`TokenEstimate`，在 `:agent-runtime`）：窗口和上下文规划器共用，中文一字一 token、其余四字符一个，
+  宁可高估。别在别处再写一份 `chars / 4`——规划器以前就是这么对中文低估到四分之一的。窗口算一条消息占多少时，**历史里助手的
+  思考也要计入**（`ThreadWindow.estimate`）：OpenAI 兼容和 Gemini 协议会把它原样发回去，Anthropic 不发
+  （`OpenAICompatibleModelClient.replaysReasoning`，改任何一条协议的回放口径都要同步它）。固定开销（system 段 + 工具定义）
+  用 `CloudEngine.requestOverheadTokens()`，工具的参数说明按**发出去的 JSON** 算——`inputSchema.toString()` 是 Kotlin 调试输出，
+  比真实大一截，用它会把窗口白白挤窄。当前全开时这份开销约 8k token（关掉健康约 4k），所以 32k 上下文的模型窗口基本就是保底的 6 轮。
 - **聊天路径不主动摘要**（`CloudEngine` 里 `summarizer = null`）：历史 = 窗口 + 记忆 + 可检索的档案。递归摘要会漂，
   还多花一路钱。相邻两条隔 ≥6 小时，`HistoryMarkers` 在后一条用户消息前补一行确定性的时间标记；
   Vana 主动说的话（`ChatMessage.Origin` 非 NORMAL）不作为独立助手消息发出去，折进**下一条用户消息**开头——

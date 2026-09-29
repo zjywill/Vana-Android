@@ -241,8 +241,10 @@ class AgentLoop(
 
                     // 上下文超限走压缩,不走重试:原样再发一次还是塞不下。
                     if (ModelFailure.isContextOverflow(description)) {
-                        // 压过一次还是超,那就是真的放不下了。报一个用户能照着做的错(开新对话),
-                        // 而不是把 provider 那句 "prompt is too long: 210000 tokens" 甩给他。
+                        // 压过一次还是超,这一层就没招了。抛一个类型化的错,而不是把 provider 那句
+                        // "prompt is too long: 210000 tokens" 甩给上层——怎么收场由 app 定:一条永远的
+                        // 对话里没有「开新对话」可劝,聊天层会强制把窗口砍到最近两轮再跑一次
+                        // (ChatViewModel.runTurnShrinkingOnOverflow),砍不动才报给用户。
                         if (overflowRecoveryUsed) {
                             throw AgentLoopError.ContextWindowExceeded
                         }
