@@ -1,6 +1,6 @@
 {
   "id": "wandb",
-  "name": "Weights & Biases",
+  "name": "CoreWeave",
   "api": "https://api.inference.wandb.ai/v1",
   "adapter": "openai",
   "models": [
@@ -231,6 +231,42 @@
       }
     },
     {
+      "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "google/gemma-4-26B-A4B-it",
+      "name": "Gemma 4 26B A4B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "google/gemma-4-31B-it",
       "name": "Gemma 4 31B",
       "tool_call": true,
@@ -451,6 +487,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3-Flash",
+      "name": "GLM 5.3 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     }

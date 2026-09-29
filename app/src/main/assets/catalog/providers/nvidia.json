@@ -774,23 +774,6 @@
       }
     },
     {
-      "id": "moonshotai/kimi-k2-instruct-0905",
-      "name": "Kimi K2 0905",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "moonshotai/kimi-k2.6",
       "name": "Kimi K2.6",
       "tool_call": true,
@@ -1510,23 +1493,6 @@
       }
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT-OSS-120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "openai/gpt-oss-20b",
       "name": "GPT OSS 20B",
       "tool_call": true,
@@ -1804,6 +1770,43 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     }

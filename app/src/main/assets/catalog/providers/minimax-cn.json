@@ -1,7 +1,7 @@
 {
   "id": "minimax-cn",
-  "name": "MiniMax (minimaxi.com)",
-  "api": "https://api.minimaxi.com/anthropic/v1",
+  "name": "MiniMax (minimax.cn)",
+  "api": "https://api.minimax.cn/anthropic/v1",
   "adapter": "anthropic",
   "models": [
     {
@@ -114,7 +114,7 @@
         "supported": true
       },
       "limit": {
-        "context": 1048576,
+        "context": 1000000,
         "output": 512000
       },
       "modalities": {

@@ -1,0 +1,95 @@
+{
+  "id": "sensenova",
+  "name": "SenseNova (China)",
+  "api": "https://token.sensenova.cn/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "sensenova-6.8-flash-lite",
+      "name": "SenseNova 6.8 Flash Lite",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

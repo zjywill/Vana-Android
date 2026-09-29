@@ -258,8 +258,8 @@
         "supported": false
       },
       "limit": {
-        "context": 1047576,
-        "output": 32768
+        "context": 128000,
+        "output": 32000
       },
       "modalities": {
         "input": [
@@ -277,8 +277,8 @@
         "supported": true
       },
       "limit": {
-        "context": 400000,
-        "output": 128000
+        "context": 272000,
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -313,8 +313,8 @@
         "supported": true
       },
       "limit": {
-        "context": 400000,
-        "output": 128000
+        "context": 272000,
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -331,8 +331,8 @@
         "supported": true
       },
       "limit": {
-        "context": 400000,
-        "output": 128000
+        "context": 272000,
+        "output": 8192
       },
       "modalities": {
         "input": [

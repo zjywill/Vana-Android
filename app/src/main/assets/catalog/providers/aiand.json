@@ -99,7 +99,7 @@
     {
       "id": "motif-technologies/motif-3",
       "name": "Motif 3",
-      "tool_call": false,
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
@@ -151,8 +151,45 @@
       }
     },
     {
+      "id": "qwen/qwen3.8-27b",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "zai-org/glm-5.2",
       "name": "GLM-5.2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/glm-5.3",
+      "name": "GLM-5.3",
       "tool_call": true,
       "reasoning": {
         "supported": true

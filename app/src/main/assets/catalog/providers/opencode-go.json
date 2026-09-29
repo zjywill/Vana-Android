@@ -57,36 +57,20 @@
       }
     },
     {
-      "id": "glm-5",
-      "name": "GLM-5",
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 202752,
-        "output": 32768
+        "context": 1000000,
+        "output": 384000
       },
       "modalities": {
         "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5.1",
-      "name": "GLM-5.1",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 202752,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
@@ -126,7 +110,7 @@
     },
     {
       "id": "glm-5.3-flash",
-      "name": "GLM-5.3-Flash (2x usage)",
+      "name": "GLM-5.3-Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -147,6 +131,25 @@
     {
       "id": "gpt-5.6-luna",
       "name": "GPT-5.6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -200,15 +203,34 @@
       }
     },
     {
+      "id": "grok-4.7",
+      "name": "Grok 4.7",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "hy3",
-      "name": "Hy3 (8x usage)",
+      "name": "Hy3",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 256000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -230,25 +252,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "kimi-k2.5",
-      "name": "Kimi K2.5",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
         ]
       }
     },
@@ -327,39 +330,20 @@
       }
     },
     {
-      "id": "mimo-v2-omni",
-      "name": "MiMo V2 Omni",
+      "id": "longcat-2.5-preview-free",
+      "name": "LongCat 2.5 Preview Free",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 128000
+        "context": 1000000,
+        "output": 131072
       },
       "modalities": {
         "input": [
           "text",
-          "image",
-          "audio",
-          "pdf"
-        ]
-      }
-    },
-    {
-      "id": "mimo-v2-pro",
-      "name": "MiMo V2 Pro",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text"
+          "image"
         ]
       }
     },
@@ -401,19 +385,42 @@
       }
     },
     {
-      "id": "minimax-m2.5",
-      "name": "MiniMax-M2.5",
+      "id": "mimo-v2.6-flash",
+      "name": "MiMo-V2.6-Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 204800,
-        "output": 65536
+        "context": 1048576,
+        "output": 131072
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2.6-pro",
+      "name": "MiMo-V2.6-Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },
@@ -475,40 +482,23 @@
       }
     },
     {
-      "id": "ox-alpha-free",
-      "name": "Ox Alpha Free (Unlimited)",
+      "id": "muse-spark-1.3-contributor",
+      "name": "Muse Spark 1.3 Contributor",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1000000,
+        "context": 1048576,
         "output": 131072
       },
       "modalities": {
         "input": [
           "text",
           "image",
-          "video"
-        ]
-      }
-    },
-    {
-      "id": "qwen3.5-plus",
-      "name": "Qwen3.5 Plus",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
+          "video",
+          "pdf",
+          "audio"
         ]
       }
     },
@@ -596,6 +586,25 @@
       "limit": {
         "context": 1000000,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "space-bunny-free",
+      "name": "Space Bunny Free",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 524288
       },
       "modalities": {
         "input": [

@@ -56,6 +56,41 @@
       }
     },
     {
+      "id": "deepseek-v4-pro:0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "gemma4:31b",
       "name": "gemma4:31b",
       "tool_call": true,
@@ -99,6 +134,23 @@
       },
       "limit": {
         "context": 976000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
         "output": 131072
       },
       "modalities": {

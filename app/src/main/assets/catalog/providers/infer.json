@@ -1,0 +1,46 @@
+{
+  "id": "infer",
+  "name": "Infer by Flow7",
+  "api": "https://infer.flow7.org/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "infer/gpt-5.6-sol:official",
+      "name": "GPT-5.6 Sol (Official API)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 271999,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "infer/gpt-6-astra:official",
+      "name": "GPT-6 Astra (Official API)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 271999,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    }
+  ]
+}

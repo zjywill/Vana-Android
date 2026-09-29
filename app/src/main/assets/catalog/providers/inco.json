@@ -1,0 +1,137 @@
+{
+  "id": "inco",
+  "name": "Inco",
+  "api": "https://api.inco.ai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "deepseek-v4.1-flash:fast",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3-flash:fast",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3:fast",
+      "name": "GLM-5.3 Fast",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k3:fast",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "minimax-m3",
+      "name": "MiniMax-M3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 512000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "minimax-m3:fast",
+      "name": "MiniMax M3 Fast",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 512000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    }
+  ]
+}

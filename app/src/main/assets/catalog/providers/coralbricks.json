@@ -5,8 +5,8 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "glm-5.2-fp4",
-      "name": "GLM 5.2 FP4",
+      "id": "deepseek-v4.1-flash-fast-fp4",
+      "name": "DeepSeek V4.1 Flash FP4",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -17,30 +17,14 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
     {
-      "id": "gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "kimi-k3",
-      "name": "Kimi K3",
+      "id": "glm-5.3-flash-fp4",
+      "name": "GLM 5.3 Flash FP4",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -54,6 +38,23 @@
           "text",
           "image",
           "video"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3-fp4",
+      "name": "GLM 5.3 FP4",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
         ]
       }
     }

@@ -1,8 +1,8 @@
 {
-  "id": "kimi-for-coding",
-  "name": "Kimi For Coding",
-  "api": "https://api.kimi.com/coding/v1",
-  "adapter": "anthropic",
+  "id": "kimi-code-plan-global",
+  "name": "Kimi For Coding (kimi.ai)",
+  "api": "https://api.kimi.ai/coding/v1",
+  "adapter": "openai",
   "models": [
     {
       "id": "k3",
@@ -43,13 +43,13 @@
     },
     {
       "id": "kimi-for-coding",
-      "name": "Kimi K2.7 Code",
+      "name": "kimi-for-coding",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
+        "context": 1048576,
         "output": 32768
       },
       "modalities": {

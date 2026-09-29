@@ -5,7 +5,7 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "auto",
+      "id": "trustedrouter/auto",
       "name": "Auto",
       "tool_call": true,
       "reasoning": {
@@ -24,7 +24,7 @@
       }
     },
     {
-      "id": "cheap",
+      "id": "trustedrouter/cheap",
       "name": "Cheap",
       "tool_call": true,
       "reasoning": {
@@ -43,7 +43,7 @@
       }
     },
     {
-      "id": "e2e",
+      "id": "trustedrouter/e2e",
       "name": "End-to-End Encrypted",
       "tool_call": true,
       "reasoning": {
@@ -62,7 +62,7 @@
       }
     },
     {
-      "id": "fast",
+      "id": "trustedrouter/fast",
       "name": "Fast",
       "tool_call": true,
       "reasoning": {
@@ -81,7 +81,7 @@
       }
     },
     {
-      "id": "synth",
+      "id": "trustedrouter/synth",
       "name": "Synth",
       "tool_call": true,
       "reasoning": {
@@ -100,7 +100,7 @@
       }
     },
     {
-      "id": "synth-code",
+      "id": "trustedrouter/synth-code",
       "name": "Synth Code",
       "tool_call": true,
       "reasoning": {
@@ -119,7 +119,7 @@
       }
     },
     {
-      "id": "zdr",
+      "id": "trustedrouter/zdr",
       "name": "Zero Data Retention",
       "tool_call": true,
       "reasoning": {

@@ -22,6 +22,24 @@
       }
     },
     {
+      "id": "deepseek-v4-1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "tool_call": true,
@@ -117,6 +135,42 @@
       "limit": {
         "context": 1000000,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "fugu-ultra-v2-0",
+      "name": "Fugu Ultra v2.0",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "gemma-3-27b",
+      "name": "Gemma 3 27B",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -383,6 +437,66 @@
       }
     },
     {
+      "id": "mimo-v2-6-flash",
+      "name": "MiMo V2.6 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2-6-pro",
+      "name": "MiMo V2.6 Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2-6-pro-ultraspeed",
+      "name": "MiMo V2.6 Pro UltraSpeed",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "minimax-m2-7",
       "name": "MiniMax M2.7",
       "tool_call": true,
@@ -432,24 +546,6 @@
           "text",
           "image",
           "video"
-        ]
-      }
-    },
-    {
-      "id": "mistral-medium-3",
-      "name": "Mistral Medium 3",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 130000,
-        "output": 40000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
         ]
       }
     },
@@ -526,6 +622,25 @@
           "image",
           "video",
           "audio"
+        ]
+      }
+    },
+    {
+      "id": "muse-spark-1-3",
+      "name": "Muse Spark 1.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     },
@@ -885,6 +1000,45 @@
       }
     },
     {
+      "id": "qwen3-8-max-0902",
+      "name": "Qwen3.8 Max 0902",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "qwen3-8-omni-flash",
+      "name": "Qwen3.8 Omni Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "qwen3-max",
       "name": "Qwen3 Max",
       "tool_call": true,
@@ -1039,6 +1193,25 @@
       },
       "limit": {
         "context": 256000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "step-5-preview",
+      "name": "Step 5 Preview",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1024000,
         "output": 131072
       },
       "modalities": {

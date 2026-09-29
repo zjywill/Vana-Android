@@ -39,6 +39,24 @@
       }
     },
     {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "qvq-max",
       "name": "QVQ Max",
       "tool_call": true,
@@ -791,6 +809,25 @@
       }
     },
     {
+      "id": "qwen3.5-flash",
+      "name": "Qwen3.5 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "qwen3.5-plus",
       "name": "Qwen3.5 Plus",
       "tool_call": true,
@@ -905,6 +942,25 @@
       }
     },
     {
+      "id": "qwen3.7-flash",
+      "name": "Qwen3.7 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "qwen3.7-max",
       "name": "Qwen3.7 Max",
       "tool_call": true,
@@ -913,7 +969,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 65536
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -930,7 +986,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 65536
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -976,6 +1032,26 @@
           "image",
           "video",
           "pdf"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.8-omni-flash",
+      "name": "Qwen3.8 Omni Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },

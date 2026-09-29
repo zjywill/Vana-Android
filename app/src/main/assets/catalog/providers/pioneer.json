@@ -1,7 +1,7 @@
 {
   "id": "pioneer",
   "name": "Pioneer",
-  "api": "https://api.pioneer.ai/v1",
+  "api": "https://api.fastino.ai/v1",
   "adapter": "openai",
   "models": [
     {
@@ -461,6 +461,25 @@
       }
     },
     {
+      "id": "claude-opus-5-fast",
+      "name": "Claude Opus 5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-sonnet-4-5",
       "name": "Claude Sonnet 4.5 (latest)",
       "tool_call": true,
@@ -603,6 +622,24 @@
       }
     },
     {
+      "id": "devstral-small-2",
+      "name": "Devstral Small 2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 256000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "fastino/gliguard-LLMGuardrails-300M",
       "name": "GLiGuard LLM Guardrails 300M",
       "tool_call": true,
@@ -611,7 +648,24 @@
       },
       "limit": {
         "context": 8192,
-        "output": 4096
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "fastino/gliguard-PII-multi",
+      "name": "GLiNER2-Guardrails-PII-Multi",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 8192,
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -628,7 +682,7 @@
       },
       "limit": {
         "context": 8192,
-        "output": 4096
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -645,7 +699,7 @@
       },
       "limit": {
         "context": 8192,
-        "output": 4096
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -662,7 +716,7 @@
       },
       "limit": {
         "context": 8192,
-        "output": 4096
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -679,7 +733,7 @@
       },
       "limit": {
         "context": 8192,
-        "output": 4096
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -696,6 +750,23 @@
       },
       "limit": {
         "context": 8192,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "fastino/gliner2.5-multi-v1",
+      "name": "GLiNER 2.5 Multi",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 4096,
         "output": 4096
       },
       "modalities": {
@@ -1254,6 +1325,23 @@
       }
     },
     {
+      "id": "magistral-medium",
+      "name": "Magistral Medium (latest)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "meta-llama/Llama-3.1-8B-Instruct",
       "name": "Llama 3.1 8B Instruct",
       "tool_call": true,
@@ -1376,6 +1464,41 @@
       }
     },
     {
+      "id": "ministral-14b",
+      "name": "Ministral 14B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 256000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "ministral-3b",
+      "name": "Ministral 3B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 4000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "mistral-large-3",
       "name": "Mistral Large 3",
       "tool_call": true,
@@ -1385,6 +1508,24 @@
       "limit": {
         "context": 256000,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "mistral-medium",
+      "name": "Mistral Medium 3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -1572,6 +1713,25 @@
     },
     {
       "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "moonshotai/Kimi-K3-Fast",
       "name": "Kimi K3",
       "tool_call": true,
       "reasoning": {
@@ -1837,6 +1997,25 @@
       }
     },
     {
+      "id": "thinkingmachines/inkling-small",
+      "name": "Inkling Small",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ]
+      }
+    },
+    {
       "id": "zai-org/GLM-5.1",
       "name": "GLM-5.1",
       "tool_call": true,
@@ -1862,6 +2041,23 @@
       },
       "limit": {
         "context": 1040000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.2-Fast",
+      "name": "GLM-5.2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
         "output": 128000
       },
       "modalities": {

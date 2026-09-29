@@ -39,6 +39,24 @@
       }
     },
     {
+      "id": "alibaba/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "alibaba/glm-5",
       "name": "GLM-5 (Alibaba Cloud)",
       "tool_call": true,
@@ -73,6 +91,23 @@
       }
     },
     {
+      "id": "alibaba/glm-5.3",
+      "name": "GLM-5.3 (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "alibaba/kimi-k2.5",
       "name": "Kimi K2.5 (Alibaba Cloud)",
       "tool_call": true,
@@ -82,6 +117,25 @@
       "limit": {
         "context": 262144,
         "output": 98304
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/kimi-k3",
+      "name": "Kimi K3 (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -280,6 +334,66 @@
         "input": [
           "text",
           "image"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B A10B (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/qwen3.5-27b",
+      "name": "Qwen3.5 27B (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "alibaba/qwen3.5-35b-a3b",
+      "name": "Qwen3.5 35B A3B (Alibaba Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
         ]
       }
     },
@@ -490,6 +604,25 @@
       }
     },
     {
+      "id": "anthropic/claude-fable-5-1",
+      "name": "Claude Fable 5.1 (Anthropic)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "anthropic/claude-haiku-4-5",
       "name": "Claude Haiku 4.5 (Anthropic)",
       "tool_call": true,
@@ -623,6 +756,25 @@
       }
     },
     {
+      "id": "anthropic/claude-opus-5-5",
+      "name": "Claude Opus 5.5 (Anthropic)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "anthropic/claude-sonnet-4-5",
       "name": "Claude Sonnet 4.5 (Anthropic)",
       "tool_call": true,
@@ -699,8 +851,63 @@
       }
     },
     {
+      "id": "anthropic/claude-sonnet-5-5",
+      "name": "Claude Sonnet 5.5 (Anthropic)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "atria/atria-dawn-preview",
+      "name": "Atria Dawn Preview (Atria)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "aws-bedrock/claude-fable-5",
       "name": "Claude Fable 5 (AWS Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "aws-bedrock/claude-fable-5-1",
+      "name": "Claude Fable 5.1 (AWS Bedrock)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1042,7 +1249,7 @@
         "supported": true
       },
       "limit": {
-        "context": 278528,
+        "context": 921600,
         "output": 128000
       },
       "modalities": {
@@ -1061,7 +1268,7 @@
         "supported": true
       },
       "limit": {
-        "context": 278528,
+        "context": 921600,
         "output": 128000
       },
       "modalities": {
@@ -1080,7 +1287,26 @@
         "supported": true
       },
       "limit": {
-        "context": 278528,
+        "context": 921600,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "aws-mantle/gpt-6-astra",
+      "name": "GPT-6 Astra (AWS Mantle)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
         "output": 128000
       },
       "modalities": {
@@ -1716,6 +1942,63 @@
       }
     },
     {
+      "id": "azure/gpt-6-astra",
+      "name": "GPT-6 Astra (Azure)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "azure/gpt-6-luna",
+      "name": "GPT-6 Luna (Azure)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "azure/gpt-6-sol",
+      "name": "GPT-6 Sol (Azure)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "azure/gpt-oss-120b",
       "name": "GPT OSS 120B (Azure)",
       "tool_call": true,
@@ -1836,6 +2119,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "baidu/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Baidu)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -2101,6 +2402,78 @@
       }
     },
     {
+      "id": "bytedance/seed-2-0-code-preview-260328",
+      "name": "Seed 2.0 Code Preview (260328) (ByteDance)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/seed-2-0-lite-260428",
+      "name": "Seed 2.0 Lite (260428) (ByteDance)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/seed-2-0-mini-260428",
+      "name": "Seed 2.0 Mini (260428) (ByteDance)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "bytedance/seed-2-0-pro-260328",
+      "name": "Seed 2.0 Pro (260328) (ByteDance)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "canopywave/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash (CanopyWave)",
       "tool_call": true,
@@ -2276,6 +2649,24 @@
       }
     },
     {
+      "id": "consensusprotocol/Qwen3.8-27B",
+      "name": "Qwen3.8 27B (Consensus Protocol)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 32768,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "consensusprotocol/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash (Consensus Protocol)",
       "tool_call": true,
@@ -2285,6 +2676,78 @@
       "limit": {
         "context": 524288,
         "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "consensusprotocol/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Consensus Protocol)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "consensusprotocol/gemma-4-31b-it",
+      "name": "Gemma 4 31B IT (Consensus Protocol)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "consensusprotocol/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Consensus Protocol)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "consensusprotocol/gpt-oss-20b",
+      "name": "GPT OSS 20B (Consensus Protocol)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 65536,
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -2344,6 +2807,24 @@
       }
     },
     {
+      "id": "deepinfra/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "deepinfra/gemma-4-26b-a4b-it",
       "name": "Gemma 4 26B A4B IT (DeepInfra)",
       "tool_call": true,
@@ -2395,6 +2876,23 @@
       }
     },
     {
+      "id": "deepinfra/granite-4.2-8b",
+      "name": "Granite 4.2 8B (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 117964
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "deepinfra/hy3",
       "name": "Hy3 (DeepInfra)",
       "tool_call": true,
@@ -2412,21 +2910,21 @@
       }
     },
     {
-      "id": "deepinfra/kimi-k2.5",
-      "name": "Kimi K2.5 (DeepInfra)",
-      "tool_call": true,
+      "id": "deepinfra/inkling",
+      "name": "Inkling (DeepInfra)",
+      "tool_call": false,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 256000,
-        "output": 131072
+        "context": 524288,
+        "output": 262144
       },
       "modalities": {
         "input": [
           "text",
           "image",
-          "video"
+          "audio"
         ]
       }
     },
@@ -2444,6 +2942,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/ling-3.0-flash-vl",
+      "name": "Ling 3.0 Flash VL (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -2481,6 +2997,64 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/mimo-v2.6-flash",
+      "name": "MiMo V2.6 Flash (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/mimo-v2.6-pro",
+      "name": "MiMo V2.6 Pro (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/muse-glimmer-30b",
+      "name": "Muse Glimmer 30B (DeepInfra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -2556,15 +3130,15 @@
       }
     },
     {
-      "id": "deepseek/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash (DeepSeek)",
+      "id": "deepinfra/qwen3.8-2.4t-a95b",
+      "name": "Qwen3.8 2.4T A95B (DeepInfra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1050000,
-        "output": 393216
+        "context": 262144,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -2573,20 +3147,21 @@
       }
     },
     {
-      "id": "deepseek/deepseek-v4-flash-vision-exp",
-      "name": "DeepSeek V4 Flash Vision Exp (DeepSeek)",
+      "id": "deepinfra/step-3.7-flash",
+      "name": "Step 3.7 Flash (DeepInfra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1050000,
-        "output": 393216
+        "context": 262144,
+        "output": 32768
       },
       "modalities": {
         "input": [
           "text",
-          "image"
+          "image",
+          "video"
         ]
       }
     },
@@ -2604,6 +3179,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (DeepSeek)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -2795,6 +3388,61 @@
       }
     },
     {
+      "id": "fireworks/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Fireworks AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "fireworks/glm-5.3",
+      "name": "GLM-5.3 (Fireworks AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "fireworks/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Fireworks AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "fireworks/kimi-k3",
       "name": "Kimi K3 (Fireworks AI)",
       "tool_call": true,
@@ -2850,15 +3498,15 @@
       }
     },
     {
-      "id": "gonka24/kimi-k2.6",
-      "name": "Kimi K2.6 (Gonka24)",
+      "id": "gonka24/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Gonka24)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 98304
+        "context": 200000,
+        "output": 16384
       },
       "modalities": {
         "input": [
@@ -3075,6 +3723,27 @@
     {
       "id": "google-ai-studio/gemini-3.7-flash",
       "name": "Gemini 3.7 Flash (Google AI Studio)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "google-ai-studio/gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash (Google AI Studio)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3323,6 +3992,25 @@
       }
     },
     {
+      "id": "google-vertex/gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash (Google Vertex AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ]
+      }
+    },
+    {
       "id": "groq/gpt-oss-120b",
       "name": "GPT OSS 120B (Groq)",
       "tool_call": true,
@@ -3357,6 +4045,43 @@
       }
     },
     {
+      "id": "inference.net/glm-5.3",
+      "name": "GLM-5.3 (Inference.net)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "inference.net/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Inference.net)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "inference.net/llama-3.2-11b-instruct",
       "name": "Llama 3.2 11B Instruct (Inference.net)",
       "tool_call": false,
@@ -3370,6 +4095,42 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "meta-contributor/muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor (Meta Contributor)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "meta-contributor/muse-spark-1.3-contributor",
+      "name": "Muse Spark 1.3 Contributor (Meta Contributor)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -3403,6 +4164,27 @@
       "limit": {
         "context": 1048576,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "meta/muse-spark-1.3",
+      "name": "Muse Spark 1.3 (Meta)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -3604,6 +4386,23 @@
       }
     },
     {
+      "id": "mistral/glm-5.3",
+      "name": "GLM-5.3 (Mistral AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "mistral/ministral-14b-2512",
       "name": "Ministral 14B (Mistral AI)",
       "tool_call": false,
@@ -3693,6 +4492,24 @@
       }
     },
     {
+      "id": "mistral/mistral-medium-3-5",
+      "name": "Mistral Medium 3.5 (Mistral AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "mistral/mistral-small-2506",
       "name": "Mistral Small 3.2 (Mistral AI)",
       "tool_call": false,
@@ -3702,6 +4519,24 @@
       "limit": {
         "context": 128000,
         "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "mistral/mistral-small-2603",
+      "name": "Mistral Small 4 (Mistral AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 262144,
+        "output": 256000
       },
       "modalities": {
         "input": [
@@ -3806,440 +4641,6 @@
       }
     },
     {
-      "id": "nebius/cosmos3-super-reasoner",
-      "name": "Cosmos 3 Super Reasoner (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "nebius/deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/gemma-3-27b",
-      "name": "Gemma 3 27B (Nebius AI)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 110000,
-        "output": 110000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "nebius/glm-5.1",
-      "name": "GLM-5.1 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 202752,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/glm-5.2",
-      "name": "GLM-5.2 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/gpt-oss-120b",
-      "name": "GPT OSS 120B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/hermes-4-405b",
-      "name": "Hermes 4 405B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/hermes-4-70b",
-      "name": "Hermes 4 70B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/kimi-k2.6",
-      "name": "Kimi K2.6 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ]
-      }
-    },
-    {
-      "id": "nebius/kimi-k2.7-code",
-      "name": "Kimi K2.7 Code (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/kimi-k3",
-      "name": "Kimi K3 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 1048576
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ]
-      }
-    },
-    {
-      "id": "nebius/llama-3.1-nemotron-ultra-253b",
-      "name": "Llama 3.1 Nemotron Ultra 253B (Nebius AI)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/llama-3.3-70b-instruct",
-      "name": "Llama 3.3 70B Instruct (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 128000,
-        "output": 4096
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/minicpm-v-4.5",
-      "name": "MiniCPM-V 4.5 (Nebius AI)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 32000,
-        "output": 32000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "nebius/minimax-m2.5",
-      "name": "MiniMax M2.5 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 196608,
-        "output": 131100
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/minimax-m3",
-      "name": "MiniMax M3 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 512000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/nemotron-3-nano-30b",
-      "name": "Nemotron 3 Nano 30B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/nemotron-3-nano-omni",
-      "name": "Nemotron 3 Nano Omni (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "nebius/nemotron-3-super-120b",
-      "name": "Nemotron 3 Super 120B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/nemotron-3-ultra-550b",
-      "name": "Nemotron 3 Ultra 550B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 1048576
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/qwen2-5-vl-72b-instruct",
-      "name": "Qwen2.5 VL 72B Instruct (Nebius AI)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 32000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "nebius/qwen3-235b-a22b-instruct-2507",
-      "name": "Qwen3 235B A22B Instruct 2507 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/qwen3-30b-a3b-instruct-2507",
-      "name": "Qwen3 30B A3B Instruct 2507 (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/qwen3-32b",
-      "name": "Qwen3 32B (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 40960,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nebius/qwen3-next-80b-a3b-thinking",
-      "name": "Qwen3 Next 80B A3B Thinking (Nebius AI)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "novita/deepseek-v3.2",
       "name": "DeepSeek V3.2 (NovitaAI)",
       "tool_call": true,
@@ -4270,6 +4671,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "novita/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (NovitaAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -4462,6 +4881,26 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "novita/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (NovitaAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },
@@ -4922,6 +5361,26 @@
       }
     },
     {
+      "id": "novita/qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B A10B (NovitaAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
       "id": "novita/qwen3.6-35b-a3b",
       "name": "Qwen3.6 35B A3B (NovitaAI)",
       "tool_call": true,
@@ -4951,6 +5410,23 @@
       "limit": {
         "context": 1000000,
         "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "novita/qwen3.8-2.4t-a95b",
+      "name": "Qwen3.8 2.4T A95B (NovitaAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -5027,6 +5503,25 @@
         "input": [
           "text",
           "image"
+        ]
+      }
+    },
+    {
+      "id": "novita/step-3.7-flash",
+      "name": "Step 3.7 Flash (NovitaAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 256000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     },
@@ -5525,6 +6020,62 @@
       }
     },
     {
+      "id": "openai/gpt-6-astra",
+      "name": "GPT-6 Astra (OpenAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "openai/gpt-6-luna",
+      "name": "GPT-6 Luna (OpenAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "openai/gpt-6-sol",
+      "name": "GPT-6 Sol (OpenAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "openai/o1",
       "name": "o1 (OpenAI)",
       "tool_call": false,
@@ -5615,40 +6166,6 @@
       }
     },
     {
-      "id": "perplexity/sonar-pro",
-      "name": "Sonar Pro (Perplexity)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 200000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "perplexity/sonar-reasoning-pro",
-      "name": "Sonar Reasoning Pro (Perplexity)",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 128000,
-        "output": 4096
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "quartz/gemini-3.1-pro-preview",
       "name": "Gemini 3.1 Pro (Preview) (Quartz)",
       "tool_call": true,
@@ -5687,6 +6204,25 @@
       }
     },
     {
+      "id": "runpod/kimi-k3",
+      "name": "Kimi K3 (Runpod)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "runware/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash (Runware)",
       "tool_call": true,
@@ -5717,6 +6253,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "runware/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Runware)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -5752,6 +6306,43 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "runware/glm-5.3",
+      "name": "GLM-5.3 (Runware)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "runware/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Runware)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },
@@ -5792,6 +6383,43 @@
       }
     },
     {
+      "id": "runware/kimi-k3",
+      "name": "Kimi K3 (Runware)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "sakana/fugu-max",
+      "name": "Fugu Max (Sakana AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 1000000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "sakana/fugu-ultra",
       "name": "Fugu Ultra (Sakana AI)",
       "tool_call": true,
@@ -5806,6 +6434,41 @@
         "input": [
           "text",
           "image"
+        ]
+      }
+    },
+    {
+      "id": "sakana/fugu-ultra-v2.0",
+      "name": "Fugu Ultra v2.0 (Sakana AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 1000000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "scx-ai-gp/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (SCX.ai)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
         ]
       }
     },
@@ -5873,7 +6536,10 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },
@@ -6021,6 +6687,308 @@
       }
     },
     {
+      "id": "tencent/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/glm-5",
+      "name": "GLM-5 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/glm-5-turbo",
+      "name": "GLM-5 Turbo (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/glm-5.1",
+      "name": "GLM-5.1 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/glm-5.2",
+      "name": "GLM-5.2 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/glm-5v-turbo",
+      "name": "GLM-5V Turbo (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "tencent/hy-mt2-plus",
+      "name": "Hy-MT2 Plus (Tencent Cloud)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 8192,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/hy3",
+      "name": "Hy3 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/hy4-preview",
+      "name": "Hy4 Preview (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/kimi-k2.6",
+      "name": "Kimi K2.6 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "tencent/kimi-k2.7-code",
+      "name": "Kimi K2.7 Code (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "tencent/kimi-k2.7-code-highspeed",
+      "name": "Kimi K2.7 Code Highspeed (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "tencent/kimi-k3",
+      "name": "Kimi K3 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "tencent/mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/minimax-m2.7",
+      "name": "MiniMax M2.7 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "tencent/minimax-m3",
+      "name": "MiniMax M3 (Tencent Cloud)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "together-ai/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash (Together AI)",
       "tool_call": true,
@@ -6055,19 +7023,20 @@
       }
     },
     {
-      "id": "together-ai/gemma-4-31b-it",
-      "name": "Gemma 4 31B IT (Together AI)",
+      "id": "together-ai/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 32768
+        "context": 1048576,
+        "output": 393216
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
@@ -6089,15 +7058,15 @@
       }
     },
     {
-      "id": "together-ai/gpt-oss-120b",
-      "name": "GPT OSS 120B (Together AI)",
+      "id": "together-ai/glm-5.3",
+      "name": "GLM-5.3 (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 131072,
-        "output": 32768
+        "context": 1048576,
+        "output": 943717
       },
       "modalities": {
         "input": [
@@ -6106,8 +7075,28 @@
       }
     },
     {
-      "id": "together-ai/gpt-oss-20b",
-      "name": "GPT OSS 20B (Together AI)",
+      "id": "together-ai/glm-5.3-flash",
+      "name": "GLM-5.3 Flash (Together AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 943717
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "together-ai/gpt-oss-120b",
+      "name": "GPT OSS 120B (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -6151,6 +7140,41 @@
       "limit": {
         "context": 524288,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "together-ai/muse-glimmer-30b",
+      "name": "Muse Glimmer 30B (Together AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 117964
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "together-ai/qwen3.8-2.4t-a95b",
+      "name": "Qwen3.8 2.4T A95B (Together AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1010000,
+        "output": 909000
       },
       "modalities": {
         "input": [
@@ -6590,6 +7614,24 @@
       }
     },
     {
+      "id": "xai/grok-4-7",
+      "name": "Grok 4.7 (xAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "xai/grok-build-0-1",
       "name": "Grok Build 0.1 (xAI)",
       "tool_call": true,
@@ -6641,6 +7683,46 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "xiaomi/mimo-v2.6-flash",
+      "name": "MiMo V2.6 Flash (Xiaomi)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "xiaomi/mimo-v2.6-pro",
+      "name": "MiMo V2.6 Pro (Xiaomi)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },
@@ -6917,7 +7999,10 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     }

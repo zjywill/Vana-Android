@@ -13,7 +13,7 @@
       },
       "limit": {
         "context": 196608,
-        "output": 196608
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -23,14 +23,14 @@
     },
     {
       "id": "deepseek-ai/DeepSeek-V3.2",
-      "name": "DeepSeek-V3.2",
+      "name": "DeepSeek V3.2",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 163840,
-        "output": 163840
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -65,7 +65,7 @@
       },
       "limit": {
         "context": 202752,
-        "output": 202752
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -81,12 +81,48 @@
         "supported": true
       },
       "limit": {
-        "context": 1000000,
+        "context": 1048576,
         "output": 131072
       },
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     }

@@ -24,6 +24,44 @@
       }
     },
     {
+      "id": "claude-fable-5.1",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "claude-fable-5.1@eu",
+      "name": "Claude Fable 5.1 (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-fable-5@eu",
       "name": "Claude Fable 5 (EU)",
       "tool_call": true,
@@ -271,6 +309,44 @@
       }
     },
     {
+      "id": "claude-opus-5-5",
+      "name": "Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "claude-opus-5-5@eu",
+      "name": "Claude Opus 5.5 (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-opus-5@eu",
       "name": "Claude Opus 5 (EU)",
       "tool_call": true,
@@ -430,8 +506,8 @@
         "supported": false
       },
       "limit": {
-        "context": 1000000,
-        "output": 384000
+        "context": 1048576,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -444,7 +520,7 @@
       "name": "DeepSeek V4 Flash 0731",
       "tool_call": true,
       "reasoning": {
-        "supported": true
+        "supported": false
       },
       "limit": {
         "context": 1048576,
@@ -482,7 +558,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 384000
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -508,6 +584,23 @@
       }
     },
     {
+      "id": "deepseek-v4-pro-0813@eu",
+      "name": "DeepSeek V4 Pro 0813 (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "deepseek-v4-pro@eu",
       "name": "DeepSeek V4 Pro (EU)",
       "tool_call": true,
@@ -521,6 +614,42 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash@eu",
+      "name": "DeepSeek V4.1 Flash (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -577,8 +706,50 @@
       }
     },
     {
+      "id": "gemini-2.5-flash-lite@eu",
+      "name": "Gemini 2.5 Flash-Lite (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65535
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gemini-2.5-flash@eu",
       "name": "Gemini 2.5 Flash (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65535
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gemini-2.5-pro@eu",
+      "name": "Gemini 2.5 Pro (EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -846,6 +1017,48 @@
       }
     },
     {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65535
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gemini-3.8-flash@eu",
+      "name": "Gemini 3.8 Flash (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65535
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gemma-4-26b-a4b-it",
       "name": "Gemma 4 26B A4B IT",
       "tool_call": true,
@@ -974,8 +1187,8 @@
         "supported": true
       },
       "limit": {
-        "context": 1000000,
-        "output": 128000
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -992,7 +1205,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 128000
+        "output": 262144
       },
       "modalities": {
         "input": [
@@ -1161,24 +1374,6 @@
       "limit": {
         "context": 400000,
         "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "gpt-5.3-chat",
-      "name": "gpt-5.3-chat",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 16384
       },
       "modalities": {
         "input": [
@@ -1484,6 +1679,101 @@
         "input": [
           "text",
           "image"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna@eu",
+      "name": "GPT-6 Luna (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-sol@eu",
+      "name": "GPT-6 Sol (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
         ]
       }
     },
@@ -1917,6 +2207,46 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2.6-flash",
+      "name": "MiMo-V2.6-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2.6-pro",
+      "name": "MiMo-V2.6-Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },
@@ -2458,6 +2788,80 @@
       }
     },
     {
+      "id": "qwen3.8-2.4T-A95B@eu",
+      "name": "Qwen3.8 2.4T A95B (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.8-flash",
+      "name": "Qwen3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.8-flash-next",
+      "name": "Qwen3.8 Flash Next",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.8-flash-next@eu",
+      "name": "Qwen3.8 Flash Next (EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "qwen3.8-max",
       "name": "Qwen3.8 Max",
       "tool_call": true,
@@ -2585,40 +2989,6 @@
           "text",
           "image",
           "video"
-        ]
-      }
-    },
-    {
-      "id": "thinkingcap-qwen3.6-27b",
-      "name": "thinkingcap-qwen3.6-27b",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "thinkingcap-qwen3.6-27b@eu",
-      "name": "thinkingcap-qwen3.6-27b@eu",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
         ]
       }
     }

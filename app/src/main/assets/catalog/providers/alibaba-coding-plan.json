@@ -145,25 +145,6 @@
       }
     },
     {
-      "id": "qwen3.6-flash",
-      "name": "Qwen3.6 Flash",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1000000,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
-        ]
-      }
-    },
-    {
       "id": "qwen3.6-plus",
       "name": "Qwen3.6 Plus",
       "tool_call": true,
@@ -179,23 +160,6 @@
           "text",
           "image",
           "video"
-        ]
-      }
-    },
-    {
-      "id": "qwen3.7-max",
-      "name": "Qwen3.7 Max",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1000000,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text"
         ]
       }
     },

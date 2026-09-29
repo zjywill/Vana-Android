@@ -24,6 +24,25 @@
       }
     },
     {
+      "id": "claude-fable-5.1",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-haiku-4.5",
       "name": "Claude Haiku 4.5 (latest)",
       "tool_call": true,
@@ -33,44 +52,6 @@
       "limit": {
         "context": 200000,
         "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "pdf"
-        ]
-      }
-    },
-    {
-      "id": "claude-opus-4.5",
-      "name": "Claude Opus 4.5 (latest)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 32000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "pdf"
-        ]
-      }
-    },
-    {
-      "id": "claude-opus-4.6",
-      "name": "Claude Opus 4.6",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 32000
       },
       "modalities": {
         "input": [
@@ -138,34 +119,15 @@
       }
     },
     {
-      "id": "claude-sonnet-4",
-      "name": "Claude Sonnet 4 (latest)",
+      "id": "claude-opus-5.5",
+      "name": "Claude Opus 5.5",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 216000,
-        "output": 16000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "pdf"
-        ]
-      }
-    },
-    {
-      "id": "claude-sonnet-4.5",
-      "name": "Claude Sonnet 4.5 (latest)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 32000
+        "context": 1000000,
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -209,27 +171,6 @@
         "input": [
           "text",
           "image",
-          "pdf"
-        ]
-      }
-    },
-    {
-      "id": "gemini-3.1-pro-preview",
-      "name": "Gemini 3.1 Pro Preview",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1000000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video",
-          "audio",
           "pdf"
         ]
       }
@@ -293,21 +234,20 @@
       }
     },
     {
-      "id": "gpt-4.1",
-      "name": "GPT-4.1",
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
       "tool_call": true,
       "reasoning": {
-        "supported": false
+        "supported": true
       },
       "limit": {
-        "context": 128000,
-        "output": 16384
+        "context": 1000000,
+        "output": 64000
       },
       "modalities": {
         "input": [
           "text",
-          "image",
-          "pdf"
+          "image"
         ]
       }
     },
@@ -326,43 +266,6 @@
         "input": [
           "text",
           "image"
-        ]
-      }
-    },
-    {
-      "id": "gpt-5.2",
-      "name": "GPT-5.2",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 400000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "gpt-5.2-codex",
-      "name": "GPT-5.2 Codex",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 400000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "pdf"
         ]
       }
     },
@@ -517,6 +420,63 @@
       }
     },
     {
+      "id": "gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "grok-4.5",
       "name": "Grok 4.5",
       "tool_call": true,
@@ -549,6 +509,25 @@
         "input": [
           "text",
           "image"
+        ]
+      }
+    },
+    {
+      "id": "grok-4.7",
+      "name": "Grok 4.7",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
         ]
       }
     },

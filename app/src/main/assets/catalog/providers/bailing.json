@@ -1,7 +1,7 @@
 {
   "id": "bailing",
   "name": "Bailing",
-  "api": "https://api.tbox.cn/api/llm/v1/chat/completions",
+  "api": "https://api.tbox.cn/api/llm/v1",
   "adapter": "openai",
   "models": [
     {

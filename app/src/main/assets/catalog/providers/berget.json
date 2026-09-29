@@ -5,6 +5,24 @@
   "adapter": "openai",
   "models": [
     {
+      "id": "Qwen/Qwen3.8-27B-FP8",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "google/gemma-4-31B-it",
       "name": "Gemma 4 31B Instruct",
       "tool_call": true,
@@ -25,41 +43,6 @@
       }
     },
     {
-      "id": "meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama 3.3 70B Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "mistralai/Mistral-Medium-3.5-128B",
-      "name": "Mistral Medium 3.5 128B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "image",
-          "text"
-        ]
-      }
-    },
-    {
       "id": "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
       "name": "Mistral Small 3.2 24B Instruct 2506",
       "tool_call": true,
@@ -73,25 +56,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "moonshotai/Kimi-K2.6",
-      "name": "Kimi K2.6",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video"
         ]
       }
     },
@@ -114,40 +78,6 @@
       }
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT-OSS-120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "zai-org/GLM-4.7",
-      "name": "GLM 4.7",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "zai-org/GLM-5.2",
       "name": "GLM-5.2",
       "tool_call": true,
@@ -161,6 +91,25 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     }

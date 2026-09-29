@@ -5,23 +5,6 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "DeepSeek-V3.2",
-      "name": "DeepSeek V3.2",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "DeepSeek-V4-Flash",
       "name": "DeepSeek V4 Flash",
       "tool_call": true,
@@ -90,6 +73,23 @@
       }
     },
     {
+      "id": "DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "GLM-5",
       "name": "GLM-5",
       "tool_call": true,
@@ -137,6 +137,43 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "GLM-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },
@@ -211,23 +248,6 @@
       }
     },
     {
-      "id": "MiMo-V2.5-Pro",
-      "name": "MiMo-V2.5-Pro",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "MiniMax-M2.5",
       "name": "MiniMax-M2.5",
       "tool_call": true,
@@ -275,6 +295,25 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "Qwen3.8-Flash",
+      "name": "Qwen3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     },

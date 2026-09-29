@@ -46,7 +46,7 @@
         "supported": true
       },
       "limit": {
-        "context": 1310720,
+        "context": 1048576,
         "output": 1048576
       },
       "modalities": {
@@ -443,8 +443,8 @@
         "supported": true
       },
       "limit": {
-        "context": 1310720,
-        "output": 1310720
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -460,8 +460,8 @@
         "supported": true
       },
       "limit": {
-        "context": 1310720,
-        "output": 1310720
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [

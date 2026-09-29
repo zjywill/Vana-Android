@@ -1,0 +1,167 @@
+{
+  "id": "oci",
+  "name": "OCI Generative AI",
+  "api": "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/openai/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "meta.llama-3.3-70b-instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "meta.llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama 4 Maverick 17B Instruct",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 512000,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "meta.llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B Instruct",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 192000,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "openai.gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "openai.gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "xai.grok-4.20-non-reasoning",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai.grok-4.20-reasoning",
+      "name": "Grok 4.20 (Reasoning)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai.grok-4.3",
+      "name": "Grok 4.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai.grok-4.6",
+      "name": "Grok 4.6",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

@@ -41,6 +41,24 @@
       }
     },
     {
+      "id": "hf:deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "hf:moonshotai/Kimi-K2.7-Code",
       "name": "Kimi K2.7 Code",
       "tool_call": true,
@@ -141,6 +159,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "hf:zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     }

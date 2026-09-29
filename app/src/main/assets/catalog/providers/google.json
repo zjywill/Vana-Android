@@ -54,8 +54,8 @@
         "supported": true
       },
       "limit": {
-        "context": 131072,
-        "output": 65536
+        "context": 128000,
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -208,7 +208,7 @@
         "supported": true
       },
       "limit": {
-        "context": 131072,
+        "context": 65536,
         "output": 32768
       },
       "modalities": {
@@ -244,8 +244,8 @@
         "supported": true
       },
       "limit": {
-        "context": 65536,
-        "output": 65536
+        "context": 131072,
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -305,7 +305,7 @@
       },
       "limit": {
         "context": 65536,
-        "output": 65536
+        "output": 4096
       },
       "modalities": {
         "input": [
@@ -516,6 +516,27 @@
       }
     },
     {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gemini-embedding-001",
       "name": "Gemini Embedding 001",
       "tool_call": false,
@@ -611,26 +632,6 @@
           "text",
           "image",
           "video"
-        ]
-      }
-    },
-    {
-      "id": "gemini-robotics-er-1.6-preview",
-      "name": "Gemini Robotics-ER 1.6 Preview",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video",
-          "audio"
         ]
       }
     },

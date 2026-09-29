@@ -1,0 +1,42 @@
+{
+  "id": "ai21",
+  "name": "AI21 Labs",
+  "api": "https://api.ai21.com/studio/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "jamba-large",
+      "name": "Jamba Large",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 256000,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "jamba-mini",
+      "name": "Jamba Mini",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 256000,
+        "output": 4096
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

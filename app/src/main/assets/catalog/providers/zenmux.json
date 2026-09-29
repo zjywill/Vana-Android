@@ -61,6 +61,25 @@
       }
     },
     {
+      "id": "anthropic/claude-fable-5.1",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "anthropic/claude-haiku-4.5",
       "name": "Claude Haiku 4.5",
       "tool_call": true,
@@ -175,6 +194,25 @@
     {
       "id": "anthropic/claude-opus-4.8",
       "name": "Claude Opus 4.8",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "anthropic/claude-opus-5.5",
+      "name": "Claude Opus 5.5",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -386,6 +424,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -870,6 +926,25 @@
       }
     },
     {
+      "id": "moonshotai/kimi-k2.7-code-highspeed",
+      "name": "Kimi K2.7 Code HighSpeed",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "moonshotai/kimi-k3",
       "name": "Kimi K3",
       "tool_call": true,
@@ -1294,6 +1369,44 @@
       }
     },
     {
+      "id": "openai/gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "openai/gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "qwen/qwen3-coder-plus",
       "name": "Qwen3-Coder-Plus",
       "tool_call": true,
@@ -1653,83 +1766,11 @@
       }
     },
     {
-      "id": "x-ai/grok-4",
-      "name": "Grok 4",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 256000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "image",
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "x-ai/grok-4-fast",
-      "name": "Grok 4 Fast",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 2000000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "x-ai/grok-4.1-fast",
-      "name": "Grok 4.1 Fast",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 2000000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "x-ai/grok-4.1-fast-non-reasoning",
-      "name": "Grok 4.1 Fast Non Reasoning",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 2000000,
-        "output": 64000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
       "id": "x-ai/grok-4.2-fast",
       "name": "Grok 4.2 Fast",
       "tool_call": true,
       "reasoning": {
-        "supported": true
+        "supported": false
       },
       "limit": {
         "context": 2000000,
@@ -1738,8 +1779,7 @@
       "modalities": {
         "input": [
           "text",
-          "image",
-          "video"
+          "image"
         ]
       }
     },
@@ -1757,8 +1797,7 @@
       "modalities": {
         "input": [
           "text",
-          "image",
-          "video"
+          "image"
         ]
       }
     },
@@ -1801,11 +1840,29 @@
       }
     },
     {
+      "id": "x-ai/grok-4.6",
+      "name": "Grok 4.6",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "x-ai/grok-build-0.1",
       "name": "Grok Build 0.1",
       "tool_call": true,
       "reasoning": {
-        "supported": true
+        "supported": false
       },
       "limit": {
         "context": 256000,
@@ -1814,21 +1871,55 @@
       "modalities": {
         "input": [
           "text",
-          "image",
-          "pdf"
+          "image"
         ]
       }
     },
     {
-      "id": "x-ai/grok-code-fast-1",
-      "name": "Grok Code Fast 1",
-      "tool_call": true,
+      "id": "x-ai/grok-imagine-image-2.0",
+      "name": "Grok Imagine Image 2.0",
+      "tool_call": false,
       "reasoning": {
-        "supported": true
+        "supported": false
       },
       "limit": {
-        "context": 256000,
-        "output": 64000
+        "context": 66000,
+        "output": 0
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "x-ai/grok-voice-stt-1.0",
+      "name": "Grok Voice STT 1.0",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 15000,
+        "output": 15000
+      },
+      "modalities": {
+        "input": [
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "x-ai/grok-voice-tts-1.0",
+      "name": "Grok Voice TTS 1.0",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 15000,
+        "output": 15000
       },
       "modalities": {
         "input": [
@@ -1929,6 +2020,26 @@
       }
     },
     {
+      "id": "xiaomi/mimo-v2.6-pro",
+      "name": "MiMo-V2.6-Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "z-ai/glm-4.5",
       "name": "GLM 4.5",
       "tool_call": true,
@@ -1937,7 +2048,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 64000
+        "output": 96000
       },
       "modalities": {
         "input": [
@@ -1954,7 +2065,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 64000
+        "output": 96000
       },
       "modalities": {
         "input": [
@@ -1971,7 +2082,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -1988,7 +2099,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2007,7 +2118,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2026,13 +2137,14 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
           "text",
           "image",
-          "video"
+          "video",
+          "pdf"
         ]
       }
     },
@@ -2045,7 +2157,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2062,7 +2174,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2079,7 +2191,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 64000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2123,14 +2235,14 @@
     },
     {
       "id": "z-ai/glm-5.1",
-      "name": "GLM-5.1",
+      "name": "GLM 5.1",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 200000,
-        "output": 131072
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2147,7 +2259,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 131072
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -2156,19 +2268,59 @@
       }
     },
     {
-      "id": "z-ai/glm-5.2-free",
-      "name": "GLM 5.2 (Free)",
+      "id": "z-ai/glm-5.3",
+      "name": "GLM 5.3",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 1000000,
-        "output": 131072
+        "output": 128000
       },
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "name": "GLM 5.3 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3-flashx",
+      "name": "GLM 5.3 FlashX",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },
@@ -2189,6 +2341,23 @@
           "image",
           "video",
           "pdf"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-image",
+      "name": "GLM-Image",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 10240,
+        "output": 0
+      },
+      "modalities": {
+        "input": [
+          "text"
         ]
       }
     }

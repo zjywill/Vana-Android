@@ -5,23 +5,6 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "deepseek/deepseek-chat-v3.1",
-      "name": "DeepSeek Chat V3.1",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 164000,
-        "output": 163840
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "deepseek/deepseek-r1-0528",
       "name": "DeepSeek R1-0528",
       "tool_call": true,
@@ -48,23 +31,6 @@
       "limit": {
         "context": 163840,
         "output": 163840
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "deepseek/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 384000
       },
       "modalities": {
         "input": [
@@ -103,6 +69,41 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -219,40 +220,6 @@
       }
     },
     {
-      "id": "nvidia/nemotron-3-super-120b-a12b",
-      "name": "Nemotron 3 Super 120B A12B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "qwen/qwen3-235b-a22b-2507",
       "name": "Qwen3 235B-A22B-2507",
       "tool_call": true,
@@ -266,41 +233,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "qwen/qwen3-coder-30b-a3b-instruct",
-      "name": "Qwen3-Coder 30B-A3B Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262000,
-        "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "qwen/qwen3-vl-235b-a22b-instruct",
-      "name": "Qwen3 VL 235B-A22B Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 131000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
         ]
       }
     },
@@ -344,20 +276,57 @@
       }
     },
     {
-      "id": "z-ai/glm-4.7",
-      "name": "GLM-4.7",
+      "id": "qwen/qwen3.8-2.4t-a95b",
+      "name": "Qwen3.8 2.4T A95B",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 200000,
-        "output": 200000
+        "context": 262144,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-27b",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
       },
       "modalities": {
         "input": [
           "text",
-          "image"
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-flash-next",
+      "name": "Qwen3.8 Flash Next",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
         ]
       }
     },
@@ -426,6 +395,43 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
         ]
       }
     },

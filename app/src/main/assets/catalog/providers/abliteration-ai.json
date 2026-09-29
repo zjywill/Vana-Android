@@ -38,6 +38,23 @@
           "text"
         ]
       }
+    },
+    {
+      "id": "abliterated-model-large-v2",
+      "name": "Abliterated Model Large V2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 999990
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
     }
   ]
 }

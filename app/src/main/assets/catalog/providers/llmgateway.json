@@ -5,6 +5,40 @@
   "adapter": "openai",
   "models": [
     {
+      "id": "Qwen3.8-27B",
+      "name": "Qwen3.8 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 32768,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "atria-dawn-preview",
+      "name": "Atria Dawn Preview",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "auto",
       "name": "Auto Route",
       "tool_call": true,
@@ -25,6 +59,25 @@
     {
       "id": "claude-fable-5",
       "name": "Claude Fable 5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "claude-fable-5-1",
+      "name": "Claude Fable 5.1",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -194,6 +247,25 @@
       }
     },
     {
+      "id": "claude-opus-5-5",
+      "name": "Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-sonnet-4-5",
       "name": "Claude Sonnet 4.5 (latest)",
       "tool_call": true,
@@ -269,6 +341,25 @@
       }
     },
     {
+      "id": "claude-sonnet-5-5",
+      "name": "Claude Sonnet 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "codestral-2508",
       "name": "Codestral",
       "tool_call": false,
@@ -282,24 +373,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "cosmos3-super-reasoner",
-      "name": "Cosmos 3 Super Reasoner",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
         ]
       }
     },
@@ -357,24 +430,6 @@
       }
     },
     {
-      "id": "deepseek-v4-flash-vision-exp",
-      "name": "DeepSeek V4 Flash Vision Exp",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1050000,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
       "id": "deepseek-v4-pro",
       "name": "DeepSeek V4 Pro",
       "tool_call": true,
@@ -388,6 +443,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -427,8 +500,44 @@
       }
     },
     {
+      "id": "fugu-max",
+      "name": "Fugu Max",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 1000000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "fugu-ultra",
       "name": "Fugu Ultra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 1000000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "fugu-ultra-v2.0",
+      "name": "Fugu Ultra v2.0",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -655,6 +764,25 @@
       }
     },
     {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ]
+      }
+    },
+    {
       "id": "gemini-pro-latest",
       "name": "Gemini Pro Latest",
       "tool_call": true,
@@ -664,24 +792,6 @@
       "limit": {
         "context": 1048576,
         "output": 65536
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "gemma-3-27b",
-      "name": "Gemma 3 27B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 110000,
-        "output": 110000
       },
       "modalities": {
         "input": [
@@ -953,6 +1063,23 @@
       }
     },
     {
+      "id": "glm-5-turbo",
+      "name": "GLM-5-Turbo",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "glm-5.1",
       "name": "GLM-5.1",
       "tool_call": true,
@@ -1029,6 +1156,26 @@
       },
       "limit": {
         "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "glm-5v-turbo",
+      "name": "GLM-5V-Turbo",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
         "output": 131072
       },
       "modalities": {
@@ -1591,6 +1738,62 @@
       }
     },
     {
+      "id": "gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 1050000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "tool_call": true,
@@ -1617,6 +1820,23 @@
       "limit": {
         "context": 131072,
         "output": 32766
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "granite-4.2-8b",
+      "name": "Granite 4.2 8B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -1810,6 +2030,24 @@
       }
     },
     {
+      "id": "grok-4-7",
+      "name": "Grok 4.7",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "grok-build-0-1",
       "name": "Grok Build 0.1",
       "tool_call": true,
@@ -1829,32 +2067,15 @@
       }
     },
     {
-      "id": "hermes-4-405b",
-      "name": "Hermes 4 405B",
+      "id": "hy-mt2-plus",
+      "name": "Hy-MT2 Plus",
       "tool_call": true,
       "reasoning": {
-        "supported": true
+        "supported": false
       },
       "limit": {
-        "context": 131072,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "hermes-4-70b",
-      "name": "Hermes 4 70B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 131072
+        "context": 8192,
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -1871,11 +2092,47 @@
       },
       "limit": {
         "context": 262144,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "hy4-preview",
+      "name": "Hy4 preview",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
         "output": 64000
       },
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "inkling",
+      "name": "Inkling",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
         ]
       }
     },
@@ -2045,6 +2302,24 @@
       }
     },
     {
+      "id": "ling-3.0-flash-vl",
+      "name": "Ling 3.0 Flash VL",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "llama-3-70b-instruct",
       "name": "Llama 3 70B Instruct",
       "tool_call": false,
@@ -2071,23 +2346,6 @@
       "limit": {
         "context": 128000,
         "output": 2048
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "llama-3.1-nemotron-ultra-253b",
-      "name": "Llama 3.1 Nemotron Ultra 253B",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 128000,
-        "output": 8192
       },
       "modalities": {
         "input": [
@@ -2220,20 +2478,42 @@
       }
     },
     {
-      "id": "minicpm-v-4.5",
-      "name": "MiniCPM-V 4.5",
+      "id": "mimo-v2.6-flash",
+      "name": "MiMo-V2.6-Flash",
       "tool_call": true,
       "reasoning": {
-        "supported": false
+        "supported": true
       },
       "limit": {
-        "context": 32000,
-        "output": 32000
+        "context": 1048576,
+        "output": 131072
       },
       "modalities": {
         "input": [
           "text",
-          "image"
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "mimo-v2.6-pro",
+      "name": "MiMo-V2.6-Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },
@@ -2483,6 +2763,24 @@
       }
     },
     {
+      "id": "mistral-medium-3-5",
+      "name": "Mistral Medium 3.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "mistral-small-2506",
       "name": "Mistral Small 3.2",
       "tool_call": true,
@@ -2501,6 +2799,42 @@
       }
     },
     {
+      "id": "mistral-small-2603",
+      "name": "Mistral Small 4",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 256000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "muse-glimmer-30b",
+      "name": "Muse Glimmer 30B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "muse-spark-1.1",
       "name": "Muse Spark 1.1",
       "tool_call": true,
@@ -2509,7 +2843,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 32000
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -2542,32 +2876,15 @@
       }
     },
     {
-      "id": "nemotron-3-nano-30b",
-      "name": "Nemotron 3 Nano 30B",
+      "id": "muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 262144
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "nemotron-3-nano-omni",
-      "name": "Nemotron 3 Nano Omni",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 262144
+        "context": 1048576,
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -2577,19 +2894,41 @@
       }
     },
     {
-      "id": "nemotron-3-super-120b",
-      "name": "Nemotron 3 Super 120B",
+      "id": "muse-spark-1.3",
+      "name": "Muse Spark 1.3",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 262144
+        "context": 1048576,
+        "output": 131072
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image",
+          "video",
+          "pdf",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "muse-spark-1.3-contributor",
+      "name": "Muse Spark 1.3 Contributor",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -2790,24 +3129,6 @@
       }
     },
     {
-      "id": "qwen2-5-vl-72b-instruct",
-      "name": "Qwen2.5-VL 72B Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 32000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
       "id": "qwen3-235b-a22b-fp8",
       "name": "Qwen3 235B A22B FP8",
       "tool_call": true,
@@ -2847,23 +3168,6 @@
       "tool_call": true,
       "reasoning": {
         "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "qwen3-30b-a3b-instruct-2507",
-      "name": "Qwen3 30B A3B Instruct (2507)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
       },
       "limit": {
         "context": 262000,
@@ -3119,6 +3423,66 @@
       }
     },
     {
+      "id": "qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B-A10B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-27b",
+      "name": "Qwen3.5 27B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.5-35b-a3b",
+      "name": "Qwen3.5 35B-A3B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ]
+      }
+    },
+    {
       "id": "qwen3.5-9b",
       "name": "Qwen3.5 9B",
       "tool_call": true,
@@ -3267,21 +3631,19 @@
       }
     },
     {
-      "id": "qwen3.8-27b",
-      "name": "Qwen3.8 27B",
+      "id": "qwen3.8-2.4t-a95b",
+      "name": "Qwen3.8 2.4T A95B",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1000000,
-        "output": 32768
+        "context": 1010000,
+        "output": 131072
       },
       "modalities": {
         "input": [
-          "text",
-          "image",
-          "video"
+          "text"
         ]
       }
     },
@@ -3415,6 +3777,78 @@
       }
     },
     {
+      "id": "seed-2-0-code-preview-260328",
+      "name": "Seed 2.0 Code Preview (260328)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "seed-2-0-lite-260428",
+      "name": "Seed 2.0 Lite (260428)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "seed-2-0-mini-260428",
+      "name": "Seed 2.0 Mini (260428)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "seed-2-0-pro-260328",
+      "name": "Seed 2.0 Pro (260328)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "sonar",
       "name": "Sonar",
       "tool_call": false,
@@ -3432,38 +3866,21 @@
       }
     },
     {
-      "id": "sonar-pro",
-      "name": "Sonar Pro",
-      "tool_call": false,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 200000,
-        "output": 8192
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "sonar-reasoning-pro",
-      "name": "Sonar Reasoning Pro",
-      "tool_call": false,
+      "id": "step-3.7-flash",
+      "name": "Step 3.7 Flash",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 128000,
-        "output": 4096
+        "context": 262144,
+        "output": 256000
       },
       "modalities": {
         "input": [
           "text",
-          "image"
+          "image",
+          "video"
         ]
       }
     }

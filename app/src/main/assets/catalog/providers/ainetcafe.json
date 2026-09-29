@@ -1,0 +1,26 @@
+{
+  "id": "ainetcafe",
+  "name": "ainetcafe",
+  "api": "https://microquickjs.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "Kimi-K3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    }
+  ]
+}

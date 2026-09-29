@@ -348,42 +348,6 @@
       }
     },
     {
-      "id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "name": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "Qwen/Qwen3-VL-235B-A22B-Thinking",
-      "name": "Qwen/Qwen3-VL-235B-A22B-Thinking",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
       "id": "Qwen/Qwen3-VL-30B-A3B-Instruct",
       "name": "Qwen/Qwen3-VL-30B-A3B-Instruct",
       "tool_call": true,
@@ -603,23 +567,6 @@
           "text",
           "image",
           "video"
-        ]
-      }
-    },
-    {
-      "id": "baidu/ERNIE-4.5-300B-A47B",
-      "name": "baidu/ERNIE-4.5-300B-A47B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 131000,
-        "output": 131000
-      },
-      "modalities": {
-        "input": [
-          "text"
         ]
       }
     },

@@ -5,6 +5,23 @@
   "adapter": "openai",
   "models": [
     {
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "name": "Qwen3 235B-A22B Instruct 2507",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 262144,
+        "output": 16384
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V3-0324",
       "name": "DeepSeek V3 0324",
       "tool_call": true,
@@ -72,6 +89,40 @@
           "text",
           "image",
           "video"
+        ]
+      }
+    },
+    {
+      "id": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
+      "name": "Nemotron 3 Nano 30B A3B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
+      "name": "Nemotron 3 Super 120B A12B",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
         ]
       }
     },

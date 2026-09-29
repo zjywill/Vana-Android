@@ -5,6 +5,25 @@
   "adapter": "gemini",
   "models": [
     {
+      "id": "claude-fable-5-1@default",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-fable-5@default",
       "name": "Claude Fable 5",
       "tool_call": true,
@@ -157,6 +176,25 @@
       }
     },
     {
+      "id": "claude-opus-5-5@default",
+      "name": "Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-opus-5@default",
       "name": "Claude Opus 5",
       "tool_call": true,
@@ -223,6 +261,25 @@
       "limit": {
         "context": 200000,
         "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "claude-sonnet-5-5@default",
+      "name": "Claude Sonnet 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -335,7 +392,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 65536
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -630,6 +687,27 @@
       }
     },
     {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gemini-embedding-001",
       "name": "Gemini Embedding 001",
       "tool_call": false,
@@ -749,7 +827,7 @@
       },
       "limit": {
         "context": 131072,
-        "output": 32768
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -792,6 +870,114 @@
       }
     },
     {
+      "id": "xai/grok-4.1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai/grok-4.1-fast-reasoning",
+      "name": "Grok 4.1 Fast (Reasoning)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai/grok-4.20-non-reasoning",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 2000000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai/grok-4.20-reasoning",
+      "name": "Grok 4.20 (Reasoning)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 2000000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai/grok-4.3",
+      "name": "Grok 4.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 200000,
+        "output": 30000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "xai/grok-4.6",
+      "name": "Grok 4.6",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "zai-org/glm-4.7-maas",
       "name": "GLM-4.7",
       "tool_call": true,
@@ -817,8 +1003,25 @@
         "supported": true
       },
       "limit": {
-        "context": 202752,
-        "output": 131072
+        "context": 200000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/glm-5.2-maas",
+      "name": "GLM-5.2",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 64000
       },
       "modalities": {
         "input": [

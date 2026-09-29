@@ -260,6 +260,24 @@
       }
     },
     {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "glm-5",
       "name": "GLM-5",
       "tool_call": true,
@@ -303,6 +321,23 @@
       "limit": {
         "context": 1000000,
         "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -362,6 +397,24 @@
           "text",
           "image",
           "video"
+        ]
+      }
+    },
+    {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -1326,7 +1379,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 65536
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -1408,6 +1461,26 @@
           "image",
           "video",
           "pdf"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.8-omni-flash",
+      "name": "Qwen3.8 Omni Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
         ]
       }
     },

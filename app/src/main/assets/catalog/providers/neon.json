@@ -24,6 +24,25 @@
       }
     },
     {
+      "id": "claude-fable-5-1",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "claude-haiku-4-5",
       "name": "Claude Haiku 4.5 (latest)",
       "tool_call": true,
@@ -375,6 +394,26 @@
       }
     },
     {
+      "id": "glm-5-3-flash",
+      "name": "GLM-5.3 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gpt-5",
       "name": "GPT-5",
       "tool_call": true,
@@ -634,6 +673,25 @@
       }
     },
     {
+      "id": "gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "tool_call": true,
@@ -664,6 +722,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "grok-4-6",
+      "name": "Grok 4.6",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 524288
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },

@@ -217,6 +217,24 @@
       }
     },
     {
+      "id": "anthropic-claude-fable-5.1",
+      "name": "Anthropic Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "anthropic-claude-haiku-4.5",
       "name": "Anthropic Claude Haiku 4.5",
       "tool_call": true,
@@ -344,6 +362,24 @@
       }
     },
     {
+      "id": "anthropic-claude-opus-5.5",
+      "name": "Anthropic Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "anthropic-claude-sonnet-4",
       "name": "Claude Sonnet 4",
       "tool_call": true,
@@ -359,6 +395,24 @@
           "text",
           "image",
           "pdf"
+        ]
+      }
+    },
+    {
+      "id": "anthropic-claude-sonnet-5.5",
+      "name": "Anthropic Claude Sonnet 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -533,6 +587,24 @@
       }
     },
     {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "e5-large-v2",
       "name": "E5 Large v2",
       "tool_call": false,
@@ -696,7 +768,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -1365,6 +1437,60 @@
     {
       "id": "openai-gpt-5.6-terra",
       "name": "OpenAI GPT-5.6 Terra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "openai-gpt-6-astra",
+      "name": "OpenAI GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "openai-gpt-6-luna",
+      "name": "OpenAI GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "openai-gpt-6-sol",
+      "name": "OpenAI GPT-6 Sol",
       "tool_call": true,
       "reasoning": {
         "supported": true

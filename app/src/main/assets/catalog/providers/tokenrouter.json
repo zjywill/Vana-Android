@@ -1,0 +1,25 @@
+{
+  "id": "tokenrouter",
+  "name": "TokenRouter",
+  "api": "https://api.tokenrouter.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "z-ai/glm-5.3-free",
+      "name": "GLM-5.3 (free)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

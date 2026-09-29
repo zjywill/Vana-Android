@@ -1,0 +1,59 @@
+{
+  "id": "klokintegration",
+  "name": "klokintegration.se",
+  "api": "https://api-gw.klok.ipaas.se/proxy/kloker-key/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "Kloker",
+      "name": "Kloker",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 200000,
+        "output": 50000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "Kloker-Integration-Architect",
+      "name": "Kloker Integration Architect",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 200000,
+        "output": 50000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "Kloker-Integration-Developer",
+      "name": "Kloker Integration Developer",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 200000,
+        "output": 50000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    }
+  ]
+}

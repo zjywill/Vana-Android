@@ -1,0 +1,71 @@
+{
+  "id": "vispark",
+  "name": "Vispark",
+  "api": "https://api.lab.vispark.in/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "vispark/vision-large",
+      "name": "Vision Large",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "vispark/vision-medium",
+      "name": "Vision Medium",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "vispark/vision-small",
+      "name": "Vision Small",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video",
+          "pdf"
+        ]
+      }
+    }
+  ]
+}

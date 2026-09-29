@@ -40,6 +40,23 @@
       }
     },
     {
+      "id": "glm5.3-754b",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 524288,
+        "output": 81920
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "tool_call": true,
@@ -53,24 +70,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "kimi-k2.7-code-1100b",
-      "name": "Kimi K2.7 Code",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 81920
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
         ]
       }
     },

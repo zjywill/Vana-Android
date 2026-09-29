@@ -13,7 +13,7 @@
       },
       "limit": {
         "context": 65536,
-        "output": 65536
+        "output": 16384
       },
       "modalities": {
         "input": [
@@ -30,7 +30,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 200000
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -49,7 +49,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -68,7 +68,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 200000
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -87,7 +87,26 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "claude-opus-5.5",
+      "name": "Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -106,7 +125,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 200000
+        "output": 64000
       },
       "modalities": {
         "input": [
@@ -125,7 +144,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -144,7 +163,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -163,7 +182,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -182,7 +201,7 @@
       },
       "limit": {
         "context": 200000,
-        "output": 200000
+        "output": 65000
       },
       "modalities": {
         "input": [
@@ -201,7 +220,7 @@
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -217,23 +236,6 @@
       "tool_call": true,
       "reasoning": {
         "supported": false
-      },
-      "limit": {
-        "context": 256000,
-        "output": 256000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "cosmos3-super-reasoner",
-      "name": "cosmos3-super-reasoner",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
       },
       "limit": {
         "context": 256000,
@@ -314,6 +316,41 @@
       }
     },
     {
+      "id": "deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 64000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "devstral-2512",
       "name": "Devstral 2",
       "tool_call": true,
@@ -321,8 +358,8 @@
         "supported": false
       },
       "limit": {
-        "context": 262000,
-        "output": 262000
+        "context": 256000,
+        "output": 256000
       },
       "modalities": {
         "input": [
@@ -339,7 +376,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -378,7 +415,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -398,7 +435,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -417,7 +454,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -437,7 +474,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -456,7 +493,27 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 65535
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -469,14 +526,14 @@
     },
     {
       "id": "gemma-3-27b-it",
-      "name": "gemma-3-27b-it",
+      "name": "Gemma 3 27B IT",
       "tool_call": false,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 131000,
-        "output": 131000
+        "output": 110000
       },
       "modalities": {
         "input": [
@@ -494,7 +551,7 @@
       },
       "limit": {
         "context": 262000,
-        "output": 262000
+        "output": 81920
       },
       "modalities": {
         "input": [
@@ -511,30 +568,13 @@
         "supported": true
       },
       "limit": {
-        "context": 262000,
+        "context": 262144,
         "output": 262000
       },
       "modalities": {
         "input": [
           "text",
           "image"
-        ]
-      }
-    },
-    {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 202752,
-        "output": 198000
-      },
-      "modalities": {
-        "input": [
-          "text"
         ]
       }
     },
@@ -615,7 +655,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 1048576
+        "output": 1000000
       },
       "modalities": {
         "input": [
@@ -649,7 +689,7 @@
       },
       "limit": {
         "context": 1048576,
-        "output": 64000
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -685,7 +725,7 @@
       },
       "limit": {
         "context": 1047576,
-        "output": 1047576
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -704,7 +744,7 @@
       },
       "limit": {
         "context": 1047576,
-        "output": 1047576
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -723,7 +763,7 @@
       },
       "limit": {
         "context": 1047576,
-        "output": 1047576
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -742,7 +782,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 128000
+        "output": 16000
       },
       "modalities": {
         "input": [
@@ -761,7 +801,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 128000
+        "output": 16000
       },
       "modalities": {
         "input": [
@@ -780,7 +820,7 @@
       },
       "limit": {
         "context": 400000,
-        "output": 400000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -798,7 +838,7 @@
       },
       "limit": {
         "context": 400000,
-        "output": 400000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -816,7 +856,7 @@
       },
       "limit": {
         "context": 400000,
-        "output": 400000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -834,7 +874,7 @@
       },
       "limit": {
         "context": 400000,
-        "output": 400000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -853,7 +893,7 @@
       },
       "limit": {
         "context": 1050000,
-        "output": 1050000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -872,7 +912,7 @@
       },
       "limit": {
         "context": 1050000,
-        "output": 1050000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -891,7 +931,7 @@
       },
       "limit": {
         "context": 1050000,
-        "output": 1050000
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -910,7 +950,45 @@
       },
       "limit": {
         "context": 1050000,
-        "output": 1050000
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -929,7 +1007,7 @@
       },
       "limit": {
         "context": 131000,
-        "output": 128000
+        "output": 131000
       },
       "modalities": {
         "input": [
@@ -989,23 +1067,6 @@
       }
     },
     {
-      "id": "hermes-4-70b",
-      "name": "Hermes 4 70B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
       "tool_call": true,
@@ -1014,7 +1075,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 256000
+        "output": 262144
       },
       "modalities": {
         "input": [
@@ -1032,7 +1093,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 256000
+        "output": 262144
       },
       "modalities": {
         "input": [
@@ -1080,42 +1141,8 @@
       }
     },
     {
-      "id": "llama-3.1-405b-instruct",
-      "name": "Llama 3.1 405B Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "llama-3.1-8b-instruct",
       "name": "Llama-3.1-8B-Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "llama-3.1-nemotron-ultra-253b-v1",
-      "name": "llama-3.1-nemotron-ultra-253b-v1",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1173,7 +1200,7 @@
       },
       "limit": {
         "context": 400000,
-        "output": 400000
+        "output": 196000
       },
       "modalities": {
         "input": [
@@ -1206,8 +1233,8 @@
         "supported": true
       },
       "limit": {
-        "context": 196680,
-        "output": 196608
+        "context": 196000,
+        "output": 196000
       },
       "modalities": {
         "input": [
@@ -1224,7 +1251,7 @@
       },
       "limit": {
         "context": 196608,
-        "output": 196072
+        "output": 196608
       },
       "modalities": {
         "input": [
@@ -1313,7 +1340,7 @@
       },
       "limit": {
         "context": 32000,
-        "output": 32000
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -1348,7 +1375,7 @@
       },
       "limit": {
         "context": 32000,
-        "output": 32000
+        "output": 8192
       },
       "modalities": {
         "input": [
@@ -1367,24 +1394,6 @@
       "limit": {
         "context": 256000,
         "output": 256000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "mistral-medium-2508",
-      "name": "mistral-medium-2508",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
       },
       "modalities": {
         "input": [
@@ -1420,7 +1429,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 131072
+        "output": 128000
       },
       "modalities": {
         "input": [
@@ -1455,7 +1464,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 262144
+        "output": 256000
       },
       "modalities": {
         "input": [
@@ -1491,7 +1500,7 @@
       },
       "limit": {
         "context": 32000,
-        "output": 32000
+        "output": 4096
       },
       "modalities": {
         "input": [
@@ -1520,14 +1529,14 @@
     },
     {
       "id": "nova-2-lite",
-      "name": "nova-2-lite",
+      "name": "Nova 2 Lite",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 1000000,
-        "output": 1000000
+        "output": 65535
       },
       "modalities": {
         "input": [
@@ -1546,7 +1555,7 @@
       },
       "limit": {
         "context": 300000,
-        "output": 300000
+        "output": 10000
       },
       "modalities": {
         "input": [
@@ -1565,7 +1574,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 128000
+        "output": 10000
       },
       "modalities": {
         "input": [
@@ -1583,7 +1592,7 @@
       },
       "limit": {
         "context": 300000,
-        "output": 5000
+        "output": 10000
       },
       "modalities": {
         "input": [
@@ -1611,23 +1620,6 @@
       }
     },
     {
-      "id": "nvidia-nemotron-3-nano-omni",
-      "name": "nvidia-nemotron-3-nano-omni",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 300000,
-        "output": 300000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "pixtral-12b-2409",
       "name": "pixtral-12b-2409",
       "tool_call": true,
@@ -1636,7 +1628,7 @@
       },
       "limit": {
         "context": 128000,
-        "output": 128000
+        "output": 4096
       },
       "modalities": {
         "input": [
@@ -1647,7 +1639,7 @@
     },
     {
       "id": "pixtral-large-2502",
-      "name": "pixtral-large-2502",
+      "name": "Pixtral Large (25.02)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1691,7 +1683,7 @@
       },
       "limit": {
         "context": 262000,
-        "output": 131000
+        "output": 262000
       },
       "modalities": {
         "input": [
@@ -1724,8 +1716,8 @@
         "supported": true
       },
       "limit": {
-        "context": 40000,
-        "output": 40000
+        "context": 16384,
+        "output": 16384
       },
       "modalities": {
         "input": [
@@ -1742,7 +1734,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 262000
+        "output": 262144
       },
       "modalities": {
         "input": [
@@ -1760,23 +1752,6 @@
       "limit": {
         "context": 256000,
         "output": 256000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "qwen3-next-80b-a3b-thinking",
-      "name": "Qwen3-Next 80B-A3B (Thinking)",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 128000,
-        "output": 128000
       },
       "modalities": {
         "input": [
@@ -1828,7 +1803,7 @@
       },
       "limit": {
         "context": 262000,
-        "output": 250000
+        "output": 262000
       },
       "modalities": {
         "input": [
@@ -1881,7 +1856,7 @@
       },
       "limit": {
         "context": 262000,
-        "output": 262000
+        "output": 32768
       },
       "modalities": {
         "input": [
@@ -1915,8 +1890,8 @@
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 262144
+        "context": 1000000,
+        "output": 500000
       },
       "modalities": {
         "input": [

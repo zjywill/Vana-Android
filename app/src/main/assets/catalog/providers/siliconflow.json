@@ -39,6 +39,24 @@
       }
     },
     {
+      "id": "MiniMaxAI/MiniMax-M3",
+      "name": "MiniMax-M3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "Qwen/Qwen2.5-72B-Instruct",
       "name": "Qwen/Qwen2.5-72B-Instruct",
       "tool_call": true,
@@ -82,23 +100,6 @@
       "limit": {
         "context": 131000,
         "output": 131000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "name": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
       },
       "modalities": {
         "input": [
@@ -188,42 +189,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "name": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "tool_call": true,
-      "reasoning": {
-        "supported": false
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "Qwen/Qwen3-VL-235B-A22B-Thinking",
-      "name": "Qwen/Qwen3-VL-235B-A22B-Thinking",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
         ]
       }
     },
@@ -437,14 +402,14 @@
       }
     },
     {
-      "id": "baidu/ERNIE-4.5-300B-A47B",
-      "name": "baidu/ERNIE-4.5-300B-A47B",
+      "id": "Qwen/Qwen3.8-2.4T-A95B",
+      "name": "Qwen3.8 2.4T A95B",
       "tool_call": true,
       "reasoning": {
-        "supported": false
+        "supported": true
       },
       "limit": {
-        "context": 131000,
+        "context": 1049000,
         "output": 131000
       },
       "modalities": {
@@ -573,6 +538,41 @@
       }
     },
     {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+      "name": "DeepSeek V4 Flash Vision Exp",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V4-Pro",
       "name": "DeepSeek V4 Pro",
       "tool_call": true,
@@ -582,6 +582,40 @@
       "limit": {
         "context": 1000000,
         "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "google/gemma-4-12B-it",
+      "name": "Gemma 4 12B IT",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
       },
       "modalities": {
         "input": [
@@ -641,6 +675,23 @@
       }
     },
     {
+      "id": "meituan-longcat/LongCat-2.0",
+      "name": "LongCat-2.0",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1049000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "moonshotai/Kimi-K2.5",
       "name": "moonshotai/Kimi-K2.5",
       "tool_call": true,
@@ -668,6 +719,60 @@
       "limit": {
         "context": 262000,
         "output": 262000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "moonshotai/Kimi-K2.7-Code",
+      "name": "Kimi K2.7 Code",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 262000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "nex-agi/Nex-N2-Pro",
+      "name": "Nex-N2-Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 256000
       },
       "modalities": {
         "input": [
@@ -745,8 +850,8 @@
       }
     },
     {
-      "id": "tencent/Hy3-preview",
-      "name": "Hy3 preview",
+      "id": "tencent/Hy3",
+      "name": "Hy3",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -804,7 +909,7 @@
       },
       "limit": {
         "context": 205000,
-        "output": 205000
+        "output": 131000
       },
       "modalities": {
         "input": [
@@ -826,6 +931,41 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3",
+      "name": "GLM-5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1049000,
+        "output": 262000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1049000,
+        "output": 262000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },

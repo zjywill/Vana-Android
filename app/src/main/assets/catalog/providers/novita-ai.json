@@ -756,7 +756,7 @@
       },
       "limit": {
         "context": 204800,
-        "output": 131100
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -773,7 +773,7 @@
       },
       "limit": {
         "context": 204800,
-        "output": 131100
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -858,7 +858,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 262144
+        "output": 98304
       },
       "modalities": {
         "input": [
@@ -892,7 +892,7 @@
       },
       "limit": {
         "context": 262144,
-        "output": 262144
+        "output": 98304
       },
       "modalities": {
         "input": [

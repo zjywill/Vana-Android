@@ -1,0 +1,27 @@
+{
+  "id": "wallaby",
+  "name": "Wallaby",
+  "api": "https://api.wallabytoken.com/v1",
+  "adapter": "openai",
+  "models": [
+    {
+      "id": "moonshotai/kimi-k3",
+      "name": "Kimi K3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    }
+  ]
+}

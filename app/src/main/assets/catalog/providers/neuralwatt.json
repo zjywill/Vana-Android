@@ -13,7 +13,7 @@
       },
       "limit": {
         "context": 1048560,
-        "output": 65536
+        "output": 393216
       },
       "modalities": {
         "input": [
@@ -30,7 +30,24 @@
       },
       "limit": {
         "context": 1048560,
-        "output": 65536
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4-flash-speed",
+      "name": "DeepSeek V4 Flash (Speed)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 393216
       },
       "modalities": {
         "input": [
@@ -52,6 +69,42 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "deepseek-v4.1-flash-flex",
+      "name": "DeepSeek V4.1 Flash Flex",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 393216
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -193,6 +246,76 @@
       }
     },
     {
+      "id": "glm-5.3",
+      "name": "GLM 5.3",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 1048560
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3-flash",
+      "name": "GLM-5.3 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 1048560
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3-flash-flex",
+      "name": "GLM-5.3 Flash Flex",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 1048560
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "glm-5.3-flex",
+      "name": "GLM 5.3 Flex",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048560,
+        "output": 1048560
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "kimi-k2.7-code",
       "name": "Kimi K2.7 Code",
       "tool_call": true,
@@ -309,7 +432,25 @@
       },
       "limit": {
         "context": 262128,
-        "output": 65536
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "qwen-3.8-27b-flex",
+      "name": "Qwen3.8 27B Flex",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262128,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -342,6 +483,24 @@
       "tool_call": true,
       "reasoning": {
         "supported": false
+      },
+      "limit": {
+        "context": 131056,
+        "output": 131056
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "qwen3.6-35b-flex",
+      "name": "Qwen3.6 35B Flex",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
       },
       "limit": {
         "context": 131056,

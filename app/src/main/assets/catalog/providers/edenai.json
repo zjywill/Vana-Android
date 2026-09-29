@@ -5,14 +5,338 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "amazon/moonshot.kimi-k2-thinking",
-      "name": "Kimi K2 Thinking",
+      "id": "amazon/amazon.nova-lite-v1:0",
+      "name": "Nova Lite",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 300000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "amazon/amazon.nova-lite-v1:0@us",
+      "name": "Nova Lite (US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 300000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "amazon/amazon.nova-micro-v1:0",
+      "name": "Nova Micro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/amazon.nova-micro-v1:0@us",
+      "name": "Nova Micro (US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/amazon.nova-pro-v1:0",
+      "name": "Nova Pro",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 300000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "amazon/amazon.nova-pro-v1:0@us",
+      "name": "Nova Pro (US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 300000,
+        "output": 10000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-12b-it",
+      "name": "Gemma 3 12B IT (Amazon Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-12b-it@us",
+      "name": "Gemma 3 12B IT (Amazon Bedrock, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-27b-it",
+      "name": "Gemma 3 27B IT (Amazon Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-27b-it@us",
+      "name": "Gemma 3 27B IT (Amazon Bedrock, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-4b-it",
+      "name": "Gemma 3 4B IT (Amazon Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/google.gemma-3-4b-it@us",
+      "name": "Gemma 3 4B IT (Amazon Bedrock, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.pixtral-large-2502-v1:0",
+      "name": "Pixtral Large (25.02) (Amazon Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.pixtral-large-2502-v1:0@us",
+      "name": "Pixtral Large (25.02) (Amazon Bedrock, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 8192
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.voxtral-mini-3b-2507",
+      "name": "Voxtral Mini 3B 2507 (Amazon Bedrock)",
       "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.voxtral-mini-3b-2507@us",
+      "name": "Voxtral Mini 3B 2507 (Amazon Bedrock, US)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.voxtral-small-24b-2507",
+      "name": "Voxtral Small 24B 2507 (Amazon Bedrock)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "amazon/mistral.voxtral-small-24b-2507@us",
+      "name": "Voxtral Small 24B 2507 (Amazon Bedrock, US)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 32768
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "audio"
+        ]
+      }
+    },
+    {
+      "id": "amazon/moonshot.kimi-k2-thinking",
+      "name": "Kimi K2 Thinking (Amazon Bedrock)",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 128000,
+        "context": 256000,
         "output": 262144
       },
       "modalities": {
@@ -23,7 +347,7 @@
     },
     {
       "id": "amazon/moonshotai.kimi-k2.5",
-      "name": "Kimi K2.5",
+      "name": "Kimi K2.5 (Amazon Bedrock)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -40,14 +364,48 @@
       }
     },
     {
-      "id": "amazon/zai.glm-4.7-flash",
-      "name": "GLM-4.7-Flash",
+      "id": "amazon/openai.gpt-oss-safeguard-20b",
+      "name": "GPT OSS Safeguard 20B (Amazon Bedrock)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 200000,
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/openai.gpt-oss-safeguard-20b@us",
+      "name": "GPT OSS Safeguard 20B (Amazon Bedrock, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 128000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "amazon/zai.glm-4.7-flash",
+      "name": "GLM-4.7-Flash (Amazon Bedrock)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 203000,
         "output": 131072
       },
       "modalities": {
@@ -58,13 +416,13 @@
     },
     {
       "id": "amazon/zai.glm-4.7-flash@us",
-      "name": "GLM-4.7-Flash (US)",
+      "name": "GLM-4.7-Flash (Amazon Bedrock, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 200000,
+        "context": 203000,
         "output": 131072
       },
       "modalities": {
@@ -93,8 +451,27 @@
       }
     },
     {
+      "id": "anthropic/claude-fable-5-1",
+      "name": "Claude Fable 5.1",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "anthropic/claude-fable-latest",
-      "name": "Claude Fable 5",
+      "name": "Claude Fable Latest (Claude Fable 5.1)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -226,8 +603,27 @@
       }
     },
     {
+      "id": "anthropic/claude-opus-5-5",
+      "name": "Claude Opus 5.5",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "anthropic/claude-opus-latest",
-      "name": "Claude Opus 5",
+      "name": "Claude Opus Latest (Claude Opus 5.5)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -284,7 +680,7 @@
     },
     {
       "id": "anthropic/claude-sonnet-latest",
-      "name": "Claude Sonnet 5",
+      "name": "Claude Sonnet Latest (Claude Sonnet 5)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -303,7 +699,7 @@
     },
     {
       "id": "azure/gpt-5.1-codex",
-      "name": "GPT-5.1 Codex",
+      "name": "GPT-5.1 Codex (Azure)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -322,7 +718,7 @@
     },
     {
       "id": "azure/gpt-5.1-codex-max",
-      "name": "GPT-5.1 Codex Max",
+      "name": "GPT-5.1 Codex Max (Azure)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -341,7 +737,7 @@
     },
     {
       "id": "azure/gpt-5.1-codex-mini",
-      "name": "GPT-5.1 Codex mini",
+      "name": "GPT-5.1 Codex mini (Azure)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -360,7 +756,7 @@
     },
     {
       "id": "azure/gpt-5.2-codex",
-      "name": "GPT-5.2 Codex",
+      "name": "GPT-5.2 Codex (Azure)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -379,7 +775,7 @@
     },
     {
       "id": "cerebras/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Cerebras)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -396,7 +792,7 @@
     },
     {
       "id": "cloudflare/@cf/aisingapore/gemma-sea-lion-v4-27b-it",
-      "name": "Gemma-SEA-LION-v4-27B-IT",
+      "name": "Gemma-SEA-LION-v4-27B-IT (Cloudflare)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -413,7 +809,7 @@
     },
     {
       "id": "cloudflare/@cf/deepseek-ai/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Cloudflare)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -430,7 +826,7 @@
     },
     {
       "id": "cloudflare/@cf/deepseek-ai/deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "name": "DeepSeek V4 Pro 0813 (Cloudflare)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -447,7 +843,7 @@
     },
     {
       "id": "cloudflare/@cf/meta/llama-guard-3-8b",
-      "name": "Llama-Guard-3-8B",
+      "name": "Llama-Guard-3-8B (Cloudflare)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -464,7 +860,7 @@
     },
     {
       "id": "cloudflare/@cf/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Cloudflare)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -481,7 +877,7 @@
     },
     {
       "id": "cloudflare/@cf/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 20B (Cloudflare)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -498,7 +894,7 @@
     },
     {
       "id": "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct",
-      "name": "Qwen2.5-Coder-32B-Instruct",
+      "name": "Qwen2.5-Coder-32B-Instruct (Cloudflare)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -515,7 +911,7 @@
     },
     {
       "id": "cloudflare/@cf/zai-org/glm-4.7-flash",
-      "name": "GLM-4.7-Flash",
+      "name": "GLM-4.7-Flash (Cloudflare)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -523,6 +919,23 @@
       "limit": {
         "context": 131072,
         "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "cohere/c4ai-aya-expanse-32b",
+      "name": "Aya Expanse 32B",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 128000,
+        "output": 4000
       },
       "modalities": {
         "input": [
@@ -599,8 +1012,42 @@
       }
     },
     {
+      "id": "databricks/databricks-deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731 (Databricks)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "databricks/databricks-deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813 (Databricks)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "databricks/databricks-gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Databricks)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -617,7 +1064,7 @@
     },
     {
       "id": "databricks/databricks-gpt-oss-120b@eu",
-      "name": "GPT OSS 120B (EU)",
+      "name": "GPT OSS 120B (Databricks, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -634,7 +1081,7 @@
     },
     {
       "id": "databricks/databricks-gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 20B (Databricks)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -651,7 +1098,7 @@
     },
     {
       "id": "databricks/databricks-gpt-oss-20b@eu",
-      "name": "GPT OSS 20B (EU)",
+      "name": "GPT OSS 20B (Databricks, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -667,8 +1114,26 @@
       }
     },
     {
+      "id": "databricks/databricks-inkling",
+      "name": "Inkling (Databricks)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 1048576
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "deepinfra/ByteDance/Seed-2.0-code",
-      "name": "Seed 2.0 Code",
+      "name": "Seed 2.0 Code (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -686,7 +1151,7 @@
     },
     {
       "id": "deepinfra/ByteDance/Seed-2.0-mini",
-      "name": "Seed 2.0 Mini",
+      "name": "Seed 2.0 Mini (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -704,7 +1169,7 @@
     },
     {
       "id": "deepinfra/deepseek-ai/DeepSeek-R1",
-      "name": "DeepSeek-R1",
+      "name": "DeepSeek-R1 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -721,7 +1186,7 @@
     },
     {
       "id": "deepinfra/deepseek-ai/DeepSeek-V3",
-      "name": "DeepSeek-V3",
+      "name": "DeepSeek-V3 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": false
@@ -738,7 +1203,7 @@
     },
     {
       "id": "deepinfra/deepseek-ai/DeepSeek-V3-0324",
-      "name": "DeepSeek V3 0324",
+      "name": "DeepSeek V3 0324 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": false
@@ -755,7 +1220,7 @@
     },
     {
       "id": "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -772,7 +1237,7 @@
     },
     {
       "id": "deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "name": "DeepSeek V4 Pro 0813 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -788,8 +1253,80 @@
       }
     },
     {
+      "id": "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash (Deep Infra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/google/gemma-3-12b-it",
+      "name": "Gemma 3 12B IT (Deep Infra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/google/gemma-3-27b-it",
+      "name": "Gemma 3 27B IT (Deep Infra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/google/gemma-3-4b-it",
+      "name": "Gemma 3 4B IT (Deep Infra)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "deepinfra/meta-llama/Llama-3.2-11B-Vision-Instruct",
-      "name": "Llama-3.2-11B-Vision-Instruct",
+      "name": "Llama-3.2-11B-Vision-Instruct (Deep Infra)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -807,7 +1344,7 @@
     },
     {
       "id": "deepinfra/meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": false
@@ -824,7 +1361,7 @@
     },
     {
       "id": "deepinfra/meta-llama/Llama-Guard-3-8B",
-      "name": "Llama-Guard-3-8B",
+      "name": "Llama-Guard-3-8B (Deep Infra)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -841,7 +1378,7 @@
     },
     {
       "id": "deepinfra/meta-models/Muse-Glimmer-30B",
-      "name": "Muse Glimmer 30B",
+      "name": "Muse Glimmer 30B (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -859,7 +1396,7 @@
     },
     {
       "id": "deepinfra/moonshotai/Kimi-K2.5",
-      "name": "Kimi K2.5",
+      "name": "Kimi K2.5 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -877,7 +1414,7 @@
     },
     {
       "id": "deepinfra/nemotron-3-ultra-550b-a55b",
-      "name": "Nemotron 3 Ultra 550B A55B",
+      "name": "Nemotron 3 Ultra 550B A55B (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -894,7 +1431,7 @@
     },
     {
       "id": "deepinfra/nvidia/Llama-3.1-Nemotron-70B-Instruct",
-      "name": "Llama 3.1 Nemotron 70B Instruct",
+      "name": "Llama 3.1 Nemotron 70B Instruct (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": false
@@ -911,7 +1448,7 @@
     },
     {
       "id": "deepinfra/nvidia/Nemotron-3-Nano-30B-A3B",
-      "name": "Nemotron 3 Nano 30B A3B",
+      "name": "Nemotron 3 Nano 30B A3B (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -928,7 +1465,7 @@
     },
     {
       "id": "deepinfra/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -945,7 +1482,7 @@
     },
     {
       "id": "deepinfra/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 20B (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -962,7 +1499,7 @@
     },
     {
       "id": "deepinfra/stepfun-ai/Step-3.5-Flash",
-      "name": "Step 3.5 Flash",
+      "name": "Step 3.5 Flash (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -979,7 +1516,7 @@
     },
     {
       "id": "deepinfra/stepfun-ai/Step-3.7-Flash",
-      "name": "Step 3.7 Flash",
+      "name": "Step 3.7 Flash (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -998,13 +1535,30 @@
     },
     {
       "id": "deepinfra/tencent/Hy3",
-      "name": "Hy3",
+      "name": "Hy3 (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 262144,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "deepinfra/tencent/Hy4-preview",
+      "name": "Hy4 preview (Deep Infra)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
         "output": 64000
       },
       "modalities": {
@@ -1015,7 +1569,7 @@
     },
     {
       "id": "deepinfra/thinkingmachines/Inkling",
-      "name": "Inkling",
+      "name": "Inkling (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1034,7 +1588,7 @@
     },
     {
       "id": "deepinfra/thinkingmachines/Inkling-Small",
-      "name": "Inkling Small",
+      "name": "Inkling Small (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1053,7 +1607,7 @@
     },
     {
       "id": "deepinfra/zai-org/GLM-4.7-Flash",
-      "name": "GLM-4.7-Flash",
+      "name": "GLM-4.7-Flash (Deep Infra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1098,7 +1652,8 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
@@ -1110,7 +1665,7 @@
         "supported": true
       },
       "limit": {
-        "context": 1048576,
+        "context": 1000000,
         "output": 384000
       },
       "modalities": {
@@ -1138,66 +1693,15 @@
       }
     },
     {
-      "id": "fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "id": "fireworks_ai/accounts/fireworks/models/inkling",
+      "name": "Inkling (Fireworks AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 1048576,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "fireworks_ai/accounts/fireworks/models/deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048576,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "fireworks_ai/accounts/fireworks/models/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "fireworks_ai/accounts/fireworks/models/muse-glimmer-30b",
-      "name": "Muse Glimmer 30B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 131072
+        "output": 1048576
       },
       "modalities": {
         "input": [
@@ -1208,7 +1712,7 @@
     },
     {
       "id": "fireworks_ai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Fireworks AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1224,9 +1728,26 @@
       }
     },
     {
+      "id": "flexai/DeepSeek-V4-Flash-0731",
+      "name": "DeepSeek V4 Flash 0731 (FlexAI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "flexai/Muse-Glimmer-30B",
-      "name": "Muse Glimmer 30B",
-      "tool_call": false,
+      "name": "Muse Glimmer 30B (FlexAI)",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
@@ -1242,43 +1763,27 @@
       }
     },
     {
-      "id": "flexai/Nemotron-3-Super-120B-A12B",
-      "name": "Nemotron 3 Super 120B A12B",
-      "tool_call": false,
+      "id": "flexai/Step-3.7-Flash",
+      "name": "Step 3.7 Flash (FlexAI)",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 262144,
-        "output": 262144
+        "output": 256000
       },
       "modalities": {
         "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "flexai/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
-      "tool_call": false,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 786432,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
     {
       "id": "flexai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "tool_call": false,
+      "name": "GPT OSS 120B (FlexAI)",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
@@ -1294,8 +1799,8 @@
     },
     {
       "id": "flexai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
-      "tool_call": false,
+      "name": "GPT OSS 20B (FlexAI)",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
@@ -1370,7 +1875,7 @@
     },
     {
       "id": "google/gemini-3-pro-image-preview",
-      "name": "Nano Banana Pro",
+      "name": "Nano Banana Pro Preview",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -1406,7 +1911,7 @@
     },
     {
       "id": "google/gemini-3.1-flash-image-preview",
-      "name": "Nano Banana 2",
+      "name": "Nano Banana 2 Preview",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -1609,8 +2114,29 @@
       }
     },
     {
+      "id": "google/gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "google/gemini-flash-latest",
-      "name": "Gemini 3.7 Flash",
+      "name": "Gemini Flash Latest (Gemini 3.8 Flash)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1631,7 +2157,7 @@
     },
     {
       "id": "google/gemini-pro-latest",
-      "name": "Gemini 3.1 Pro Preview",
+      "name": "Gemini Pro Latest (Gemini 3.1 Pro Preview)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1652,7 +2178,7 @@
     },
     {
       "id": "groq/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Groq)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1669,7 +2195,7 @@
     },
     {
       "id": "groq/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 20B (Groq)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -1685,8 +2211,42 @@
       }
     },
     {
+      "id": "groq/openai/gpt-oss-safeguard-20b",
+      "name": "GPT OSS Safeguard 20B (Groq)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 131072,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "infomaniak/mistralai/Ministral-3-14B-Instruct-2512",
+      "name": "Ministral 3 14B (Infomaniak)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 100000,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "ionos/meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct (IONOS)",
       "tool_call": false,
       "reasoning": {
         "supported": false
@@ -1703,7 +2263,7 @@
     },
     {
       "id": "ionos/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (IONOS)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -2058,6 +2618,23 @@
       }
     },
     {
+      "id": "moonshot/kimi-k2.7-code-highspeed",
+      "name": "Kimi K2.7 Code Highspeed",
+      "tool_call": false,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
       "id": "moonshot/kimi-k3",
       "name": "Kimi K3",
       "tool_call": true,
@@ -2078,7 +2655,7 @@
     },
     {
       "id": "nebius/deepseek-ai/DeepSeek-V4-Flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Nebius)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2094,15 +2671,15 @@
       }
     },
     {
-      "id": "nebius/meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama-3.3-70B-Instruct",
+      "id": "nebius/deepseek-ai/DeepSeek-V4-Pro-0813",
+      "name": "DeepSeek V4 Pro 0813 (Nebius)",
       "tool_call": true,
       "reasoning": {
-        "supported": false
+        "supported": true
       },
       "limit": {
-        "context": 131072,
-        "output": 4096
+        "context": 979000,
+        "output": 384000
       },
       "modalities": {
         "input": [
@@ -2111,8 +2688,44 @@
       }
     },
     {
+      "id": "nebius/deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash (Nebius)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "nebius/google/gemma-3-27b-it",
+      "name": "Gemma 3 27B IT (Nebius)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 110000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "nebius/nvidia/Nemotron-3-Ultra-550b-a55b",
-      "name": "Nemotron 3 Ultra 550B A55B",
+      "name": "Nemotron 3 Ultra 550B A55B (Nebius)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2129,7 +2742,7 @@
     },
     {
       "id": "nebius/nvidia/nemotron-3-super-120b-a12b",
-      "name": "Nemotron 3 Super 120B A12B",
+      "name": "Nemotron 3 Super 120B A12B (Nebius)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2146,7 +2759,7 @@
     },
     {
       "id": "nebius/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Nebius)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2671,8 +3284,65 @@
       }
     },
     {
+      "id": "openai/gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "openai/gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "openai/gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1050000,
+        "output": 128000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "openai/gpt-latest",
-      "name": "GPT-5.6 Sol",
+      "name": "GPT Latest (GPT-6 Astra)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2691,7 +3361,7 @@
     },
     {
       "id": "openai/gpt-mini-latest",
-      "name": "GPT-5.4 mini",
+      "name": "GPT Mini Latest (GPT-5.4 mini)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2710,7 +3380,7 @@
     },
     {
       "id": "openai/gpt-pro-latest",
-      "name": "GPT-5.5 Pro",
+      "name": "GPT Pro Latest (GPT-5.5 Pro)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2842,7 +3512,7 @@
     },
     {
       "id": "ovhcloud/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (OVHcloud)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -2859,7 +3529,7 @@
     },
     {
       "id": "ovhcloud/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 20B (OVHcloud)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -2947,7 +3617,7 @@
     },
     {
       "id": "qwen/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Alibaba)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2964,7 +3634,7 @@
     },
     {
       "id": "qwen/deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "name": "DeepSeek V4 Pro 0813 (Alibaba)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -2976,6 +3646,24 @@
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "qwen/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (Alibaba)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -3334,6 +4022,45 @@
       }
     },
     {
+      "id": "qwen/qwen3.8-max-0902",
+      "name": "Qwen3.8 Max 0902",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ]
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-omni-flash",
+      "name": "Qwen3.8 Omni Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ]
+      }
+    },
+    {
       "id": "qwen/qwq-plus",
       "name": "QwQ Plus",
       "tool_call": false,
@@ -3352,7 +4079,7 @@
     },
     {
       "id": "scaleway/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Scaleway)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3368,8 +4095,26 @@
       }
     },
     {
+      "id": "scaleway/gemma-3-27b-it",
+      "name": "Gemma 3 27B IT (Scaleway)",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 40000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "scaleway/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "name": "GPT OSS 120B (Scaleway)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3386,7 +4131,7 @@
     },
     {
       "id": "scaleway/llama-3.3-70b-instruct",
-      "name": "Llama-3.3-70B-Instruct",
+      "name": "Llama-3.3-70B-Instruct (Scaleway)",
       "tool_call": true,
       "reasoning": {
         "supported": false
@@ -3403,7 +4148,7 @@
     },
     {
       "id": "tensorx/deepseek/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (TensorX)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3420,7 +4165,7 @@
     },
     {
       "id": "tensorx/deepseek/deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "name": "DeepSeek V4 Pro 0813 (TensorX)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3436,8 +4181,26 @@
       }
     },
     {
+      "id": "tensorx/deepseek/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash (TensorX)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "tensorx/moonshotai/kimi-k2.5",
-      "name": "Kimi K2.5",
+      "name": "Kimi K2.5 (TensorX)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3455,7 +4218,7 @@
     },
     {
       "id": "together_ai/deepseek-ai/DeepSeek-V4-Flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "name": "DeepSeek V4 Flash 0731 (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3472,7 +4235,7 @@
     },
     {
       "id": "together_ai/deepseek-ai/DeepSeek-V4-Pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "name": "DeepSeek V4 Pro 0813 (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3488,8 +4251,26 @@
       }
     },
     {
+      "id": "together_ai/deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek V4.1 Flash (Together AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
       "id": "together_ai/meta-models/Muse-Glimmer-30B",
-      "name": "Muse Glimmer 30B",
+      "name": "Muse Glimmer 30B (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3507,24 +4288,7 @@
     },
     {
       "id": "together_ai/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 32768
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "together_ai/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "name": "GPT OSS 120B (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3541,26 +4305,7 @@
     },
     {
       "id": "together_ai/thinkingmachines/Inkling",
-      "name": "Inkling",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 524288,
-        "output": 1048576
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "audio"
-        ]
-      }
-    },
-    {
-      "id": "together_ai/thinkingmachines/Inkling-Small",
-      "name": "Inkling Small",
+      "name": "Inkling (Together AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3579,7 +4324,7 @@
     },
     {
       "id": "vertex/gemini-2.5-flash-image",
-      "name": "Nano Banana",
+      "name": "Nano Banana (Vertex AI)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -3597,7 +4342,7 @@
     },
     {
       "id": "vertex/gemini-3-flash-preview",
-      "name": "Gemini 3 Flash Preview",
+      "name": "Gemini 3 Flash Preview (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3618,7 +4363,7 @@
     },
     {
       "id": "vertex/gemini-3-pro-image",
-      "name": "Nano Banana Pro",
+      "name": "Nano Banana Pro (Vertex AI)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -3636,7 +4381,7 @@
     },
     {
       "id": "vertex/gemini-3.1-flash-image",
-      "name": "Nano Banana 2",
+      "name": "Nano Banana 2 (Vertex AI)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -3654,7 +4399,7 @@
     },
     {
       "id": "vertex/gemini-3.1-flash-lite",
-      "name": "Gemini 3.1 Flash Lite",
+      "name": "Gemini 3.1 Flash Lite (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3675,7 +4420,7 @@
     },
     {
       "id": "vertex/gemini-3.1-flash-lite-image",
-      "name": "Nano Banana 2 Lite",
+      "name": "Nano Banana 2 Lite (Vertex AI)",
       "tool_call": false,
       "reasoning": {
         "supported": true
@@ -3693,7 +4438,7 @@
     },
     {
       "id": "vertex/gemini-3.1-flash-lite@eu",
-      "name": "Gemini 3.1 Flash Lite (EU)",
+      "name": "Gemini 3.1 Flash Lite (Vertex AI, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3714,7 +4459,7 @@
     },
     {
       "id": "vertex/gemini-3.1-flash-lite@us",
-      "name": "Gemini 3.1 Flash Lite (US)",
+      "name": "Gemini 3.1 Flash Lite (Vertex AI, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3735,7 +4480,7 @@
     },
     {
       "id": "vertex/gemini-3.1-pro-preview",
-      "name": "Gemini 3.1 Pro Preview",
+      "name": "Gemini 3.1 Pro Preview (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3756,7 +4501,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash",
-      "name": "Gemini 3.5 Flash",
+      "name": "Gemini 3.5 Flash (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3777,7 +4522,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash-lite",
-      "name": "Gemini 3.5 Flash Lite",
+      "name": "Gemini 3.5 Flash Lite (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3798,7 +4543,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash-lite@eu",
-      "name": "Gemini 3.5 Flash Lite (EU)",
+      "name": "Gemini 3.5 Flash Lite (Vertex AI, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3819,7 +4564,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash-lite@us",
-      "name": "Gemini 3.5 Flash Lite (US)",
+      "name": "Gemini 3.5 Flash Lite (Vertex AI, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3840,7 +4585,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash@eu",
-      "name": "Gemini 3.5 Flash (EU)",
+      "name": "Gemini 3.5 Flash (Vertex AI, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3861,7 +4606,7 @@
     },
     {
       "id": "vertex/gemini-3.5-flash@us",
-      "name": "Gemini 3.5 Flash (US)",
+      "name": "Gemini 3.5 Flash (Vertex AI, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3882,7 +4627,7 @@
     },
     {
       "id": "vertex/gemini-3.6-flash",
-      "name": "Gemini 3.6 Flash",
+      "name": "Gemini 3.6 Flash (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3903,7 +4648,7 @@
     },
     {
       "id": "vertex/gemini-3.6-flash@eu",
-      "name": "Gemini 3.6 Flash (EU)",
+      "name": "Gemini 3.6 Flash (Vertex AI, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3924,7 +4669,7 @@
     },
     {
       "id": "vertex/gemini-3.6-flash@us",
-      "name": "Gemini 3.6 Flash (US)",
+      "name": "Gemini 3.6 Flash (Vertex AI, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3945,7 +4690,7 @@
     },
     {
       "id": "vertex/gemini-3.7-flash",
-      "name": "Gemini 3.7 Flash",
+      "name": "Gemini 3.7 Flash (Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3966,7 +4711,7 @@
     },
     {
       "id": "vertex/gemini-3.7-flash@eu",
-      "name": "Gemini 3.7 Flash (EU)",
+      "name": "Gemini 3.7 Flash (Vertex AI, EU)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -3987,7 +4732,70 @@
     },
     {
       "id": "vertex/gemini-3.7-flash@us",
-      "name": "Gemini 3.7 Flash (US)",
+      "name": "Gemini 3.7 Flash (Vertex AI, US)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "vertex/gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash (Vertex AI)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "vertex/gemini-3.8-flash@eu",
+      "name": "Gemini 3.8 Flash (Vertex AI, EU)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "id": "vertex/gemini-3.8-flash@us",
+      "name": "Gemini 3.8 Flash (Vertex AI, US)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -4008,7 +4816,7 @@
     },
     {
       "id": "vertex/gemini-flash-latest",
-      "name": "Gemini 3.7 Flash",
+      "name": "Gemini Flash Latest (Gemini 3.8 Flash, Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -4029,7 +4837,7 @@
     },
     {
       "id": "vertex/gemini-pro-latest",
-      "name": "Gemini 3.1 Pro Preview",
+      "name": "Gemini Pro Latest (Gemini 3.1 Pro Preview, Vertex AI)",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -4142,6 +4950,25 @@
       }
     },
     {
+      "id": "xai/grok-4.7",
+      "name": "Grok 4.7",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 500000,
+        "output": 500000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ]
+      }
+    },
+    {
       "id": "xai/grok-build-0.1",
       "name": "Grok Build 0.1",
       "tool_call": true,
@@ -4162,7 +4989,7 @@
     },
     {
       "id": "xai/grok-latest",
-      "name": "Grok 4.6",
+      "name": "Grok Latest (Grok 4.7)",
       "tool_call": true,
       "reasoning": {
         "supported": true

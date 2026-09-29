@@ -5,8 +5,8 @@
   "adapter": "openai",
   "models": [
     {
-      "id": "accounts/fireworks/models/deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "id": "accounts/fireworks/models/deepseek-v4p1-flash",
+      "name": "DeepSeek V4.1 Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -17,41 +17,26 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
     {
-      "id": "accounts/fireworks/models/deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro 0813",
+      "id": "accounts/fireworks/models/ember-1",
+      "name": "Ember-1",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1000000,
-        "output": 384000
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "accounts/fireworks/models/glm-5p2",
-      "name": "GLM 5.2",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1048575,
+        "context": 1048576,
         "output": 131072
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
@@ -63,12 +48,30 @@
         "supported": true
       },
       "limit": {
-        "context": 1000000,
-        "output": 131072
+        "context": 1048573,
+        "output": 262144
       },
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/models/glm-5p3-flash",
+      "name": "GLM 5.3 Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048573,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -109,42 +112,6 @@
       }
     },
     {
-      "id": "accounts/fireworks/models/kimi-k2p6",
-      "name": "Kimi K2.6",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "accounts/fireworks/models/kimi-k2p7-code",
-      "name": "Kimi K2.7 Code",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262000,
-        "output": 262000
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
       "id": "accounts/fireworks/models/kimi-k3",
       "name": "Kimi K3",
       "tool_call": true,
@@ -175,27 +142,7 @@
       },
       "modalities": {
         "input": [
-          "text",
-          "image",
-          "video"
-        ]
-      }
-    },
-    {
-      "id": "accounts/fireworks/models/muse-glimmer-30b",
-      "name": "Muse Glimmer 30B",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 131072,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
+          "text"
         ]
       }
     },
@@ -234,20 +181,19 @@
       }
     },
     {
-      "id": "accounts/fireworks/models/qwen3p7-plus",
-      "name": "Qwen 3.7 Plus",
+      "id": "accounts/fireworks/models/qwen3p8-2p4t-a95b",
+      "name": "Qwen3.8 2.4T A95B",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
         "context": 262144,
-        "output": 65536
+        "output": 131072
       },
       "modalities": {
         "input": [
-          "text",
-          "image"
+          "text"
         ]
       }
     },
@@ -264,24 +210,113 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
     {
-      "id": "accounts/fireworks/routers/glm-5p2-fast",
-      "name": "GLM 5.2 Fast",
+      "id": "accounts/fireworks/routers/deepseek-flash-latest",
+      "name": "DeepSeek Flash Latest",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 1048575,
-        "output": 131072
+        "context": 1000000,
+        "output": 384000
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/glm-5p3-fast",
+      "name": "GLM 5.3 Fast",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048572,
+        "output": 262144
       },
       "modalities": {
         "input": [
           "text"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/glm-fast-latest",
+      "name": "GLM 5.3 Fast (Latest)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048572,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/glm-flash-latest",
+      "name": "GLM Flash Latest (GLM 5.3 Flash)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048573,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/glm-latest",
+      "name": "GLM Latest",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048573,
+        "output": 262144
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/kimi-fast-latest",
+      "name": "Kimi Fast Latest",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
         ]
       }
     },
@@ -294,6 +329,59 @@
       },
       "limit": {
         "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/kimi-latest",
+      "name": "Kimi Latest",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/minimax-latest",
+      "name": "MiniMax Latest",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 512000,
+        "output": 512000
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "accounts/fireworks/routers/qwen-max-latest",
+      "name": "Qwen Max Latest (Qwen3.8 Max)",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 262144,
         "output": 131072
       },
       "modalities": {

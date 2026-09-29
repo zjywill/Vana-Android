@@ -277,6 +277,26 @@
           "text"
         ]
       }
+    },
+    {
+      "id": "glm-5-3-flash-260828",
+      "name": "GLM-5.3-Flash",
+      "tool_call": true,
+      "reasoning": {
+        "supported": true
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf"
+        ]
+      }
     }
   ]
 }

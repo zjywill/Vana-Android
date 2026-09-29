@@ -22,14 +22,31 @@
       }
     },
     {
-      "id": "mercury-edit-2",
-      "name": "Mercury Edit 2",
-      "tool_call": false,
+      "id": "mercury-2.5",
+      "name": "Mercury 2.5",
+      "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 128000,
+        "context": 260000,
+        "output": 65536
+      },
+      "modalities": {
+        "input": [
+          "text"
+        ]
+      }
+    },
+    {
+      "id": "mercury-edit-2",
+      "name": "Mercury Edit 2",
+      "tool_call": false,
+      "reasoning": {
+        "supported": false
+      },
+      "limit": {
+        "context": 32000,
         "output": 8192
       },
       "modalities": {

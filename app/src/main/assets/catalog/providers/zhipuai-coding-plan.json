@@ -24,91 +24,6 @@
       }
     },
     {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 204800,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5-turbo",
-      "name": "GLM-5-Turbo",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5.1",
-      "name": "GLM-5.1",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5.2",
-      "name": "GLM-5.2",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1000000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5.2-highspeed",
-      "name": "GLM-5.2 Highspeed",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 1000000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ]
-      }
-    },
-    {
       "id": "glm-5.3",
       "name": "GLM-5.3",
       "tool_call": true,
@@ -159,26 +74,6 @@
       "modalities": {
         "input": [
           "text"
-        ]
-      }
-    },
-    {
-      "id": "glm-5v-turbo",
-      "name": "GLM-5V-Turbo",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 200000,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image",
-          "video",
-          "pdf"
         ]
       }
     }

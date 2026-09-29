@@ -12,13 +12,14 @@
         "supported": true
       },
       "limit": {
-        "context": 262144,
-        "output": 32768
+        "context": 1048576,
+        "output": 131071
       },
       "modalities": {
         "input": [
           "text",
-          "image"
+          "image",
+          "video"
         ]
       }
     },
@@ -40,8 +41,8 @@
       }
     },
     {
-      "id": "umans-deepseek-v4-pro-0813",
-      "name": "DeepSeek V4 Pro",
+      "id": "umans-deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
@@ -52,7 +53,8 @@
       },
       "modalities": {
         "input": [
-          "text"
+          "text",
+          "image"
         ]
       }
     },
@@ -75,33 +77,15 @@
       }
     },
     {
-      "id": "umans-glm-5.2",
-      "name": "GLM 5.2",
+      "id": "umans-glm-5.3-flash",
+      "name": "GLM 5.3 Flash",
       "tool_call": true,
       "reasoning": {
         "supported": true
       },
       "limit": {
-        "context": 405504,
-        "output": 131072
-      },
-      "modalities": {
-        "input": [
-          "text",
-          "image"
-        ]
-      }
-    },
-    {
-      "id": "umans-kimi-k2.7",
-      "name": "Kimi K2.7 Code",
-      "tool_call": true,
-      "reasoning": {
-        "supported": true
-      },
-      "limit": {
-        "context": 262144,
-        "output": 32768
+        "context": 1048576,
+        "output": 131071
       },
       "modalities": {
         "input": [
