@@ -22,9 +22,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.activity.compose.BackHandler
 import com.pinapia.vana.chat.ChatScreen
+import com.pinapia.vana.chat.HostedSideChat
+import com.pinapia.vana.chat.SideChatHost
 import com.pinapia.vana.chat.SideChatListScreen
+import com.pinapia.vana.chat.SideChatVisit
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavBackStackEntry
 import com.pinapia.vana.thread.SideChat
 import com.pinapia.vana.chat.ChatViewModel
 import com.pinapia.vana.checkin.CheckInScheduler
@@ -156,6 +161,13 @@ fun VanaApp(
         }
     }
 
+    /** 侧聊的宿主:主对话那一项的 view model。侧聊列表和侧聊本身都从那一项上取,拿到的是同一个。 */
+    @Composable
+    fun sideChatHost(entry: NavBackStackEntry): SideChatHost {
+        val chatEntry = remember(entry) { navController.getBackStackEntry(Routes.CHAT) }
+        return viewModel(viewModelStoreOwner = chatEntry, key = "side-host-$tenantId")
+    }
+
     fun chatFactory(ephemeral: Boolean = false, sideChat: SideChat? = null) = ChatViewModel.Factory(
         threadWriter = TenantScope.currentStores.threadWriter,
         engineSettings = app.engineSettings,
@@ -219,6 +231,8 @@ fun VanaApp(
                     key = "chat-$tenantId",
                     factory = chatFactory(),
                 )
+                // 侧聊的宿主挂在主对话这一项上:换成员、清空全部对话时和主对话一起换掉。
+                val sideChatsUnread by viewModel<SideChatHost>(key = "side-host-$tenantId").unread.collectAsStateWithLifecycle()
                 LaunchedEffect(checkInQuestion) {
                     if (checkInQuestion != null) {
                         chatViewModel.applyCheckIn(checkInQuestion)
@@ -249,12 +263,16 @@ fun VanaApp(
                     onOpenTask = { navController.navigate(Routes.task(it)) },
                     onOpenSurface = { surface -> surfaceRoute(surface)?.let { navController.navigate(it) } },
                     onOpenSideChats = { navController.navigate(Routes.SIDES) },
+                    onOpenSideChat = { navController.navigate(Routes.side(it.id)) },
+                    sideChatsUnread = sideChatsUnread.isNotEmpty(),
                 )
             }
         }
-        composable(Routes.SIDES) {
+        composable(Routes.SIDES) { entry ->
+            val host = sideChatHost(entry)
             SideChatListScreen(
                 store = TenantScope.currentStores.sides,
+                host = host,
                 tenant = TenantScope.current,
                 onOpen = { navController.navigate(Routes.side(it.id)) },
                 onBack = { navController.popBackStack() },
@@ -264,6 +282,9 @@ fun VanaApp(
             // 一条侧聊:另一个聊天 view model 接另一条线程。返回回到「⋯ › 侧聊」那一页。
             val id = entry.arguments?.getString("id").orEmpty()
             val sides = TenantScope.currentStores.sides
+            val host = sideChatHost(entry)
+            // 这一项被弹出返回栈(返回、被快捷方式顶回主对话)时告诉宿主「那一页离开了」:还在写就留着写完。
+            viewModel<SideChatVisit>(key = "visit-$id", factory = viewModelFactory { initializer { SideChatVisit { host.close(id) } } })
             var lookedUp by remember(id) { mutableStateOf(false) }
             var found by remember(id) { mutableStateOf<SideChat?>(null) }
             LaunchedEffect(id) {
@@ -277,16 +298,10 @@ fun VanaApp(
                 LaunchedEffect(Unit) { navController.popBackStack() }
                 return@composable
             }
-            val sideViewModel: ChatViewModel = viewModel(
-                key = "side-${TenantScope.current.id}-$id",
-                factory = chatFactory(sideChat = sideChat),
-            )
-            // 离开侧聊就停(等于按了停止,写出来的留着)。接着写完是 S2 的事。
-            val leave = {
-                sideViewModel.leaveSideChat()
-                navController.popBackStack()
+            // 宿主里还在写的那一个就接着用——同一个对象,不是重新读盘。
+            val sideViewModel = remember(id) {
+                host.open(id) { HostedSideChat.make(chatFactory(sideChat = sideChat)) }.viewModel
             }
-            BackHandler { leave() }
             ChatScreen(
                 viewModel = sideViewModel,
                 exerciseLibrary = exerciseLibrary,
@@ -296,10 +311,15 @@ fun VanaApp(
                 onOpenTasks = { navController.navigate(Routes.TASKS) },
                 onOpenTask = { navController.navigate(Routes.task(it)) },
                 onDeleteSideChat = {
-                    sideViewModel.deleteSideChat()
+                    // 先停下、落盘,再按「名单 → 线程和照片 → 目录」的顺序删;界面当场关掉,不等。
+                    val leaving = host.discard(id)
+                    sides.launch {
+                        leaving?.join()
+                        sides.delete(id)
+                    }
                     navController.popBackStack()
                 },
-                onBack = { leave() },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.EPHEMERAL) {

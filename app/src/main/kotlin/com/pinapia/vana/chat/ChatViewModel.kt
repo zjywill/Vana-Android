@@ -39,6 +39,7 @@ import com.pinapia.vana.tenant.Tenant
 import com.pinapia.vana.tenant.TenantScope
 import com.pinapia.vana.thread.ConversationHistory
 import com.pinapia.vana.thread.SideChat
+import com.pinapia.vana.thread.SideChatQuote
 import com.pinapia.vana.thread.SideChatStore
 import com.pinapia.vana.thread.SideChatTitle
 import com.pinapia.vana.thread.ThreadWindow
@@ -576,9 +577,9 @@ class ChatViewModel(
     }
 
     /**
-     * 离开这条侧聊(返回、删它、被快捷方式或 check-in 顶回主对话、被回收)。**正在写的回复停下**——等于按了
-     * 停止,已经写出来的留着;回来时接上同一个对象、让它接着写完是 S2 的事。离开时顺手收割一次:里面刚说的
-     * 那几句,主对话那边的收割要等到下一次切后台才轮得到。
+     * 放掉这条侧聊的 view model(宿主 [SideChatHost] 在它写完之后、或者要删它、换成员时调)。正在写的回复
+     * 停下——等于按了停止,已经写出来的留着。离开那一页本身**不**走这里:还在写的那个留在宿主里接着写完。
+     * 离开时顺手收割一次:里面刚说的那几句,主对话那边的收割要等到下一次切后台才轮得到。
      *
      * 标记是**当场**做的,落盘和收割在名单自己的作用域里做:这个 view model 马上就要被回收,它自己的
      * `viewModelScope` 等不到写完。几条路会前后脚走到这儿,只有第一条算数。
@@ -596,18 +597,61 @@ class ChatViewModel(
         }
     }
 
-    /** 在侧聊里按了「删除这条侧聊」:先让它停下、落盘,再按「名单 → 线程和照片 → 目录」的顺序删。 */
-    fun deleteSideChat(): Job? {
-        val chat = _sideChat.value ?: return null
-        val leaving = leaveSideChat(harvesting = false)
-        return sides.launch {
-            leaving?.join()
-            sides.delete(chat.id)
+    // ------------------------------------------------------------------ 主对话和侧聊之间搬一段话
+
+    private val _broughtBack = MutableStateFlow<Set<String>>(emptySet())
+
+    /**
+     * 这一次打开期间带回过主对话的那几条。只记在内存里:它的用处是让他按完看得见结果、别连按两次,
+     * 不是一份要存下来的账——主对话里那一条本身才是记录。
+     */
+    val broughtBack: StateFlow<Set<String>> = _broughtBack.asStateFlow()
+
+    /** 这条回复能往哪条线上搬。主对话里是「在侧聊里接着聊」,侧聊里是「带回主对话」。 */
+    fun sideChatMove(message: ChatMessage): SideChatMove {
+        if (isSideChat && message.id in _broughtBack.value) return SideChatMove.BROUGHT_BACK
+        if (_isReplying.value || !SideChatQuote.canQuote(message)) return SideChatMove.NONE
+        return when {
+            isMainThread -> SideChatMove.CONTINUE_IN_SIDE_CHAT
+            isSideChat -> SideChatMove.BRING_BACK
+            else -> SideChatMove.NONE
         }
     }
 
+    /**
+     * 拿主对话里这一问一答开一条新侧聊。名字取那句提问(他随后能改),开头是那段回答的可见正文——不拷
+     * transcript。开好了交给 [onOpened],界面接着把它打开。
+     */
+    fun continueInSideChat(messageId: String, onOpened: (SideChat) -> Unit) {
+        val messages = _session.value.messages
+        val index = messages.indexOfFirst { it.id == messageId }
+        if (index < 0 || sideChatMove(messages[index]) != SideChatMove.CONTINUE_IN_SIDE_CHAT) return
+        val answer = messages[index]
+        val question = messages.take(index).lastOrNull { it.role == ChatMessage.Role.USER && !it.isQueued }
+        val seed = SideChatQuote.seed(question, answer)
+        viewModelScope.launch {
+            val chat = sides.create(question?.let { SideChatTitle.make(it.text) }.orEmpty())
+            sides.writer(chat.id).write { it.appendAtEnd(seed) }
+            onOpened(chat)
+        }
+    }
+
+    /**
+     * 把侧聊里这一段原样追加到主对话末尾。主对话那边照后台来的主动消息那样,在轮边界并进去(`postProactive`
+     * 会拨一下它的 revision)。**不花一次调用去总结**,要带什么由他挑那一条。
+     */
+    fun bringBackToMain(messageId: String) {
+        val chat = _sideChat.value ?: return
+        val message = _session.value.messages.firstOrNull { it.id == messageId } ?: return
+        if (sideChatMove(message) != SideChatMove.BRING_BACK) return
+        _broughtBack.update { it + messageId }
+        val note = SideChatQuote.broughtBack(message, chat.displayTitle)
+        val main = threadWriter
+        sides.launch { main.postProactive(note) }
+    }
+
     override fun onCleared() {
-        // 离开侧聊的最后一道:返回栈上这一项被弹掉了,不管是从哪条路。
+        // 侧聊的最后一道:宿主清掉了它那一格 ViewModelStore。宿主多半已经先调过 leaveSideChat,这里是兜底。
         leaveSideChat()
         super.onCleared()
     }
@@ -1262,6 +1306,16 @@ class ChatViewModel(
 
         val IDLE_HARVEST_DELAY = 30.minutes
     }
+}
+
+/** 一条回复能往另一条线上搬的那一步。主对话里是「在侧聊里接着聊」,侧聊里是「带回主对话」。 */
+enum class SideChatMove {
+    NONE,
+    CONTINUE_IN_SIDE_CHAT,
+    BRING_BACK,
+
+    /** 这一次打开期间已经带回去过了:按完要看得见结果,也别让他连按两次。 */
+    BROUGHT_BACK,
 }
 
 enum class ErrorRecovery {

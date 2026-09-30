@@ -92,6 +92,8 @@ data class ChatMessage(
     var origin: Origin = Origin.NORMAL,
     /** [Origin.TASK] 的消息指向哪条任务:气泡上的「查看详情」凭它跳过去。 */
     var refTaskId: String? = null,
+    /** 从另一条线上带过来的那一段是哪儿来的([Origin.FROM_MAIN] / [Origin.FROM_SIDE_CHAT])。 */
+    var provenance: Provenance? = null,
 ) : AgentTurnSink {
     @Serializable
     enum class Role {
@@ -113,7 +115,29 @@ data class ChatMessage(
 
         /** 后台任务的结果(P5/P6)。 */
         @SerialName("task") TASK,
+
+        /** 侧聊的开头:从主对话里某一问一答接着聊,那一段原样带过来。只出现在侧聊里。 */
+        @SerialName("fromMain") FROM_MAIN,
+
+        /** 他从某条侧聊里挑一段回复带回主对话。只出现在主对话里。 */
+        @SerialName("fromSideChat") FROM_SIDE_CHAT,
     }
+
+    /**
+     * 从另一条线上带过来的那一段是哪儿来的。两份读者:界面上那一行小字说它从哪儿来、当时问的是什么;
+     * 给模型的那段话(`SideChatQuote.modelNote`)要说清楚这不是对上一句的回答——否则它会以为自己答非所问。
+     */
+    @Serializable
+    data class Provenance(
+        /** 带过来的那段回答当时回的是哪句话。只有侧聊的开头有。 */
+        val question: String? = null,
+        /** 从哪条侧聊带回来的(它的名字)。只有带回主对话的那条有。 */
+        val sideChatTitle: String? = null,
+        /** 那段回答当时查过哪些工具。只留名字,不留输出(同召回读回来的原文)。 */
+        val toolNames: List<String> = emptyList(),
+        /** 原来那段是什么时候说的。 */
+        val date: Instant? = null,
+    )
 
     /** 主动消息:模型要知道自己说过,但它不是对某句提问的回答。 */
     val isProactive: Boolean get() = origin != Origin.NORMAL

@@ -102,8 +102,12 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 - **照片仓库是成员名下所有线程共用的**：`ThreadStore.deleteAll()` 只删这条线程自己引用的照片；
   要一张不留走 `ConversationHistory.clearAll()`（「对话历史」的三样都经它，范围是主对话加全部侧聊）。
 - **删的顺序是先落名单、再清线程（连照片）、最后删目录**；孤儿目录只在名单读懂、且没有 `index.json.bak` 时清。
-- **离开 = 返回栈上那一项被弹出**：返回键 / 返回箭头 / 删除显式调 `leaveSideChat()`，`onCleared()` 兜底。
-  离开时的落盘和收割在 `SideChatStore.launch` 里做——`onCleared` 时 `viewModelScope` 已经取消了。
+- **侧聊的 view model 归 `SideChatHost`**（主对话那一项返回栈上的 view model），不归侧聊那一页：离开时还在写的留着写完、
+  写完亮未读点，回来接上的是**同一个对象**（两个对象写一条线，位置和已删的记账会对不上）。每个侧聊 view model 一格自己的
+  `ViewModelStore`（`HostedSideChat`），放掉就清那一格。「离开那一页」= 侧聊那一项被弹出返回栈（`SideChatVisit`），
+  推出设置页不算。放掉时的落盘和收割在 `SideChatStore.launch` 里做——`onCleared` 时 `viewModelScope` 已经取消了。
+- **两条线之间搬的是文字，不是 transcript**（`SideChatQuote`）：`tool_call` 配对、思考、原图断一样就是 400；照片不带
+  （照片归原来那条线）。给模型的来历说明由 `HistoryMarkers` 折进下一条用户消息开头。
 - **侧聊说明块**（`CoreInstructions.sideChat`，`PromptOrder.SIDE_CHAT = 25`）在静态区，名字在第一次请求**之前**定下来，
   不带领域词（`PromptAssemblyTest` 盯着）。
 

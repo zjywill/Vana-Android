@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -149,6 +150,8 @@ import com.pinapia.vana.exercises.exerciseIDs
 import com.pinapia.vana.plugins.HealthTopics
 import com.pinapia.vana.plugins.PluginRegistry
 import com.pinapia.vana.settings.CloudCatalog
+import com.pinapia.vana.thread.SideChat
+import com.pinapia.vana.thread.SideChatQuote
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,6 +172,10 @@ fun ChatScreen(
     onOpenSideChats: () -> Unit = {},
     /** 侧聊里按了「删除这条侧聊」并确认之后。 */
     onDeleteSideChat: () -> Unit = {},
+    /** 「在侧聊里接着聊」开好了一条侧聊,打开它。 */
+    onOpenSideChat: (SideChat) -> Unit = {},
+    /** 有侧聊在他离开之后写完了回复、他还没看:主对话的「⋯」上亮一个点。 */
+    sideChatsUnread: Boolean = false,
     /** 浮层和侧聊需要:退出这一页(浮层连同里面的全部内容)。 */
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -181,6 +188,8 @@ fun ChatScreen(
     val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
     val todayAfterId by viewModel.todayAfterId.collectAsStateWithLifecycle()
     val sideChat by viewModel.sideChat.collectAsStateWithLifecycle()
+    // 只为了「已带回主对话」那一下能重画:按完要看得见结果。
+    val broughtBack by viewModel.broughtBack.collectAsStateWithLifecycle()
     var renamingSideChat by remember { mutableStateOf<String?>(null) }
     var confirmDeleteSideChat by remember { mutableStateOf(false) }
     // 「今天」那张卡:本机数据拼的,不进线程、不进上下文。只在主对话里出(不留痕、侧聊都没有)。
@@ -489,14 +498,32 @@ fun ChatScreen(
                         // 插件的入口都在「插件」页里,这里只留通用的几样。
                         Box {
                             IconButton(onClick = { showOverflowMenu = true }) {
-                                Icon(VanaIcons.EllipsisVertical, contentDescription = uiText("更多", "More"))
+                                // 关着的时候写完了的那几条侧聊:「⋯」上亮一个点,菜单里说一句。
+                                BadgedBox(badge = { if (sideChatsUnread) Badge() }) {
+                                    Icon(
+                                        VanaIcons.EllipsisVertical,
+                                        contentDescription = if (sideChatsUnread) {
+                                            uiText("更多，侧聊有新回复", "More, a side chat has a new reply")
+                                        } else {
+                                            uiText("更多", "More")
+                                        },
+                                    )
+                                }
                             }
                             DropdownMenu(
                                 expanded = showOverflowMenu,
                                 onDismissRequest = { showOverflowMenu = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text(uiText("侧聊", "Side chats")) },
+                                    text = {
+                                        Text(
+                                            if (sideChatsUnread) {
+                                                uiText("侧聊 · 有新回复", "Side chats · new reply")
+                                            } else {
+                                                uiText("侧聊", "Side chats")
+                                            },
+                                        )
+                                    },
                                     onClick = {
                                         showOverflowMenu = false
                                         onOpenSideChats()
@@ -597,6 +624,19 @@ fun ChatScreen(
                                     onRetry = { viewModel.retry(message.id) },
                                     onOpenSettings = onOpenSettings,
                                     onDelete = { pendingDeleteAssistantId = message.id },
+                                    sideChatMove = if (message.role == ChatMessage.Role.ASSISTANT) {
+                                        // 读一下 broughtBack,让「已带回主对话」按完就重画。
+                                        broughtBack.let { viewModel.sideChatMove(message) }
+                                    } else {
+                                        SideChatMove.NONE
+                                    },
+                                    onSideChatMove = {
+                                        if (viewModel.isMainThread) {
+                                            viewModel.continueInSideChat(message.id, onOpenSideChat)
+                                        } else {
+                                            viewModel.bringBackToMain(message.id)
+                                        }
+                                    },
                                     onAnswerAsk = { callId, answer ->
                                         viewModel.answerAsk(message.id, callId, answer)
                                     },
@@ -1252,6 +1292,9 @@ private fun MessageBubble(
     onDelete: () -> Unit,
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
     onOpenTask: (String) -> Unit = {},
+    /** 这条能不能搬到另一条线上(在侧聊里接着聊 / 带回主对话)。 */
+    sideChatMove: SideChatMove = SideChatMove.NONE,
+    onSideChatMove: () -> Unit = {},
 ) {
     val isUser = message.role == ChatMessage.Role.USER
     var openReasoningId by remember(message.id) { mutableStateOf<String?>(null) }
@@ -1295,10 +1338,22 @@ private fun MessageBubble(
             } else {
                 if (message.isProactive) {
                     Text(
-                        proactiveLabel(message.origin),
+                        SideChatQuote.label(message) ?: proactiveLabel(message.origin),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
+                }
+                // 从主对话带过来的那段:当时回的是哪句话。不写这一行,底下那段回答就没头没尾。
+                if (message.origin == ChatMessage.Origin.FROM_MAIN) {
+                    message.provenance?.question?.let { question ->
+                        Text(
+                            "「$question」",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 segments.forEach { segment ->
                     key(segment.stableId) {
@@ -1448,7 +1503,8 @@ private fun MessageBubble(
                 }
             }
             if (!isUser && !isLiveReply && !message.textIsPlaceholder && message.text.isNotBlank()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // 会换行:按钮多了一颗,字号调大的人一行放不下。
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     // 主动说的话不是对哪句提问的回答,「重新回答」没有可重来的那句。
                     if (!message.isProactive) {
                         TextButton(onClick = onRetry, enabled = !isReplying) {
@@ -1459,6 +1515,18 @@ private fun MessageBubble(
                         TextButton(onClick = { onOpenTask(taskId) }) {
                             Text(uiText("查看详情", "View details"))
                         }
+                    }
+                    when (sideChatMove) {
+                        SideChatMove.CONTINUE_IN_SIDE_CHAT -> TextButton(onClick = onSideChatMove) {
+                            Text(uiText("在侧聊里接着聊", "Continue in a side chat"))
+                        }
+                        SideChatMove.BRING_BACK -> TextButton(onClick = onSideChatMove) {
+                            Text(uiText("带回主对话", "Bring back to main"))
+                        }
+                        SideChatMove.BROUGHT_BACK -> TextButton(onClick = {}, enabled = false) {
+                            Text(uiText("已带回主对话", "Brought back to main"))
+                        }
+                        SideChatMove.NONE -> Unit
                     }
                     TextButton(onClick = onDelete, enabled = !isReplying) {
                         Text(uiText("删除", "Delete"))
@@ -1947,5 +2015,8 @@ private fun proactiveLabel(origin: ChatMessage.Origin): String = when (origin) {
     ChatMessage.Origin.FOLLOW_UP -> L10n.text("Vana 主动说 · 回头看了一眼", "Vana followed up")
     ChatMessage.Origin.REMINDER -> L10n.text("Vana 提醒", "Vana reminder")
     ChatMessage.Origin.TASK -> L10n.text("Vana 主动说 · 任务结果", "Vana reported · task result")
+    ChatMessage.Origin.FROM_MAIN,
+    ChatMessage.Origin.FROM_SIDE_CHAT,
+    -> SideChatQuote.label(ChatMessage(role = ChatMessage.Role.ASSISTANT, text = "", origin = origin)).orEmpty()
     ChatMessage.Origin.NORMAL -> ""
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +38,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,11 +82,15 @@ internal object SideChatCopy {
 @Composable
 fun SideChatListScreen(
     store: SideChatStore,
+    /** 离开之后还在写、或者写完了没看的那几条(「正在回复」、未读点)。删的时候也要先经过它:还在写的那一个要先停下。 */
+    host: SideChatHost,
     tenant: Tenant,
     onOpen: (SideChat) -> Unit,
     onBack: () -> Unit,
 ) {
     val revision by store.revision.collectAsStateWithLifecycle()
+    val unread by host.unread.collectAsStateWithLifecycle()
+    val replying by host.replying.collectAsStateWithLifecycle()
     var chats by remember { mutableStateOf<List<SideChat>?>(null) }
     LaunchedEffect(revision) { chats = store.all() }
     val scope = rememberCoroutineScope()
@@ -133,6 +140,8 @@ fun SideChatListScreen(
                 items(list, key = { it.id }) { chat ->
                     SideChatRow(
                         chat = chat,
+                        isReplying = chat.id in replying,
+                        isUnread = chat.id in unread,
                         onOpen = { onOpen(chat) },
                         onRename = { renaming = chat },
                         onDelete = { deleting = chat },
@@ -217,7 +226,11 @@ fun SideChatListScreen(
             confirmButton = {
                 TextButton(onClick = {
                     deleting = null
-                    scope.launch { store.delete(chat.id) }
+                    val leaving = host.discard(chat.id)
+                    scope.launch {
+                        leaving?.join()
+                        store.delete(chat.id)
+                    }
                 }) { Text(uiText("删除", "Delete"), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
@@ -231,6 +244,8 @@ fun SideChatListScreen(
 @Composable
 private fun SideChatRow(
     chat: SideChat,
+    isReplying: Boolean,
+    isUnread: Boolean,
     onOpen: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
@@ -251,10 +266,14 @@ private fun SideChatRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                lastActive(chat),
+                if (isReplying) uiText("正在回复…", "Replying…") else lastActive(chat),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        // 离开之后写完了、他还没看的那条。
+        if (isUnread) {
+            Badge(modifier = Modifier.semantics { contentDescription = L10n.text("有新回复", "New reply") })
         }
         // 长按之外再给一个看得见的「⋯」:长按在 Android 上不是人人都会去试。
         Box {

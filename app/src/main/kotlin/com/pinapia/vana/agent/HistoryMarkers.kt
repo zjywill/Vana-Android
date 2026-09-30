@@ -2,6 +2,7 @@ package com.pinapia.vana.agent
 
 import com.pinapia.vana.agentruntime.AgentChatMessageDTO
 import com.pinapia.vana.session.ChatMessage
+import com.pinapia.vana.thread.SideChatQuote
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -33,16 +34,24 @@ object HistoryMarkers {
      * - **主动消息**(Vana 自己先开口:check-in、回头看的结论……)不作为独立的助手消息发出去,而是折进
      *   **下一条用户消息**的开头(「Vana 之前主动说过：……」)。请求里助手和用户消息严格交替——有的 provider
      *   (比如 Anthropic 协议)不接受连着两条助手消息,也不接受以助手消息开头。
+     *   从另一条线上搬过来的那两种(侧聊的开头、带回主对话的)各自有一段说明来历的话
+     *   ([SideChatQuote.modelNote]),不混进「主动说过」那一句里。
      */
     fun apply(messages: List<ChatMessage>, zone: ZoneId = ZoneId.systemDefault()): List<AgentChatMessageDTO> {
         var previous: ChatMessage? = null
         val proactive = ArrayList<String>()
+        val quoted = ArrayList<String>()
         val out = ArrayList<AgentChatMessageDTO>()
         for (message in messages) {
             val before = previous
             previous = message
             if (message.role == ChatMessage.Role.ASSISTANT && message.isProactive) {
-                message.text.trim().takeIf { it.isNotEmpty() }?.let { proactive += it }
+                val note = SideChatQuote.modelNote(message)
+                if (note != null) {
+                    quoted += note
+                } else {
+                    message.text.trim().takeIf { it.isNotEmpty() }?.let { proactive += it }
+                }
                 continue
             }
             val dto = message.toDTO()
@@ -58,6 +67,8 @@ object HistoryMarkers {
                     zone = zone,
                 )?.let { prefix.append(it).append('\n') }
             }
+            quoted.forEach { prefix.append(it).append('\n') }
+            quoted.clear()
             if (proactive.isNotEmpty()) {
                 prefix.append("（Vana 之前主动说过：").append(proactive.joinToString("；")).append("）\n")
                 proactive.clear()
