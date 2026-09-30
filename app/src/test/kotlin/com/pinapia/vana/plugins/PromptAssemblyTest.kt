@@ -107,6 +107,9 @@ class PromptAssemblyTest {
         memorySnapshot: MemorySnapshot = memory,
         /** 有没有原文滑出了窗口。没有的话召回不该挂。 */
         hiddenHistory: Boolean = true,
+        /** 召回还够得着的别的线(侧聊)。 */
+        otherThreads: List<com.pinapia.vana.recall.HistoryRecallTools.Source> = emptyList(),
+        otherThreadsScope: OtherThreadsScope? = null,
     ) = PluginEnvironment(
         tasks = TasksEnvironment(store = taskStore),
         isEnabled = { id ->
@@ -121,6 +124,8 @@ class PromptAssemblyTest {
         tenant = tenant,
         archive = archive,
         hiddenBeforePos = { if (hiddenHistory) 100.0 else null },
+        otherThreads = otherThreads,
+        otherThreadsScope = otherThreadsScope,
         memoryStore = memoryStore,
         memorySnapshot = { memorySnapshot },
         location = location,
@@ -646,6 +651,54 @@ class PromptAssemblyTest {
             engine(env(health = false), sideChatTitle = "十月去京都").everythingTheModelReads(),
             "侧聊",
         )
+    }
+
+    /** 主对话里:够得着一条有内容的侧聊,没有自己滑出去的历史。 */
+    private fun envReachingASideChat(health: Boolean = true, memoryOn: Boolean = true) = env(
+        health = health,
+        memoryOn = memoryOn,
+        hiddenHistory = false,
+        otherThreads = listOf(com.pinapia.vana.recall.HistoryRecallTools.Source(label = "侧聊「十月去京都」", archive = archive)),
+        otherThreadsScope = OtherThreadsScope(
+            others = "他开的侧聊",
+            sideChats = listOf(RecallReach.Listing(title = "十月去京都", lastActiveAt = Clock.System.now())),
+        ),
+    )
+
+    /**
+     * 跨线程召回:只有别的线有原文时召回照样挂,说明里说清楚还够得着哪儿;主对话的易变区最后挂一份侧聊名单,
+     * 末尾那句「他没提起时不要主动说起它们」必须在。
+     */
+    @Test
+    fun recallReachesSideChatsAndTheRosterSitsAtTheVeryEnd() {
+        val engine = engine(envReachingASideChat())
+        assertTrue(HistoryRecallToolsNames.SEARCH in engine.toolNames())
+        val text = engine.systemInstruction()
+        assertTrue(text.contains("他开的侧聊里说过的你在这里看不到，但原文都还在。"))
+        assertTrue(text.contains("他提到他开的侧聊里的事时也一样。"))
+        assertTrue(text.contains("- 「十月去京都」，最近一次是 "))
+        assertTrue(text.contains("他没提起时不要主动说起它们"))
+        assertTrue("名单在易变区最后", text.indexOf("他另外开着几条侧聊") > text.indexOf("他正在推进的目标"))
+        assertTrue(
+            engine.toolDefinitions().first { it.name == HistoryRecallToolsNames.SEARCH }.description.orEmpty()
+                .contains("以及别的对话线（主对话、侧聊）里说过的"),
+        )
+        assertNoHealthWords(engine(envReachingASideChat(health = false)).everythingTheModelReads(), "跨线程召回")
+    }
+
+    /** 只有这条对话自己时,召回那段话和原来逐字一样,一个「侧聊」都不提。名单跟着召回走,归记忆开关。 */
+    @Test
+    fun withoutOtherThreadsRecallTalksExactlyAsBeforeAndMemoryOffDropsTheRoster() {
+        val text = engine(env()).systemInstruction()
+        assertTrue(text.contains("这条对话更早的部分已经滑出了你能直接看到的范围，但原文都还在。默认不要去翻"))
+        assertFalse(text.contains("侧聊"))
+        val off = engine(envReachingASideChat(memoryOn = false))
+        assertFalse(HistoryRecallToolsNames.SEARCH in off.toolNames())
+        assertFalse(off.systemInstruction().contains("他另外开着几条侧聊"))
+    }
+
+    private object HistoryRecallToolsNames {
+        const val SEARCH = com.pinapia.vana.recall.HistoryRecallTools.SEARCH_TOOL_NAME
     }
 
     @Test

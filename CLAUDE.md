@@ -106,6 +106,9 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
   写完亮未读点，回来接上的是**同一个对象**（两个对象写一条线，位置和已删的记账会对不上）。每个侧聊 view model 一格自己的
   `ViewModelStore`（`HostedSideChat`），放掉就清那一格。「离开那一页」= 侧聊那一项被弹出返回栈（`SideChatVisit`），
   推出设置页不算。放掉时的落盘和收割在 `SideChatStore.launch` 里做——`onCleared` 时 `viewModelScope` 已经取消了。
+- **互通靠记忆和召回，不靠往窗口里塞别处的原文**：召回每轮现算够得着哪些线（`SideChatRecall.gather`），别的线整条都算
+  看不见，搜出来的每一处标上在哪条线上；只有这条对话自己时召回的说明**逐字不变**。主对话易变区最后那块侧聊名单末尾的
+  「他没提起时不要主动说起它们」是产出不是免责：不写的话模型每答一句都先扯一句侧聊。
 - **两条线之间搬的是文字，不是 transcript**（`SideChatQuote`）：`tool_call` 配对、思考、原图断一样就是 400；照片不带
   （照片归原来那条线）。给模型的来历说明由 `HistoryMarkers` 折进下一条用户消息开头。
 - **侧聊说明块**（`CoreInstructions.sideChat`，`PromptOrder.SIDE_CHAT = 25`）在静态区，名字在第一次请求**之前**定下来，

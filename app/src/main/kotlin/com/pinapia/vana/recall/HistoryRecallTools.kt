@@ -12,7 +12,10 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.max
 
 /**
- * 检索这条对话里**已经滑出窗口**的历史。
+ * 检索这条对话里**已经滑出窗口**的历史,以及别的线(主对话、侧聊)里说过的。
+ *
+ * 侧聊和主对话窗口各管各的,互通靠的就是这一层和记忆:别的线整条都算「看不见」,搜出来的每一处标上它在哪条
+ * 线上([Source.label])。
  *
  * 工具名(`search_sessions` / `read_session`)沿用旧的——历史 transcript 里已经写过对它们的调用,
  * 改名只会让旧调用对不上号;对模型来说它们的意思是「翻对话历史」。
@@ -30,14 +33,37 @@ object HistoryRecallTools {
 
     val footer = "（以上是当时说过的话，日期见开头。里面的具体数值都可能已经过时，要用就现在重新查一遍工具，一律以本次返回的为准。）"
 
+    /** 能翻的一条线。 */
+    class Source(
+        /** null 是这条对话本身;别的线写它是哪条(「主对话」「侧聊「京都」」),搜出来的每一处都标上。给模型看的,固定中文。 */
+        val label: String?,
+        val archive: ThreadArchive,
+        /** 它**之前**的才算看不见。这条对话本身是窗口起点(每次调用现取);别的线整条都看不见。 */
+        val hiddenBeforePos: () -> Double? = { Double.MAX_VALUE },
+    )
+
     fun registry(archive: ThreadArchive, hiddenBeforePos: () -> Double?): CapabilityRegistry =
-        CapabilityRegistry(definitions = listOf(searchDefinition(), readDefinition())) { invocation ->
+        registry(listOf(Source(label = null, archive = archive, hiddenBeforePos = hiddenBeforePos)))
+
+    /** 几条线一起翻。只有这条对话本身的时候,工具说明和线上一直以来的那份逐字一样。 */
+    fun registry(sources: List<Source>): CapabilityRegistry {
+        val spansOtherThreads = sources.any { it.label != null }
+        return CapabilityRegistry(definitions = listOf(searchDefinition(spansOtherThreads), readDefinition())) { invocation ->
             when (invocation.name) {
-                SEARCH_TOOL_NAME -> search(archive, hiddenBeforePos, invocation)
-                READ_TOOL_NAME -> read(archive, hiddenBeforePos, invocation)
+                SEARCH_TOOL_NAME -> search(sources, invocation)
+                READ_TOOL_NAME -> read(sources, invocation)
                 else -> text("不支持名为 ${invocation.name} 的工具。", isError = true)
             }
         }
+    }
+
+    /** 搜出来的一处:哪一行、在哪条线上。 */
+    private class Hit(val row: ThreadArchive.Row, val source: Int, val label: String?)
+
+    /** 谁更近。同一条线上按位置(它才是真顺序:插话之前的回复位置更小);跨线只能按时间。 */
+    private val mostRecentFirst = Comparator<Hit> { a, b ->
+        if (a.source == b.source) b.row.pos.compareTo(a.row.pos) else b.row.createdAt.compareTo(a.row.createdAt)
+    }
 
     /** 一条消息的短编号:id 的稳定散列。不按「第几条」编,删掉一条编号就全错位了。 */
     fun handleOf(id: String): String = "H" + Integer.toUnsignedString(id.hashCode(), 36).uppercase()
@@ -48,66 +74,72 @@ object HistoryRecallTools {
     )
 
     private suspend fun search(
-        archive: ThreadArchive,
-        hiddenBeforePos: () -> Double?,
+        sources: List<Source>,
         invocation: CapabilityInvocation,
     ): CapabilityExecutionResult {
         val input = runCatching { RuntimeJSONValue.decode(from = invocation.input) }.getOrNull()
         val query = input?.get("query")?.stringValue?.trim().orEmpty()
         val sinceDays = input?.get("since_days")?.intValue
-        archive.await()
-        val before = hiddenBeforePos() ?: return text("还没有可以回顾的过往对话。")
         val since = sinceDays?.let {
             System.currentTimeMillis() - it.toLong().coerceIn(1, 365) * 86_400_000L
         }
-        val candidates = archive.rowsBefore(before).filter { row ->
-            row.isUser && (since == null || row.createdAt.toEpochMilliseconds() >= since)
+        val candidates = ArrayList<Hit>()
+        sources.forEachIndexed { index, source ->
+            source.archive.await()
+            val before = source.hiddenBeforePos() ?: return@forEachIndexed
+            source.archive.rowsBefore(before)
+                .filter { row -> row.isUser && (since == null || row.createdAt.toEpochMilliseconds() >= since) }
+                .mapTo(candidates) { Hit(it, index, source.label) }
         }
         if (candidates.isEmpty()) return text("还没有可以回顾的过往对话。")
 
         val matches = if (query.isEmpty()) {
-            candidates.takeLast(6).reversed()
+            candidates.sortedWith(mostRecentFirst).take(6)
         } else {
-            val scored = candidates.mapNotNull { row ->
-                val score = relevance(query, row.text)
-                if (score <= 0) null else row to score
+            val scored = candidates.mapNotNull { hit ->
+                val score = relevance(query, hit.row.text)
+                if (score <= 0) null else hit to score
             }
             if (scored.isEmpty()) return text("没有找到相关的过往对话。")
             val best = scored.maxOf { it.second }
             val floor = best * 2 / 3
             scored.filter { it.second >= max(1, floor) }
-                .sortedWith(compareByDescending<Pair<ThreadArchive.Row, Int>> { it.second }.thenByDescending { it.first.pos })
+                .sortedWith(compareByDescending<Pair<Hit, Int>> { it.second }.thenBy(mostRecentFirst) { it.first })
                 .map { it.first }
                 .take(6)
         }
         val lines = mutableListOf("找到 ${matches.size} 处相关的过往对话：")
-        matches.forEach { row ->
-            lines += "- ${handleOf(row.id)} · ${formatDate(row.createdAt)} · ${row.text.lineSequence().first().take(80)}"
+        matches.forEach { hit ->
+            val place = hit.label?.let { " · $it" }.orEmpty()
+            lines += "- ${handleOf(hit.row.id)} · ${formatDate(hit.row.createdAt)}$place · ${hit.row.text.lineSequence().first().take(80)}"
         }
         lines += "其中确实是用户说的那次，用 read_session 读它；都对不上就别读了，照常回答。"
         return text(lines.joinToString("\n"))
     }
 
     private suspend fun read(
-        archive: ThreadArchive,
-        hiddenBeforePos: () -> Double?,
+        sources: List<Source>,
         invocation: CapabilityInvocation,
     ): CapabilityExecutionResult {
         val handle = runCatching {
             RuntimeJSONValue.decode(from = invocation.input)["id"]?.stringValue?.trim()
         }.getOrNull().orEmpty()
-        archive.await()
-        val before = hiddenBeforePos()
-            ?: return text("没有编号为 $handle 的对话。先调 search_sessions 拿编号。", isError = true)
-        val target = archive.rowsBefore(before).firstOrNull { handleOf(it.id).equals(handle, ignoreCase = true) }
-            ?: return text("没有编号为 $handle 的对话。先调 search_sessions 拿编号。", isError = true)
-        val rows = archive.around(target.id)
-            ?: return text("编号 $handle 的对话已经读不到了，可能刚被删除。", isError = true)
-        return text(transcript(rows))
+        for (source in sources) {
+            source.archive.await()
+            val before = source.hiddenBeforePos() ?: continue
+            val target = source.archive.rowsBefore(before).firstOrNull { handleOf(it.id).equals(handle, ignoreCase = true) }
+                ?: continue
+            val rows = source.archive.around(target.id)
+                ?: return text("编号 $handle 的对话已经读不到了，可能刚被删除。", isError = true)
+            return text(transcript(rows, place = source.label))
+        }
+        return text("没有编号为 $handle 的对话。先调 search_sessions 拿编号。", isError = true)
     }
 
-    private fun transcript(rows: List<ThreadArchive.Row>): String {
-        val lines = mutableListOf("这是 ${formatDate(rows.first().createdAt)} 的一段对话：", "")
+    /** [place] 这段在哪条线上,写在日期后面的括号里。 */
+    private fun transcript(rows: List<ThreadArchive.Row>, place: String? = null): String {
+        val where = place?.let { "（$it）" }.orEmpty()
+        val lines = mutableListOf("这是 ${formatDate(rows.first().createdAt)} 的一段对话$where：", "")
         var used = lines.sumOf { it.length }
         for (row in rows) {
             val prefix = if (row.isUser) "他：" else "Vana："
@@ -145,9 +177,22 @@ object HistoryRecallTools {
         return (ascii + cjk).distinct().toList()
     }
 
-    private fun formatDate(instant: kotlinx.datetime.Instant): String {
+    /** 一律说得出具体是哪天:「上个月」听着自然,但模型拿它没法判断一条三个月前的结论还算不算数。 */
+    fun formatDate(instant: kotlinx.datetime.Instant): String {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
         return formatter.format(java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()))
+    }
+
+    /** 只有这条对话本身时,说明和线上一直以来的那份逐字一样;能翻别的线时多说一句「还有哪儿」。 */
+    private fun searchDefinition(spansOtherThreads: Boolean): CapabilityDefinition {
+        val base = searchDefinition()
+        if (!spansOtherThreads) return base
+        return base.copy(
+            description = base.description.orEmpty().replace(
+                "搜索这条对话里更早的、已经不在上面的部分。",
+                "搜索这条对话里更早的、已经不在上面的部分，以及别的对话线（主对话、侧聊）里说过的。",
+            ) + "他提到主对话或别的侧聊里的事时也一样。",
+        )
     }
 
     private fun searchDefinition() = CapabilityDefinition(

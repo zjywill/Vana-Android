@@ -56,4 +56,7 @@ object PromptOrder {
     const val MEASUREMENTS = 350
     const val FOCUS_MEDICATION = 360
     const val GOAL = 370
+
+    /** 主对话里挂的侧聊名单:几个名字加最近一次的日期。侧聊一有人说话就可能变,排在最后。 */
+    const val SIDE_CHATS = 380
 }

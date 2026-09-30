@@ -72,13 +72,20 @@ object CorePlugin : VanaPlugin {
 
     override fun agentPlugins(env: PluginEnvironment, route: PluginRoute): List<AgentPlugin> {
         // 召回归在记忆开关下面:关掉记忆的人不指望 Vana 还在引用他上个月说过的话。
-        // 而且只有真的有东西滑出了窗口才挂——没有「看不见的历史」,就没有可回顾的。
+        // 而且只有真的有看不见的原文才挂——这条对话自己滑出窗口的那段,加上别的线(主对话、侧聊)整条。
         val memoryOn = env.isEnabled(PluginIds.MEMORY)
-        val recall = env.archive?.takeIf { memoryOn }
-            ?.let { archive ->
-                env.hiddenBeforePos()?.takeIf { archive.hasRowsBefore(it) }
-                    ?.let { RecallPlugin(archive = archive, hiddenBeforePos = env.hiddenBeforePos) }
-            }
+        val own = env.archive?.let { archive ->
+            env.hiddenBeforePos()?.takeIf { archive.hasRowsBefore(it) }
+                ?.let { HistoryRecallTools.Source(label = null, archive = archive, hiddenBeforePos = env.hiddenBeforePos) }
+        }
+        val sources = listOfNotNull(own) + env.otherThreads
+        val recall = sources.takeIf { memoryOn && it.isNotEmpty() }?.let {
+            RecallPlugin(
+                sources = it,
+                reach = env.otherThreadsScope?.takeIf { env.otherThreads.isNotEmpty() }
+                    ?.let { scope -> RecallReach(ownHistory = own != null, others = scope.others, sideChats = scope.sideChats) },
+            )
+        }
         val memory = MemoryPlugin(
             store = env.memoryStore?.takeIf { memoryOn },
             snapshot = if (memoryOn) PluginRegistry.visibleMemory(env.memorySnapshot(), env.isEnabled) else MemorySnapshot.empty,

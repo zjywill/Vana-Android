@@ -1,5 +1,7 @@
 package com.pinapia.vana.plugins
 
+import com.pinapia.vana.recall.HistoryRecallTools
+
 import com.pinapia.vana.agentruntime.AgentPlugin
 import com.pinapia.vana.exercises.ExerciseLibrary
 import com.pinapia.vana.location.LocationSnapshot
@@ -96,6 +98,13 @@ class PluginEnvironment(
     val archive: ThreadArchive?,
     /** 窗口起点的位置。在它之前的才是「已经滑出去」的历史;没有就说明还没有东西滑出去。 */
     val hiddenBeforePos: () -> Double? = { null },
+    /**
+     * 召回还够得着的别的线(主对话里是有内容的侧聊,侧聊里是主对话和别的侧聊),整条都算看不见。
+     * 由聊天界面每轮现算:侧聊刚删掉的话,下一轮就翻不到它。
+     */
+    val otherThreads: List<HistoryRecallTools.Source> = emptyList(),
+    /** 那几条线统称什么、主对话里要挂的侧聊名单。[otherThreads] 为空时不用。 */
+    val otherThreadsScope: OtherThreadsScope? = null,
     val memoryStore: MemoryStore?,
     val memorySnapshot: () -> MemorySnapshot = { MemorySnapshot.empty },
     val location: LocationSnapshot = LocationSnapshot.unknown,
@@ -112,6 +121,12 @@ class PluginEnvironment(
     val focusMedication: MedicationItem? = null,
     val measurementStore: MeasurementStore? = null,
     val measurementSnapshot: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
+)
+
+/** 召回够得着的别的线统称什么,以及主对话里要挂的侧聊名单(见 [RecallReach])。 */
+data class OtherThreadsScope(
+    val others: String,
+    val sideChats: List<RecallReach.Listing> = emptyList(),
 )
 
 /**

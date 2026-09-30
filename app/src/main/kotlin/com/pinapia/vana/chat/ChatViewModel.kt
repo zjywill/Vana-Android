@@ -22,7 +22,10 @@ import com.pinapia.vana.medications.MedicationSnapshot
 import com.pinapia.vana.measurements.MeasurementSnapshot
 import com.pinapia.vana.memory.MemoryHarvester
 import com.pinapia.vana.memory.MemorySnapshot
+import com.pinapia.vana.plugins.OtherThreadsScope
 import com.pinapia.vana.plugins.PluginEnvironment
+import com.pinapia.vana.recall.HistoryRecallTools
+import com.pinapia.vana.recall.SideChatRecall
 import com.pinapia.vana.plugins.PluginIds
 import com.pinapia.vana.plugins.PluginRegistry
 import com.pinapia.vana.plugins.PluginRoute
@@ -958,6 +961,7 @@ class ChatViewModel(
 
     private suspend fun runTurn() {
         locationProvider.refresh()
+        refreshRecallReach()
         var engine = resolveEngine()
         // 请求之前先看窗口该不该滑:固定开销(system 段、工具定义)先从预算里扣掉。
         // 滑动之后「有原文滑出去了」这件事变了,召回工具该不该挂也跟着变——所以要重新装配一次。
@@ -1086,9 +1090,11 @@ class ChatViewModel(
         return PluginEnvironment(
             isEnabled = engineSettings::isPluginEnabled,
             tenant = tenantProvider(),
-            // 召回读整条线程的档案;只有真的有原文滑出了窗口,PluginRegistry 才会把它挂上。
+            // 召回读整条线程的档案;只有真的有看不见的原文(自己滑出窗口的那段,加上别的线),PluginRegistry 才会把它挂上。
             archive = writer.archive,
             hiddenBeforePos = ::hiddenBeforePos,
+            otherThreads = recallReach.first,
+            otherThreadsScope = recallReach.second,
             memoryStore = stores.memory,
             memorySnapshot = memorySnapshotProvider,
             location = location,
@@ -1138,6 +1144,21 @@ class ChatViewModel(
         val dispatcher = AgentHookDispatcher(listOf(hook))
         followUpHooks = dispatcher
         return dispatcher
+    }
+
+    // ------------------------------------------------------------------ 召回够得着的别的线
+
+    /** 召回够得着的别的线,和它们统称什么。每轮请求之前现算([refreshRecallReach])。 */
+    private var recallReach: Pair<List<HistoryRecallTools.Source>, OtherThreadsScope?> = emptyList<HistoryRecallTools.Source>() to null
+
+    /** 每轮现算:侧聊刚删掉的话,下一轮就翻不到它。不留痕的那条不翻别的线。 */
+    private suspend fun refreshRecallReach() {
+        if (ephemeral) return
+        recallReach = SideChatRecall.gather(
+            main = threadWriter,
+            sides = sides,
+            current = _sideChat.value?.id,
+        )
     }
 
     // ------------------------------------------------------------------ 窗口

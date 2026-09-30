@@ -90,32 +90,80 @@ class WebFetchPlugin(private val client: WebFetchClient) : AgentPlugin {
 
 /**
  * 归在记忆开关下面:关掉记忆的人不指望 Vana 还在引用他上个月说过的话。
- * 只在真的有历史滑出了窗口时才构造(见 `CorePlugin`),所以挂上就是常挂,不再靠「用户提了『上次』才解锁」猜。
+ * 只在真的有看不见的原文时才构造(见 `CorePlugin`),所以挂上就是常挂,不再靠「用户提了『上次』才解锁」猜。
+ *
+ * [reach] 是 null 时只翻这条对话自己滑出窗口的那段——那时候说明和线上一直以来的那份逐字一样。
  */
 class RecallPlugin(
-    private val archive: ThreadArchive,
-    private val hiddenBeforePos: () -> Double?,
+    private val sources: List<HistoryRecallTools.Source>,
+    private val reach: RecallReach? = null,
 ) : AgentPlugin {
     override val id = "recall"
 
     override fun tools(context: PluginContext): List<PluginTool> =
-        PluginTool.from(
-            HistoryRecallTools.registry(archive = archive, hiddenBeforePos = hiddenBeforePos),
-        ) { setOf(ToolEffect.READ) }
+        PluginTool.from(HistoryRecallTools.registry(sources)) { setOf(ToolEffect.READ) }
 
     override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> {
         if (HistoryRecallTools.SEARCH_TOOL_NAME !in mountedTools) return emptyList()
-        return listOf(
-            PromptBlock(
-                PromptOrder.GUIDE_RECALL,
-                "这条对话更早的部分已经滑出了你能直接看到的范围，但原文都还在。" +
-                    "默认不要去翻；只有用户自己提起过去" +
-                    "（「上次」「之前说过」「我们聊过」「你还记得」，或者问一件他以前交代过、这次没再说的事）时，" +
-                    "才用 search_sessions 找到那一段，再用 read_session 读它，然后接着他当时的说法往下讲。" +
-                    "读回来的都是当时说过的话，里面的数值可能已经过期；要用具体数值就重新查，或者问他。" +
-                    "没找到就直接说没聊过，不要编一段「我们上次说过」出来。",
-            ),
-        )
+        return buildList {
+            add(
+                PromptBlock(
+                    PromptOrder.GUIDE_RECALL,
+                    opening +
+                        "默认不要去翻；只有用户自己提起过去" +
+                        "（「上次」「之前说过」「我们聊过」「你还记得」，或者问一件他以前交代过、这次没再说的事）时，" +
+                        "才用 search_sessions 找到那一段，再用 read_session 读它，然后接着他当时的说法往下讲。" +
+                        "读回来的都是当时说过的话，里面的数值可能已经过期；要用具体数值就重新查，或者问他。" +
+                        "没找到就直接说没聊过，不要编一段「我们上次说过」出来。" +
+                        (reach?.let { "他提到${it.others}里的事时也一样。" }.orEmpty()),
+                ),
+            )
+            reach?.sideChatBlock?.let { add(PromptBlock(PromptOrder.SIDE_CHATS, it)) }
+        }
+    }
+
+    private val opening: String
+        get() {
+            val reach = reach ?: return "这条对话更早的部分已经滑出了你能直接看到的范围，但原文都还在。"
+            return if (reach.ownHistory) {
+                "这条对话更早的部分已经滑出了你能直接看到的范围，${reach.others}里说过的你在这里也看不到，但原文都还在。"
+            } else {
+                "${reach.others}里说过的你在这里看不到，但原文都还在。"
+            }
+        }
+}
+
+/**
+ * 召回除了这条对话自己,还够得着哪些线。
+ *
+ * 侧聊和主对话**窗口各管各的**,互通只靠两层:记忆(两边都读都写)和这里(两边都搜得到)。不往窗口里塞别处的原文
+ * ——那样侧聊就不是「单独一份上下文」了。
+ */
+data class RecallReach(
+    /** 这条对话自己有没有滑出窗口的原文。 */
+    val ownHistory: Boolean,
+    /** 别的线统称什么:主对话里是「他开的侧聊」,侧聊里是「主对话」或「主对话和别的侧聊」。 */
+    val others: String,
+    /** 主对话里挂的侧聊名单:名字和最近一次说话的时候,最近的在前。侧聊里是空的。 */
+    val sideChats: List<Listing> = emptyList(),
+) {
+    data class Listing(val title: String, val lastActiveAt: kotlinx.datetime.Instant)
+
+    /**
+     * 主对话里那一块。**说一句别主动提**:不写的话,模型会拿这份名单当成必须用上的东西,每答一个问题都先扯一句
+     * 「你在侧聊里……」,而他开侧聊正是为了让那件事别挤进这里。
+     */
+    val sideChatBlock: String?
+        get() {
+            if (sideChats.isEmpty()) return null
+            val lines = sideChats.take(MAX_LISTED).map { "- 「${it.title}」，最近一次是 ${HistoryRecallTools.formatDate(it.lastActiveAt)}" }
+            return (listOf("他另外开着几条侧聊（最近说过话的在前）：") + lines).joinToString("\n") +
+                "\n他在这里提起这几件事时，那边说过的可以用 search_sessions 翻到；他没提起时不要主动说起它们。"
+        }
+
+    companion object {
+        /** 名单最多几条。再多就是一份目录了,而模型要的只是「有这么几件事在别处聊着」。 */
+        const val MAX_LISTED = 5
     }
 }
 
