@@ -18,7 +18,6 @@ import com.pinapia.vana.search.WebFetchTools
 import com.pinapia.vana.search.WebSearchTools
 import com.pinapia.vana.session.ToolCallRecord
 import com.pinapia.vana.tenant.TenantOpening
-import com.pinapia.vana.tasks.SubagentTools
 import com.pinapia.vana.tasks.TasksTools
 import com.pinapia.vana.today.CoreToday
 import com.pinapia.vana.today.HealthToday
@@ -66,7 +65,8 @@ object CorePlugin : VanaPlugin {
         TasksTools.UPDATE_TASK -> L10n.text("更新了一项任务", "Updated a task")
         TasksTools.CREATE_GOAL -> L10n.text("记成了一个目标", "Saved a goal")
         TasksTools.UPDATE_GOAL -> L10n.text("更新了一个目标", "Updated a goal")
-        SubagentTools.START_TASK -> L10n.text("派了一个后台任务", "Started a background task")
+        // 以前存下来的 `start_task` 调用(后台任务 2026-09-30 撤掉了):胶囊上照样说得出是什么。
+        "start_task" -> L10n.text("派了一个后台任务", "Started a background task")
         else -> null
     }
 
@@ -102,7 +102,7 @@ object CorePlugin : VanaPlugin {
             }
             // 后台派生:用户不在场。只带记忆(只读)和召回——结论不取决于别的,多挂一样就多花一份钱。
             PluginRoute.BACKGROUND -> buildList {
-                // 后台任务才带搜索和读网页(由调用方决定给不给);待跟进回访不给,多挂一样就多花一份钱。
+                // 搜索和读网页由调用方决定给不给;待跟进回访不给,多挂一样就多花一份钱。
                 env.webSearch?.let { add(WebSearchPlugin(it)) }
                 env.webFetch?.let { add(WebFetchPlugin(it)) }
                 recall?.let { add(it) }

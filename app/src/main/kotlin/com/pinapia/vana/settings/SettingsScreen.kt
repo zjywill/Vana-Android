@@ -86,7 +86,6 @@ fun SettingsScreen(
     var thinking by remember { mutableStateOf(engineSettings.thinkingEnabled) }
     var memory by remember { mutableStateOf(engineSettings.memoryEnabled) }
     var checkIns by remember { mutableStateOf(engineSettings.checkInsEnabled) }
-    var autoStartTasks by remember { mutableStateOf(engineSettings.autoStartTasks) }
     var morningHour by remember { mutableStateOf(engineSettings.morningCheckInHour) }
     var eveningHour by remember { mutableStateOf(engineSettings.eveningCheckInHour) }
     var confirmClearChats by remember { mutableStateOf(false) }
@@ -311,7 +310,7 @@ fun SettingsScreen(
                 engineSettings.thinkingEnabled = it
             }
             HorizontalDivider()
-            // 记忆、对话、后台任务:三件都是「Vana 替你留着或替你做的事」,和插件无关,关不掉。
+            // 记忆、对话:都是「Vana 替你留着的事」,和插件无关,关不掉。
             Text(uiText("记忆与对话", "Memory & conversation"), style = MaterialTheme.typography.titleMedium)
             SettingSwitch(uiText("长期记忆", "Long-term memory"), memory) {
                 memory = it
@@ -351,25 +350,6 @@ fun SettingsScreen(
                 uiText(
                     "清除的范围包括侧聊，会删除本机保存的消息（连同其中的照片），无法撤销。单独删一条侧聊在「侧聊」页。",
                     "Clearing includes side chats and permanently deletes messages saved on this device, along with their photos. To delete a single side chat, use the Side chats page.",
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            SettingSwitch(uiText("只读任务自动开始", "Start read-only tasks automatically"), autoStartTasks) { enabled ->
-                autoStartTasks = enabled
-                engineSettings.autoStartTasks = enabled
-            }
-            Text(
-                uiText(
-                    "Vana 可以把要花几分钟的独立事务（比如查资料、比较方案）放到后台去做。默认每一件都先给你一张确认卡，" +
-                        "你点了「开始」才会跑；打开这一项后，只读的任务会直接开始。后台任务只读：它不会改动你的任何数据，" +
-                        "想让你做的事只会作为建议放在结果里，由你决定。它会把任务说明、用到的记忆和搜到的内容发给你选的模型服务。",
-                    "Vana can hand a self-contained job that takes a few minutes — researching, comparing options — to the background. " +
-                        "By default every job shows a confirmation card and only starts when you tap Start; with this on, " +
-                        "read-only jobs start right away. Background jobs are read-only: they never change your data, and anything " +
-                        "they want you to do appears as a suggestion for you to accept. A job sends its brief, the memory it needs " +
-                        "and what it finds to your chosen model service.",
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

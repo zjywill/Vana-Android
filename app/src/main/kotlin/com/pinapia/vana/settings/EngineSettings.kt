@@ -65,14 +65,6 @@ class EngineSettings(context: Context) {
         get() = prefs.getInt(EVENING_HOUR_KEY, DEFAULT_EVENING_HOUR)
         set(value) = prefs.edit().putInt(EVENING_HOUR_KEY, value.coerceIn(18, 23)).apply()
 
-    /**
-     * 「只读任务自动开始」:开着,`start_task` 派出去的后台任务不再先弹确认卡、直接开跑。
-     * 默认关——后台任务会把任务说明和它要用的记忆发给模型服务,每一件先让用户点头是默认值。
-     */
-    var autoStartTasks: Boolean
-        get() = prefs.getBoolean(AUTO_START_TASKS_KEY, false)
-        set(value) = prefs.edit().putBoolean(AUTO_START_TASKS_KEY, value).apply()
-
     var hasAcceptedDataUseNotice: Boolean
         get() = prefs.getBoolean(DATA_USE_KEY, false)
         set(value) = prefs.edit().putBoolean(DATA_USE_KEY, value).apply()
@@ -145,7 +137,6 @@ class EngineSettings(context: Context) {
         const val MEDICATIONS_KEY = "medicationsEnabled"
         const val MEASUREMENTS_KEY = "measurementsEnabled"
         const val CHECKINS_KEY = "checkInsEnabled"
-        const val AUTO_START_TASKS_KEY = "autoStartTasks"
         const val MORNING_HOUR_KEY = "morningCheckInHour"
         const val EVENING_HOUR_KEY = "eveningCheckInHour"
         const val DATA_USE_KEY = "hasAcceptedDataUseNotice"

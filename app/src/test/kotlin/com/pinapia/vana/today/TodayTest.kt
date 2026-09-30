@@ -70,13 +70,11 @@ class TodayTest {
     /** 卡上那颗图标按类别上色:过点的和到点的不能是同一种颜色(和 iOS 同一套)。 */
     @Test
     fun eachCardSaysWhatKindItIs() {
-        val job = Task(kind = TaskKind.JOB, title = "查租房", status = TaskStatus.PROPOSED, brief = "x")
         val goal = Task(kind = TaskKind.GOAL, title = "备半马", status = TaskStatus.RUNNING)
-        val kinds = cards(listOf(goal, job, reminder("过点了", now - 1.hours), reminder("待会儿", now + 1.hours)))
+        val kinds = cards(listOf(goal, reminder("过点了", now - 1.hours), reminder("待会儿", now + 1.hours)))
             .associate { it.title to it.kind }
         assertEquals(TodayKind.OVERDUE, kinds["过点了"])
         assertEquals(TodayKind.REMINDER, kinds["待会儿"])
-        assertEquals(TodayKind.NEEDS_YOU, kinds["查租房"])
         assertEquals(TodayKind.GOAL, kinds["备半马"])
     }
 
@@ -86,11 +84,10 @@ class TodayTest {
     }
 
     @Test
-    fun aJobWaitingForTheUserComesBeforeEverythingButAnOverdueReminder() {
-        val job = Task(kind = TaskKind.JOB, title = "查租房", status = TaskStatus.PROPOSED, brief = "x")
+    fun anOverdueReminderComesBeforeAGoal() {
         val goal = Task(kind = TaskKind.GOAL, title = "备半马", status = TaskStatus.RUNNING)
-        val result = cards(listOf(goal, job, reminder("过点了", now - 1.hours)))
-        assertEquals(listOf("过点了", "查租房", "备半马"), result.map { it.title })
+        val result = cards(listOf(goal, reminder("过点了", now - 1.hours)))
+        assertEquals(listOf("过点了", "备半马"), result.map { it.title })
     }
 
     @Test

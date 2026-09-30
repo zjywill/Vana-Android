@@ -17,8 +17,8 @@
 | P6 子 agent | **已完成**（2026-09-29）：`SubagentRunner`（纯 JVM、秒级测试：隔离上下文、只读、预算、步骤审计、结果解析）+ `SubagentScheduler`（一次只跑一件、排队、被杀后 `resume` 最多再跑一次、过 provider 同意的闸、结果作为 `Origin.TASK` 主动消息 + 通知）；`start_task`（写盘 + 要用户参与，后台路挂不上）放一张确认卡（`TaskCard`：开始 / 不做了 / 进行中 / 结果 / 再试一次），用户点了才跑；`propose_action`（只读，攒进 `ProposalCollector`）→ 结果里逐条「照做 / 算了」（`TaskActions.decide`：提醒走手动添加同一条路，记忆按用户自己写的算）；预算 `SubagentLimits`（12 轮 / 5 分钟 / 估算 8 万 token / 排队 ≤3 / 每天 ≤10 / brief ≤1500 字）；设置「只读任务自动开始」（默认关）；目标每周回顾（`GoalDigest`，用户在目标上开开关那一刻即是同意）；任务详情（说明、状态、结果、来源、提议、步骤、用量）。**与原方案不同**：① 待跟进回访（`FollowUpRunner`）没有并进 `SubagentRunner`——它有自己的结果路径，共用的是 `BackgroundTurn` 那层（后台路装配、引擎、事件累积）；② token 是按字符估的（事件流里没有 usage）；③ 不做 WorkManager（P6b）：进程活着才跑，被杀了下次打开接着排——按用量再定 |
 | P7 通用工具 | **已完成**（2026-09-29）：`fetch_url`（`FetchUrlPolicy` 挡协议/内网后缀/IP 字面量/账号口令/奇怪端口，解析结果落在内网的由 `guardedDns` 在连接时再挡，**每一跳重定向重新过**；正文截 8000 字；「外部资料不是指令」；前台和后台任务都带，待跟进回访不带）；P7b 笔记与清单（`NoteStore`/`NotesTools`：存、找、读、改，**没有删除工具**；只前台挂、按需读写不常驻；`memoryExclusions` 让购物单不进记忆；笔记页；插件页可关） |
 | P8 文档与合规 | **已完成**（2026-09-29）：`CLAUDE.md` 重写（定位、提醒/目标/今天、后台任务规则、读网页与笔记、目录、同意闸）；隐私说明中英两份 + `DataUseNotice` 对上新行为（单条对话与清理方式、抽记忆的发送、后台任务、读网页对方能看到 IP、提醒不调模型、不留痕聊天、逐项删除路径；生效日期改为 2026-09-29）；`README.md`、`PLAYSTORE.md`（Data safety、升级说明）；`docs/architecture/ios-parity.md`。**没替你定**：Play 类目、简短/完整描述、商店截图与 `goldie.config.ts` 文案 |
-| P9 侧聊（S1–S3） | **已定方案**（2026-09-30），见 §16。iOS 先行：**iOS S1–S3 已完成**（2026-09-30，落地记录在 iOS 的 `Docs/architecture/daily-agent.md`）。**Android S1 已完成**（2026-09-30）：`SideChatStore`（`tenants/<id>/sides/index.json` + 每条一个和 `thread/` 同格式的目录；每个目录一个实例、每条一个 `ThreadWriter`；逐条宽容解码、读不懂的原样留、坏文件备份、原子写；删除先落名单再清线程和照片再删目录；孤儿目录只在名单读懂时清）、`sides` 进 `TenantPaths.perTenantItems`、「⋯ › 侧聊」列表（新建 / 改名 / 删除，按最近活跃排）、`ChatViewModel(sideChat:)`（`isMainThread` 关掉「今天」、欢迎卡与首屏建议、check-in、快捷方式；空侧聊只一句说明）、`CoreInstructions.sideChat`（`PromptOrder.SIDE_CHAT = 25`，名字在第一次请求前定下来）、收割走「主对话 + 全部侧聊」、`ConversationHistory`（「对话历史」的占用空间 / 清 30 天前 / 清空全部覆盖侧聊）、离开即停、隐私说明中英两份。**Android S2 已完成**（2026-09-30）：`SideChatQuote`（纯函数：搬可见正文、工具留名字、照片不带、正文最长 3000 字；`ChatMessage.Origin.FROM_MAIN` / `FROM_SIDE_CHAT` + `Provenance`；`HistoryMarkers` 把来历说明折进下一条用户消息开头，不混进「主动说过」）、主对话回复上「在侧聊里接着聊」（名字取提问、开头是那段回答）、侧聊回复上「带回主对话」（`postProactive` 追加到主对话末尾，按完变「已带回主对话」）、`SideChatHost`（离开时还在写的留着写完，写完亮未读点：主对话「⋯」上一个点、菜单里「侧聊 · 有新回复」、列表那一行一个点和「正在回复…」；回来接上同一个对象；删侧聊、换成员、清空全部时停下）。**Android S3 已完成**（2026-09-30）：召回每轮现算够得着哪些线（`SideChatRecall.gather`：主对话够得着有内容的侧聊，侧聊够得着主对话和别的侧聊；自己只翻滑出窗口的那段，别的线整条都算看不见；删掉的侧聊下一轮就翻不到），`HistoryRecallTools.Source` 给搜出来、读回来的每一处标上在哪条线上；只有这条对话自己时工具说明和召回那段话逐字不变；主对话易变区最后多一块侧聊名单（`PromptOrder.SIDE_CHATS = 380`，最多 5 条，末尾「他没提起时不要主动说起它们」，跟着召回走、归记忆开关）。与方案 / iOS 不同的几处见 §16.10 |
-| P10 撤掉子 agent（S4） | **已定方案**（2026-09-30），见 §16.7。两边都未开始；P6 的东西在它落地之前照常可用 |
+| P9 侧聊（S1–S3） | **已定方案**（2026-09-30），见 §16。iOS 先行：**iOS S1–S4 已完成**（2026-09-30，落地记录在 iOS 的 `Docs/architecture/daily-agent.md`）。**Android S1 已完成**（2026-09-30）：`SideChatStore`（`tenants/<id>/sides/index.json` + 每条一个和 `thread/` 同格式的目录；每个目录一个实例、每条一个 `ThreadWriter`；逐条宽容解码、读不懂的原样留、坏文件备份、原子写；删除先落名单再清线程和照片再删目录；孤儿目录只在名单读懂时清）、`sides` 进 `TenantPaths.perTenantItems`、「⋯ › 侧聊」列表（新建 / 改名 / 删除，按最近活跃排）、`ChatViewModel(sideChat:)`（`isMainThread` 关掉「今天」、欢迎卡与首屏建议、check-in、快捷方式；空侧聊只一句说明）、`CoreInstructions.sideChat`（`PromptOrder.SIDE_CHAT = 25`，名字在第一次请求前定下来）、收割走「主对话 + 全部侧聊」、`ConversationHistory`（「对话历史」的占用空间 / 清 30 天前 / 清空全部覆盖侧聊）、离开即停、隐私说明中英两份。**Android S2 已完成**（2026-09-30）：`SideChatQuote`（纯函数：搬可见正文、工具留名字、照片不带、正文最长 3000 字；`ChatMessage.Origin.FROM_MAIN` / `FROM_SIDE_CHAT` + `Provenance`；`HistoryMarkers` 把来历说明折进下一条用户消息开头，不混进「主动说过」）、主对话回复上「在侧聊里接着聊」（名字取提问、开头是那段回答）、侧聊回复上「带回主对话」（`postProactive` 追加到主对话末尾，按完变「已带回主对话」）、`SideChatHost`（离开时还在写的留着写完，写完亮未读点：主对话「⋯」上一个点、菜单里「侧聊 · 有新回复」、列表那一行一个点和「正在回复…」；回来接上同一个对象；删侧聊、换成员、清空全部时停下）。**Android S3 已完成**（2026-09-30）：召回每轮现算够得着哪些线（`SideChatRecall.gather`：主对话够得着有内容的侧聊，侧聊够得着主对话和别的侧聊；自己只翻滑出窗口的那段，别的线整条都算看不见；删掉的侧聊下一轮就翻不到），`HistoryRecallTools.Source` 给搜出来、读回来的每一处标上在哪条线上；只有这条对话自己时工具说明和召回那段话逐字不变；主对话易变区最后多一块侧聊名单（`PromptOrder.SIDE_CHATS = 380`，最多 5 条，末尾「他没提起时不要主动说起它们」，跟着召回走、归记忆开关）。与方案 / iOS 不同的几处见 §16.10 |
+| P10 撤掉子 agent（S4） | **已定方案**（2026-09-30），见 §16.7。**iOS 已完成**（2026-09-30）。**Android 已完成**（2026-09-30）：删掉 `SubagentRunner` / `SubagentScheduler` / `SubagentTools`（`start_task`、`propose_action`）/ `SubagentPlugin` / `SubagentResult` / `SubagentLimits` / `JobControls` / `AppJobControls` / `TaskCard` / `GoalDigest`、`TaskActions.decide` / `setDigest`、`PromptOrder.SUBAGENT` / `GUIDE_JOBS`、设置「只读任务自动开始」、任务页「后台任务」一节、「今天」里的任务卡、`BackgroundModelWork.runExclusive`；`Task` 去掉 `JOB` 这一类和它的字段（旧条目认不出 kind，由 `TaskStore` 原样留着、不再显示）以及 `PROPOSED` / `NEEDS_YOU` / `FAILED` 三个状态；`list_tasks` / `update_task` 不再提任务；以前存下来的 `start_task` 调用和 `Origin.TASK` 消息照样读得出来。目标的「每周回顾」换成目标详情里「在侧聊里聊这个目标」。告知对齐：隐私说明中英两份、`DataUseNotice`、`PLAYSTORE.md` 的 Data safety 与提交前真实路径、README；`DataUseNoticeLogicTest` 逐字盯着 |
 
 ---
 
@@ -333,8 +333,7 @@ tenants/<id>/thread/
 
 ## 8. 子 agent（独立任务）
 
-> **2026-09-30 决定撤掉**，由用户手动开的侧聊取代，见 §16.7。下面保留原方案，作为 P6 已落地部分的说明，
-> 直到 S4 删除为止。
+> **2026-09-30 撤掉了**（S4，两边都已删除），由用户手动开的侧聊取代，见 §16.7。下面保留原方案只作历史记录。
 
 **形状**：现有 `DerivedTurn` 本来就是「非阻塞、独立上下文、失败即放弃」，把它泛化为 `SubagentRunner`。
 
@@ -677,6 +676,18 @@ tenants/<id>/sides/
   「删掉的侧聊下一轮就翻不到」。
 - 名单和召回结果里的日期沿用 Android 召回一直以来的 `yyyy-MM-dd`（iOS 是「M月d日」）。
 - 每条侧聊的档案索引（`ThreadArchive`）在第一次被召回够到时建起来，之后常驻进程内存，和主对话的一样只存截断后的文字。
+
+**S4（2026-09-30）**
+- 删的范围和 iOS 一样；Android 多删了两样 iOS 没有的：`JobControls` 接口（Android 用它把「开始 / 停止 / 决定提议」从
+  界面接到调度器）和 `BackgroundTurn` 上只给子 agent 用的那几个参数（额外插件、工具轮数预算、搜索和读网页）。
+- 「在侧聊里聊这个目标」：同名侧聊有了就接着用（`SideChatStore.named`），输入框里替他起个头（`SideChatHost.stageDraft`，
+  不自动发）。任务页和目标详情是导航目的地而不是 iOS 的 sheet，所以不用等它退场：直接导航到侧聊并
+  `popUpTo(CHAT)`，返回回到主对话（和 iOS 收掉 sheet 之后推侧聊是同一个结果）。
+- 以前的任务结果消息（`Origin.TASK`）不再给「查看详情」（iOS 是点不开；Android 的按钮会进一页「这一项已经不在了」，干脆不给）。
+- 告知屏那一条和 iOS 逐字同义：「侧聊里的往来同样如此。一条侧聊的请求不带主对话的原文；主对话的请求里会带上你开着的几条
+  侧聊的名字」。隐私说明中英两份的「侧聊」一段和 iOS 同文。Android 没有 iOS 那套提示词黄金文件，契约由
+  `PromptAssemblyTest.noRouteOffersToHandWorkOffToABackgroundHelper` 盯着（哪条路上都没有 `start_task` / `propose_action`，
+  `list_tasks` 不再列 job）。
 
 ---
 

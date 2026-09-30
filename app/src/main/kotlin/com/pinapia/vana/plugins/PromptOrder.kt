@@ -23,9 +23,6 @@ object PromptOrder {
     const val SIDE_CHAT = 25
     const val PERSONA = 30
 
-    /** 后台助手(子 agent)的角色说明。只有派出去的那一路有。 */
-    const val SUBAGENT = 10
-
     // ---- 核心插件的工具用法 ----
     const val GUIDE_RECALL = 100
     const val GUIDE_REMEMBER = 110
@@ -33,7 +30,6 @@ object PromptOrder {
     const val GUIDE_WEB_FETCH = 125
     const val GUIDE_ASK_USER = 130
     const val GUIDE_TASKS = 140
-    const val GUIDE_JOBS = 145
     const val GUIDE_NOTES = 150
 
     // ---- 健康插件 ----

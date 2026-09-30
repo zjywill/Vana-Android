@@ -40,8 +40,8 @@ object DataUseNotice {
                 "To remember things that stay true, not-yet-processed parts of the conversation after you leave the app or it goes idle (only when Memory is on)",
             ),
             L10n.text(
-                "你点了「开始」的后台任务：任务说明、它用到的记忆和过往对话片段、它搜索或读取到的网页内容。后台任务只读，不会改动你的数据",
-                "Background tasks you start: the brief, the memory and past-conversation excerpts it uses, and the web content it finds. Background tasks are read-only and never change your data",
+                "侧聊里的往来同样如此。一条侧聊的请求不带主对话的原文；主对话的请求里会带上你开着的几条侧聊的名字",
+                "The same goes for side chats. A side chat's request does not carry the main conversation's text; requests from the main conversation include the names of your open side chats",
             ),
         ),
     )

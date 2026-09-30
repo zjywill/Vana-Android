@@ -65,15 +65,13 @@ object BackgroundTurn {
         return reply.text.trim()
     }
 
-    /** 后台路(用户不在场)的装配输入:只读记忆加召回。子 agent 在它上面再挂搜索和提议。 */
-    fun backgroundEnvironment(
+    /** 后台路(用户不在场)的装配输入:只读记忆加召回。不带搜索和读网页:多挂一样就多花一份钱。 */
+    private fun backgroundEnvironment(
         now: Instant,
         memoryStore: MemoryStore,
         writer: ThreadWriter,
         engineSettings: EngineSettings,
         tenant: Tenant,
-        webSearch: com.pinapia.vana.search.WebSearchClient? = null,
-        webFetch: com.pinapia.vana.search.WebFetchClient? = null,
     ) = PluginEnvironment(
         isEnabled = engineSettings::isPluginEnabled,
         tenant = tenant,
@@ -81,30 +79,22 @@ object BackgroundTurn {
         hiddenBeforePos = { writer.store.meta().windowStartPos },
         memoryStore = memoryStore,
         memorySnapshot = { memoryStore.snapshot(now) },
-        webSearch = webSearch,
-        webFetch = webFetch,
     )
 
-    /**
-     * 后台路的引擎:显式关掉思考(辅助调用的规矩),只读。
-     * [extraPlugins] 是这一路自己的工具(子 agent 的提议);[maxToolRounds] 由调用方按预算给。
-     */
-    fun engine(
+    /** 后台路的引擎:显式关掉思考(辅助调用的规矩),只读。 */
+    private fun engine(
         provider: String,
         model: String,
         apiKey: String,
         environment: PluginEnvironment,
-        extraPlugins: List<com.pinapia.vana.agentruntime.AgentPlugin> = emptyList(),
-        maxToolRounds: Int? = null,
     ): CloudEngine = CloudEngine(
         providerId = provider,
         model = model,
         apiKey = apiKey,
-        plugins = PluginRegistry.agentPlugins(environment, PluginRoute.BACKGROUND) + extraPlugins,
+        plugins = PluginRegistry.agentPlugins(environment, PluginRoute.BACKGROUND),
         pluginContext = PluginRegistry.backgroundContext(),
         thinkingEnabled = false,
         persona = AssistantPersona.BALANCED,
-        maxToolRounds = maxToolRounds ?: CloudEngine.DEFAULT_TOOL_ROUNDS,
     )
 
     fun firstSentence(of: String): String {

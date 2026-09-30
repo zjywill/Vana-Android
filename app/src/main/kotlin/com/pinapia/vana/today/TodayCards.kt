@@ -10,7 +10,7 @@ import java.util.Locale
 private fun english(): Boolean = Locale.getDefault().language.equals("en", ignoreCase = true)
 
 /**
- * 核心贡献的「今天」卡片:到点/错过的提醒、等你确认的后台任务、在推进的目标、说好回头看的事。
+ * 核心贡献的「今天」卡片:到点/错过的提醒、在推进的目标、说好回头看的事。
  * 全部由本机数据拼出来,不调模型。
  */
 object CoreToday {
@@ -34,28 +34,6 @@ object CoreToday {
                         ReminderRules.describe(due, context.now, context.zone, en),
                     action = TodayAction.OpenTask(task.id),
                     kind = if (overdue) TodayKind.OVERDUE else TodayKind.REMINDER,
-                ),
-            )
-        }
-
-        for (task in context.tasks.filter { it.kind == TaskKind.JOB && it.isActive }) {
-            val (priority, body) = when (task.status) {
-                TaskStatus.NEEDS_YOU, TaskStatus.PROPOSED ->
-                    TodayPriority.NEEDS_YOU to L10n.text("等你确认", "Waiting for you")
-                TaskStatus.RUNNING ->
-                    TodayPriority.RUNNING to L10n.text("进行中", "In progress")
-                else -> TodayPriority.RUNNING to L10n.text("排队中", "Queued")
-            }
-            val kind = if (priority == TodayPriority.NEEDS_YOU) TodayKind.NEEDS_YOU else TodayKind.RUNNING
-            add(
-                TodayCard(
-                    id = "job-${task.id}",
-                    pluginId = "core",
-                    priority = priority,
-                    title = task.title,
-                    body = body,
-                    action = TodayAction.OpenTask(task.id),
-                    kind = kind,
                 ),
             )
         }
@@ -105,12 +83,9 @@ object CoreToday {
 
     /** 界面上给状态一个标签。 */
     fun statusLabel(status: TaskStatus): String = when (status) {
-        TaskStatus.PROPOSED -> L10n.text("等你确认", "Waiting for you")
-        TaskStatus.QUEUED -> L10n.text("排队中", "Queued")
+        TaskStatus.QUEUED -> L10n.text("还没到点", "Upcoming")
         TaskStatus.RUNNING -> L10n.text("进行中", "In progress")
-        TaskStatus.NEEDS_YOU -> L10n.text("需要你", "Needs you")
         TaskStatus.DONE -> L10n.text("已完成", "Done")
-        TaskStatus.FAILED -> L10n.text("失败了", "Failed")
         TaskStatus.CANCELLED -> L10n.text("已取消", "Cancelled")
     }
 }

@@ -116,6 +116,17 @@ class SideChatStoreTest {
         assertEquals("", store.get(renamedToEmpty.id)!!.title)
     }
 
+    /** 目标详情里「在侧聊里聊这个目标」:同名的有了就接着用,不然列表里很快就是一串同名的侧聊。 */
+    @Test
+    fun aGoalsSideChatIsReusedByName() = runBlocking {
+        val store = store()
+        val first = store.named("备半马")
+        assertEquals("备半马", first.title)
+        assertFalse(first.autoTitled)
+        assertEquals(first.id, store.named("  备半马 ").id)
+        assertEquals(1, store.all().size)
+    }
+
     /** 同一条侧聊永远是同一个线程写者:两个实例就是两个写者。 */
     @Test
     fun theSameSideChatAlwaysGetsTheSameWriter() = runBlocking {

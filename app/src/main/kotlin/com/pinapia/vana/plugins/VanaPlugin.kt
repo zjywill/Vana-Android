@@ -113,7 +113,7 @@ class PluginEnvironment(
     /** 笔记与清单。null(关着、或这条路不该碰)就不挂。 */
     val noteStore: NoteStore? = null,
     val webSearch: WebSearchClient? = null,
-    /** 读网页。前台聊天和后台任务带,其余后台路(待跟进回访)不带。 */
+    /** 读网页。前台聊天带,后台路(待跟进回访)不带。 */
     val webFetch: WebFetchClient? = null,
     val exerciseLibrary: ExerciseLibrary? = null,
     val medicationStore: MedicationStore? = null,

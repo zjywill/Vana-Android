@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,7 +44,8 @@ fun TaskDetailScreen(
     taskId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    jobs: JobControls = LocalJobControls.current,
+    /** 「在侧聊里聊这个目标」。null 就不出那颗按钮。 */
+    onDiscussGoal: ((Task) -> Unit)? = null,
 ) {
     val revision by env.store.revision.collectAsState()
     val task = remember(revision, taskId) { env.store.get(taskId) }
@@ -95,8 +95,7 @@ fun TaskDetailScreen(
             )
             when (task.kind) {
                 TaskKind.REMINDER -> ReminderSection(env, task)
-                TaskKind.GOAL -> GoalSection(env, task)
-                TaskKind.JOB -> JobSection(task, jobs)
+                TaskKind.GOAL -> GoalSection(env, task, onDiscussGoal)
             }
         }
     }
@@ -109,7 +108,6 @@ fun TaskDetailScreen(
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
-                    if (task.kind == TaskKind.JOB && task.isActive) jobs.stop(task.id)
                     TaskActions.delete(env, task.id)
                     onBack()
                 }) { Text(uiText("删除", "Delete")) }
@@ -139,7 +137,7 @@ private fun ReminderSection(env: TasksEnvironment, task: Task) {
 }
 
 @Composable
-private fun GoalSection(env: TasksEnvironment, task: Task) {
+private fun GoalSection(env: TasksEnvironment, task: Task, onDiscussGoal: ((Task) -> Unit)?) {
     var newStep by remember(task.id) { mutableStateOf("") }
     var newNote by remember(task.id) { mutableStateOf("") }
 
@@ -216,21 +214,17 @@ private fun GoalSection(env: TasksEnvironment, task: Task) {
                 onClick = { TaskActions.addNote(env, task.id, newNote); newNote = "" },
             ) { Text(uiText("记录", "Save")) }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(uiText("每周回顾", "Weekly review"), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    uiText(
-                        "每隔一周，在后台请模型看一眼这个目标的进展，把结论放进对话。会把目标的内容发给你选的模型服务。",
-                        "Once a week, a background job reviews this goal's progress and posts a summary in the chat. The goal's content is sent to your chosen model service.",
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = task.digestEnabled,
-                onCheckedChange = { enabled -> TaskActions.setDigest(env, task.id, enabled) },
+        // 以前是「每周回顾」——后台每七天自动请模型看一眼,写几句放进对话;子 agent 撤掉之后改成他想聊的时候
+        // 自己开一条侧聊(那里的 system 段本来就带着进行中的目标)。
+        onDiscussGoal?.let { discuss ->
+            OutlinedButton(onClick = { discuss(task) }) { Text(uiText("在侧聊里聊这个目标", "Talk this goal through in a side chat")) }
+            Text(
+                uiText(
+                    "开一条以这个目标命名的侧聊，回顾进展、商量接下来怎么做。那里说的不挤主对话。",
+                    "Opens a side chat named after this goal to review progress and plan what's next. It doesn't crowd the main conversation.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -241,92 +235,3 @@ private fun GoalSection(env: TasksEnvironment, task: Task) {
         OutlinedButton(onClick = { TaskActions.reopen(env, task.id) }) { Text(uiText("重新开始", "Resume")) }
     }
 }
-
-/** 后台任务的详情:说明、状态、做了哪些步、结果、要你拍板的提议。运行本身在 [JobControls] 后面。 */
-@Composable
-private fun JobSection(task: Task, jobs: JobControls) {
-    if (task.brief.isNotBlank()) {
-        Text(uiText("交代的事", "Brief"), style = MaterialTheme.typography.titleSmall)
-        Text(task.brief, style = MaterialTheme.typography.bodyMedium)
-    }
-
-    when (task.status) {
-        TaskStatus.PROPOSED -> {
-            Text(
-                uiText(
-                    "会放到后台做，大概几分钟；期间它会把上面这段说明和用到的记忆发给模型服务。它只读，不会改动你的任何数据。",
-                    "This runs in the background for a few minutes. The brief above and any memory it needs are sent to the model service. It is read-only and never changes your data.",
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { jobs.start(task.id) }) { Text(uiText("开始", "Start")) }
-                OutlinedButton(onClick = { jobs.stop(task.id) }) { Text(uiText("不做了", "Never mind")) }
-            }
-        }
-        TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.NEEDS_YOU ->
-            OutlinedButton(onClick = { jobs.stop(task.id) }) { Text(uiText("停止", "Stop")) }
-        TaskStatus.FAILED, TaskStatus.CANCELLED ->
-            OutlinedButton(onClick = { jobs.start(task.id) }) { Text(uiText("再试一次", "Try again")) }
-        TaskStatus.DONE -> Unit
-    }
-
-    task.error?.takeIf { it.isNotBlank() }?.let {
-        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-    }
-
-    task.result?.let { result ->
-        HorizontalDivider()
-        Text(uiText("结果", "Result"), style = MaterialTheme.typography.titleSmall)
-        Text(result.summary, style = MaterialTheme.typography.bodyLarge)
-        if (result.body.isNotBlank()) Text(result.body, style = MaterialTheme.typography.bodyMedium)
-        if (result.sources.isNotEmpty()) {
-            Text(
-                uiText("来源", "Sources") + "：" + result.sources.joinToString("\n"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (result.proposals.isNotEmpty()) {
-            Text(uiText("它想让你做的", "Suggested actions"), style = MaterialTheme.typography.titleSmall)
-            for (proposal in result.proposals) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(proposalLabel(proposal), style = MaterialTheme.typography.bodyMedium)
-                    when (proposal.status) {
-                        ProposalStatus.PENDING -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { jobs.decide(task.id, proposal.id, true) }) { Text(uiText("照做", "Apply")) }
-                            OutlinedButton(onClick = { jobs.decide(task.id, proposal.id, false) }) { Text(uiText("算了", "Skip")) }
-                        }
-                        ProposalStatus.ACCEPTED -> Text(uiText("已照做", "Applied"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                        ProposalStatus.DISMISSED -> Text(uiText("已略过", "Skipped"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-    }
-
-    if (task.steps.isNotEmpty()) {
-        HorizontalDivider()
-        Text(uiText("做了什么", "What it did"), style = MaterialTheme.typography.titleSmall)
-        for (step in task.steps) {
-            Text("· ${step.label}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-    if (task.tokensUsed > 0) {
-        Text(
-            uiText("用了约 ${task.tokensUsed} token", "About ${task.tokensUsed} tokens used"),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-private fun proposalLabel(proposal: TaskProposal): String = when (proposal.kind) {
-    "reminder" -> uiTextPlain("设个提醒：", "Set a reminder: ") + proposal.text
-    "goal" -> uiTextPlain("记成目标：", "Save as a goal: ") + proposal.text
-    "memory" -> uiTextPlain("记住：", "Remember: ") + proposal.text
-    else -> proposal.text
-}
-
-private fun uiTextPlain(zh: String, en: String): String = com.pinapia.vana.ui.L10n.text(zh, en)

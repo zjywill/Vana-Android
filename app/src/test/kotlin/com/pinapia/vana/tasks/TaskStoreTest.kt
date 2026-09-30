@@ -99,6 +99,26 @@ class TaskStoreTest {
         assertEquals(1, store.all().size)
     }
 
+    /**
+     * 后台任务(子 agent)2026-09-30 撤掉了,`job` 这一类跟着没了。以前存下来的那几条认不出 kind:原样留着
+     * (下一次保存不会悄悄丢掉),只是不再显示;同一份文件里的提醒和目标照常读得出来。
+     */
+    @Test
+    fun anOldBackgroundJobIsKeptOnDiskButNoLongerShown() {
+        File(folder.root, "tasks.json").writeText(
+            """{"tasks":[
+              {"id":"j1","kind":"job","title":"比较三款净化器","status":"proposed","brief":"x","createdAt":"2026-09-29T00:00:00Z","updatedAt":"2026-09-29T00:00:00Z"},
+              {"id":"g1","kind":"goal","title":"备半马","status":"running","digestEnabled":true,"createdAt":"2026-09-29T00:00:00Z","updatedAt":"2026-09-29T00:00:00Z"}
+            ]}""",
+        )
+        val store = store()
+        assertEquals(listOf("备半马"), store.all().map { it.title })
+
+        store.add(reminder("新的"))
+        assertTrue(File(folder.root, "tasks.json").readText().contains("比较三款净化器"))
+        assertEquals(2, store.all().size)
+    }
+
     @Test
     fun anUnreadableFileIsBackedUpBeforeItCanBeOverwritten() {
         File(folder.root, "tasks.json").writeText("{ 坏了")

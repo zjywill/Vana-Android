@@ -182,6 +182,18 @@ class SideChatStore internal constructor(
         chat
     }
 
+    /**
+     * 叫这个名字的那条侧聊:有了就接着用,没有就开一条。目标详情里「在侧聊里聊这个目标」用——以前的
+     * 「每周回顾」由后台每七天自动跑一次,改成他想聊的时候自己开之后,每次都新开一条的话,列表里很快就是
+     * 一串同名的侧聊。
+     */
+    suspend fun named(title: String, now: Instant = Clock.System.now()): SideChat {
+        val wanted = SideChatTitle.clean(title)
+        return locked {
+            loaded().firstOrNull { it.title == wanted } ?: SideChat.new(wanted, now).also { write(loaded() + it) }
+        }
+    }
+
     /** 他改了名字。从此不再替他起名;改成空的就退回「新侧聊」,也不再自动起名——他清空它是一个明确的动作。 */
     suspend fun rename(id: String, title: String): SideChat? =
         update(id) { it.copy(title = SideChatTitle.clean(title), autoTitled = false) }

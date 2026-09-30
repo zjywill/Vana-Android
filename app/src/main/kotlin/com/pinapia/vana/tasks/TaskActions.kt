@@ -52,7 +52,7 @@ object TaskActions {
         env.store.update(id) { it.copy(status = TaskStatus.DONE) }
     }
 
-    /** 放弃(目标、提醒、任务通用):闹钟一并撤掉。 */
+    /** 放弃(目标、提醒通用):闹钟一并撤掉。 */
     fun cancel(env: TasksEnvironment, id: String) {
         env.scheduling.cancel(id)
         env.store.update(id) { it.copy(status = TaskStatus.CANCELLED) }
@@ -84,58 +84,8 @@ object TaskActions {
         env.store.update(id, now) { task -> task.copy(notes = task.notes + GoalNote(now, note.take(400))) }
     }
 
-    /** 打开「每周回顾」的这一刻起算:第一次回顾在七天之后,不是马上。 */
-    fun setDigest(env: TasksEnvironment, id: String, enabled: Boolean) {
-        val now = env.now()
-        env.store.update(id, now) { it.copy(digestEnabled = enabled, lastDigestAt = if (enabled) now else it.lastDigestAt) }
-    }
-
     fun reopen(env: TasksEnvironment, id: String) {
         env.store.update(id) { it.copy(status = TaskStatus.RUNNING) }
-    }
-
-    /**
-     * 用户对后台助手的一条提议做了决定。「照做」才真的写:提醒走和手动添加同一条路(同样的上限和排程),
-     * 记忆是用户亲手点了才存的,所以按「自己写的」算(不会被容量挤掉)。
-     * 返回没能照做的原因,null 表示成功或只是略过。
-     */
-    fun decide(
-        env: TasksEnvironment,
-        memory: com.pinapia.vana.memory.MemoryStore?,
-        taskId: String,
-        proposalId: String,
-        accept: Boolean,
-    ): String? {
-        val task = env.store.get(taskId) ?: return null
-        val proposal = task.result?.proposals?.firstOrNull { it.id == proposalId } ?: return null
-        if (proposal.status != ProposalStatus.PENDING) return null
-
-        var problem: String? = null
-        if (accept) {
-            problem = when (proposal.kind) {
-                "reminder" -> {
-                    val at = proposal.at
-                    if (at == null) L10n.text("这条提醒没有时间", "This reminder has no time") else addReminder(env, proposal.text, at, Repeat.NONE)
-                }
-                "goal" -> addGoal(env, proposal.text, proposal.why.orEmpty())
-                "memory" -> if (memory == null) {
-                    L10n.text("记忆现在是关着的", "Memory is turned off")
-                } else {
-                    memory.remember(proposal.text, com.pinapia.vana.memory.MemoryItem.Kind.PROFILE, origin = com.pinapia.vana.memory.MemoryItem.Origin.MANUAL)
-                    null
-                }
-                else -> L10n.text("不认识这种提议", "Unknown suggestion")
-            }
-        }
-        val next = if (accept && problem == null) ProposalStatus.ACCEPTED else ProposalStatus.DISMISSED
-        env.store.update(taskId) { current ->
-            current.copy(
-                result = current.result?.copy(
-                    proposals = current.result.proposals.map { if (it.id == proposalId) it.copy(status = next) else it },
-                ),
-            )
-        }
-        return problem
     }
 
     private const val MAX_PLAN_ITEMS = 30

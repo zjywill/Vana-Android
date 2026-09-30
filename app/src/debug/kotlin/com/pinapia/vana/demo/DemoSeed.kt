@@ -4,18 +4,11 @@ import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
 import android.os.LocaleList
-import com.pinapia.vana.agentruntime.RuntimeJSONValue
-import com.pinapia.vana.session.ChatMessage
-import com.pinapia.vana.session.ToolCallRecord
 import com.pinapia.vana.settings.EngineSettings
 import com.pinapia.vana.settings.SecureKeyStore
 import com.pinapia.vana.tasks.PlanItem
-import com.pinapia.vana.tasks.SubagentTools
 import com.pinapia.vana.tasks.Task
 import com.pinapia.vana.tasks.TaskKind
-import com.pinapia.vana.tasks.TaskProposal
-import com.pinapia.vana.tasks.TaskResult
-import com.pinapia.vana.tasks.TaskStep
 import com.pinapia.vana.tasks.TaskStatus
 import com.pinapia.vana.tasks.TaskStore
 import com.pinapia.vana.tenant.TenantPaths
@@ -50,7 +43,6 @@ object DemoSeed {
     private const val PROPERTY = "debug.vana.demo"
     private const val ASSET_ROOT = "demo"
     private const val MARKER = ".demo-seeded"
-    private const val DEMO_JOB_ID = "demo-job-0000-0000-0000-000000000001"
 
     /** 占位密钥,纯数字。只为了让「还没配置云端模型」那条横幅不出现在截图里。 */
     private const val PLACEHOLDER_API_KEY = "00000000000000000000000000000000"
@@ -86,31 +78,6 @@ object DemoSeed {
         }
         seedThread(context, root)
         seedTasks(root)
-        seedTaskCard(root)
-    }
-
-    /** 对话末尾放一条带 `start_task` 卡的助手消息,卡指向那件「等你确认」的任务。 */
-    private fun seedTaskCard(root: File) {
-        val segment = File(root, "thread/seg-000001.jsonl")
-        val last = segment.readLines().lastOrNull { it.isNotBlank() }
-            ?.let { Regex("\"p\":([0-9.]+)").find(it)?.groupValues?.get(1)?.toDoubleOrNull() } ?: 0.0
-        val message = ChatMessage(
-            role = ChatMessage.Role.ASSISTANT,
-            text = "这个要查几款产品的参数，我放到后台去做，大概几分钟，你先点一下开始。",
-            toolCalls = listOf(
-                ToolCallRecord(
-                    id = "call-demo-task",
-                    name = "start_task",
-                    input = "{}",
-                    output = "已经在对话里放了一张确认卡。",
-                    metadata = RuntimeJSONValue.ObjectValue(
-                        mapOf(SubagentTools.TASK_ID_KEY to RuntimeJSONValue.StringValue(DEMO_JOB_ID)),
-                    ),
-                ),
-            ),
-        )
-        val json = Json { encodeDefaults = true }
-        segment.appendText("{\"p\":${last + 1.0},\"m\":${json.encodeToString(ChatMessage.serializer(), message)}}\n")
     }
 
     /** 「今天」和「任务」页要有东西可看:一个进行中的目标、一条稍后的提醒、一条已经过点的。时间相对现在。 */
@@ -135,34 +102,6 @@ object DemoSeed {
         )
         store.add(
             Task(kind = TaskKind.REMINDER, title = "带伞", status = TaskStatus.QUEUED, dueAt = now - 30.minutes),
-        )
-        store.add(
-            Task(
-                id = DEMO_JOB_ID,
-                kind = TaskKind.JOB,
-                title = "比较三款空气净化器",
-                status = TaskStatus.PROPOSED,
-                brief = "比较小米 4 Pro、352 X50、IKEA STARKVIND 三款：适用面积、滤芯成本、噪音。给一个结论，标出各自的短板。",
-            ),
-        )
-        store.add(
-            Task(
-                kind = TaskKind.JOB,
-                title = "整理膝盖友好的跑步计划",
-                status = TaskStatus.DONE,
-                brief = "根据他的情况整理一份四周的跑步计划。",
-                result = TaskResult(
-                    summary = "四周从每周 3 次、每次 20 分钟起步，第三周再加量，膝盖有反应就退一步。",
-                    body = "第一周：三次慢跑 20 分钟，间隔休息一天。\n第二周：每次加到 25 分钟。\n第三周：其中一次加到 30 分钟。\n第四周：回到 25 分钟，看看恢复得怎么样。",
-                    sources = listOf("https://example.com/running-plan"),
-                    proposals = listOf(
-                        TaskProposal(kind = "reminder", text = "周三晚上慢跑", at = now + 26.hours),
-                        TaskProposal(kind = "memory", text = "他的膝盖跑完第二天下楼梯会疼"),
-                    ),
-                ),
-                steps = listOf(TaskStep(now - 10.minutes, "查看了过往对话"), TaskStep(now - 9.minutes, "搜索了网页")),
-                tokensUsed = 5200,
-            ),
         )
     }
 

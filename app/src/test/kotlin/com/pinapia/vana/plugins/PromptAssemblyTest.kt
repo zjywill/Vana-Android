@@ -379,74 +379,26 @@ class PromptAssemblyTest {
 
     @Test
     fun backgroundTasksNeverSeeTheUsersNotes() {
-        assertTrue(engine(envWithNotes(), route = PluginRoute.BACKGROUND).toolNames().none { it.contains("note") && it != "propose_action" })
+        assertTrue(engine(envWithNotes(), route = PluginRoute.BACKGROUND).toolNames().none { it.contains("note") })
     }
 
-    // ---- 后台任务(子 agent) ----
+    // ---- 后台任务(子 agent)2026-09-30 撤掉了 ----
 
-    private class NoJobs(override val autoStart: Boolean = false) : com.pinapia.vana.tasks.JobControls {
-        override fun start(taskId: String) = Unit
-        override fun stop(taskId: String) = Unit
-        override fun decide(taskId: String, proposalId: String, accept: Boolean) = Unit
-    }
-
-    private fun envWithJobs(search: Boolean = true) = env(search = search).let {
-        PluginEnvironment(
-            isEnabled = it.isEnabled, tenant = it.tenant, archive = it.archive, hiddenBeforePos = it.hiddenBeforePos,
-            memoryStore = it.memoryStore, memorySnapshot = it.memorySnapshot, location = it.location,
-            tasks = TasksEnvironment(store = taskStore, jobs = NoJobs()),
-            webSearch = it.webSearch, exerciseLibrary = it.exerciseLibrary, medicationStore = it.medicationStore,
-            medicationSnapshot = it.medicationSnapshot, measurementStore = it.measurementStore, measurementSnapshot = it.measurementSnapshot,
-        )
-    }
-
+    /** 派后台任务那一整套撤掉了:哪条路上都不再有 `start_task` / `propose_action`,也不再教模型把活儿分出去。 */
     @Test
-    fun startTaskIsMountedInTheForegroundOnlyWhenTheHostCanRunJobs() {
-        assertFalse("start_task" in engine(env()).toolNames())
-        val engine = engine(envWithJobs())
-        assertTrue("start_task" in engine.toolNames())
-        val text = engine.systemInstruction()
-        assertTrue(text.contains("start_task"))
-        assertTrue("有搜索的时候说它能上网", text.contains("它能上网搜索"))
-        assertTrue(engine(envWithJobs(search = false)).systemInstruction().contains("它现在不能上网"))
-    }
-
-    @Test
-    fun startTaskIsWrittenAndNeedsTheUserSoPrivateAndBackgroundRoutesNeverGetIt() {
-        assertFalse("start_task" in engine(envWithJobs(), isPrivate = true).toolNames())
-        assertFalse(engine(envWithJobs(), isPrivate = true).systemInstruction().contains("start_task"))
-        assertFalse("后台助手不能再派后台助手", "start_task" in engine(envWithJobs(), route = PluginRoute.BACKGROUND).toolNames())
-    }
-
-    @Test
-    fun theSubagentRouteIsReadOnlyPlusProposalsAndItsSearch() {
-        val collector = com.pinapia.vana.tasks.ProposalCollector()
-        val env = envWithJobs()
-        val engine = CloudEngine(
-            providerId = "deepseek", model = "deepseek-chat", apiKey = "sk-test",
-            plugins = PluginRegistry.agentPlugins(env, PluginRoute.BACKGROUND) + com.pinapia.vana.tasks.SubagentPlugin(collector),
-            pluginContext = PluginRegistry.backgroundContext(),
-        )
-        val names = engine.toolNames().toSet()
-        assertTrue("propose_action" in names)
-        assertTrue("search_sessions" in names)
-        listOf("remember", "forget_memory", "revise_memory", "create_reminder", "create_goal", "update_task", "start_task", "ask_user")
-            .forEach { assertFalse("后台助手不该有 $it", it in names) }
-        assertTrue(engine.systemInstruction().contains("你现在是 Vana 派出去的后台助手"))
-    }
-
-    @Test
-    fun theSubagentBlockIsInTheStaticZoneAndIsFreeOfHealthWords() {
-        val collector = com.pinapia.vana.tasks.ProposalCollector()
-        val env = env(health = false)
-        val engine = CloudEngine(
-            providerId = "deepseek", model = "deepseek-chat", apiKey = "sk-test",
-            plugins = PluginRegistry.agentPlugins(env, PluginRoute.BACKGROUND) + com.pinapia.vana.tasks.SubagentPlugin(collector),
-            pluginContext = PluginRegistry.backgroundContext(),
-        )
-        val text = engine.systemInstruction()
-        assertTrue("角色说明排在易变快照之前", text.indexOf("后台助手") < text.indexOf("今天是"))
-        assertTrue(healthWords.none { engine.everythingTheModelReads().contains(it) })
+    fun noRouteOffersToHandWorkOffToABackgroundHelper() {
+        for (route in PluginRoute.entries) {
+            for (private in listOf(false, true)) {
+                val engine = engine(env(), route = route, isPrivate = private)
+                assertFalse("start_task" in engine.toolNames())
+                assertFalse("propose_action" in engine.toolNames())
+                val text = engine.everythingTheModelReads()
+                assertFalse(text.contains("后台助手"))
+                assertFalse(text.contains("start_task"))
+            }
+        }
+        val list = engine(env()).toolDefinitions().first { it.name == "list_tasks" }
+        assertFalse("list_tasks 不再列 job", list.inputSchema.toString().contains("job"))
     }
 
     @Test

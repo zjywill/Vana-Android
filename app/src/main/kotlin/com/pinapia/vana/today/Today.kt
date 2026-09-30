@@ -35,7 +35,7 @@ data class TodayCard(
 )
 
 /** 卡片是哪一类。决定那一行图标的颜色和那两个字,不影响排序(排序看 `priority`)。和 iOS 同一套。 */
-enum class TodayKind { REMINDER, OVERDUE, NEEDS_YOU, RUNNING, GOAL, FOLLOW_UP, MEDICATION }
+enum class TodayKind { REMINDER, OVERDUE, GOAL, FOLLOW_UP, MEDICATION }
 
 /** 各插件拼卡片要看的那点本机数据。 */
 class TodayContext(
@@ -49,22 +49,18 @@ class TodayContext(
 
 object TodayPriority {
     const val OVERDUE_REMINDER = 90
-    const val NEEDS_YOU = 85
     const val DUE_TODAY_REMINDER = 75
     const val FOLLOW_UP_DUE = 70
-    const val RUNNING = 60
     const val GOAL = 40
 }
 
-/** 折叠时那一行:「今天 · 2 件待办 · 1 项进行中」。 */
+/** 折叠时那一行:「今天 · 1 条提醒 · 3 件其他」。 */
 object TodaySummary {
     fun line(cards: List<TodayCard>): String? {
         if (cards.isEmpty()) return null
         val reminders = cards.count { it.priority == TodayPriority.OVERDUE_REMINDER || it.priority == TodayPriority.DUE_TODAY_REMINDER }
-        val needsYou = cards.count { it.priority == TodayPriority.NEEDS_YOU }
-        val rest = cards.size - reminders - needsYou
+        val rest = cards.size - reminders
         val parts = buildList {
-            if (needsYou > 0) add("$needsYou 件等你确认")
             if (reminders > 0) add("$reminders 条提醒")
             if (rest > 0) add("$rest 件其他")
         }

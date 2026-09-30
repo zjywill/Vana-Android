@@ -113,7 +113,7 @@ data class ChatMessage(
 
         @SerialName("reminder") REMINDER,
 
-        /** 后台任务的结果(P5/P6)。 */
+        /** 后台任务的结果。后台任务(子 agent)2026-09-30 撤掉了,留着这一格是为了读得懂以前存下来的那几条。 */
         @SerialName("task") TASK,
 
         /** 侧聊的开头:从主对话里某一问一答接着聊,那一段原样带过来。只出现在侧聊里。 */

@@ -136,12 +136,10 @@ private fun TodayRow(card: TodayCard, onClick: () -> Unit) {
     }
 }
 
-/** 和 iOS 同一套颜色:过点红、到点橙、等你确认蓝、后台靛、目标绿、回头看青、用药紫。 */
+/** 和 iOS 同一套颜色:过点红、到点橙、目标绿、回头看青、用药紫。 */
 private fun TodayKind.tint(): Color = when (this) {
     TodayKind.OVERDUE -> Color(0xFFFF3B30)
     TodayKind.REMINDER -> Color(0xFFFF9500)
-    TodayKind.NEEDS_YOU -> Color(0xFF007AFF)
-    TodayKind.RUNNING -> Color(0xFF5856D6)
     TodayKind.GOAL -> Color(0xFF34C759)
     TodayKind.FOLLOW_UP -> Color(0xFF30B0C7)
     TodayKind.MEDICATION -> Color(0xFFAF52DE)
@@ -149,7 +147,7 @@ private fun TodayKind.tint(): Color = when (this) {
 
 private fun TodayKind.icon(): ImageVector = when (this) {
     TodayKind.OVERDUE, TodayKind.REMINDER, TodayKind.FOLLOW_UP -> VanaIcons.Clock
-    TodayKind.NEEDS_YOU, TodayKind.RUNNING, TodayKind.GOAL -> VanaIcons.CheckCircle
+    TodayKind.GOAL -> VanaIcons.CheckCircle
     TodayKind.MEDICATION -> VanaIcons.Beaker
 }
 
@@ -157,8 +155,6 @@ private fun TodayKind.icon(): ImageVector = when (this) {
 private fun TodayKind.label(): String = when (this) {
     TodayKind.OVERDUE -> uiText("已过点", "Overdue")
     TodayKind.REMINDER -> uiText("提醒事项", "Reminder")
-    TodayKind.NEEDS_YOU -> uiText("等你确认", "Waiting for you")
-    TodayKind.RUNNING -> uiText("后台在做", "Background task")
     TodayKind.GOAL -> uiText("在推进的目标", "Goal")
     TodayKind.FOLLOW_UP -> uiText("回头看", "Follow-up")
     TodayKind.MEDICATION -> uiText("用药回访", "Medication check-in")

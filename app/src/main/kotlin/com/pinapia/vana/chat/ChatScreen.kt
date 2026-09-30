@@ -99,8 +99,6 @@ import com.pinapia.vana.session.ChatMessage
 import com.pinapia.vana.session.TurnSegment
 import com.pinapia.vana.session.compactionSummary
 import com.pinapia.vana.session.foldedSpan
-import com.pinapia.vana.tasks.TaskCard
-import com.pinapia.vana.tasks.taskId
 import com.pinapia.vana.tenant.TenantScope
 import com.pinapia.vana.today.TodayAction
 import com.pinapia.vana.today.TodayStrip
@@ -1470,9 +1468,6 @@ private fun MessageBubble(
                     ExerciseCards(moves = exerciseLibrary.moves(exerciseIds))
                 }
                 message.toolCalls.forEach { call ->
-                    call.taskId?.let { TaskCard(taskId = it, onOpen = onOpenTask) }
-                }
-                message.toolCalls.forEach { call ->
                     val question = call.askQuestion ?: return@forEach
                     AskUserCard(
                         question = question,
@@ -1511,11 +1506,8 @@ private fun MessageBubble(
                             Text(uiText("重新回答", "Answer again"))
                         }
                     }
-                    message.refTaskId?.let { taskId ->
-                        TextButton(onClick = { onOpenTask(taskId) }) {
-                            Text(uiText("查看详情", "View details"))
-                        }
-                    }
+                    // 以前的后台任务结果(`Origin.TASK`)不再给「查看详情」:后台任务 2026-09-30 撤掉了,
+                    // 那条任务已经不显示,点进去只会是一页「找不到」。
                     when (sideChatMove) {
                         SideChatMove.CONTINUE_IN_SIDE_CHAT -> TextButton(onClick = onSideChatMove) {
                             Text(uiText("在侧聊里接着聊", "Continue in a side chat"))

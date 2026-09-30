@@ -69,7 +69,7 @@ object NotesVanaPlugin : VanaPlugin {
     }
 
     override fun agentPlugins(env: PluginEnvironment, route: PluginRoute): List<AgentPlugin> {
-        // 只前台挂:后台任务是只读、并且看不到笔记(它没有理由读用户的清单)。
+        // 只前台挂:后台那一路(待跟进回访)没有理由读用户的清单。
         if (route != PluginRoute.FOREGROUND) return emptyList()
         return listOfNotNull(env.noteStore?.let { NotesAgentPlugin(it) })
     }

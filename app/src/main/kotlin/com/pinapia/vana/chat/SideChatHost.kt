@@ -76,6 +76,16 @@ class SideChatHost : ViewModel() {
         return chat
     }
 
+    private val drafts = HashMap<String, String>()
+
+    /** 打开这条侧聊时替他在输入框里起个头(他看一眼再发,不自动发)。 */
+    fun stageDraft(id: String, text: String) {
+        drafts[id] = text
+    }
+
+    /** 取走起好的头。只取一次。 */
+    fun takeDraft(id: String): String? = drafts.remove(id)
+
     /** 手里的那一个(测试和界面看一眼,不改任何状态)。 */
     fun hosted(id: String): Hosted? = entries[id]?.chat
 

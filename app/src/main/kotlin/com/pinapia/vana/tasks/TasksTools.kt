@@ -31,8 +31,6 @@ class TasksEnvironment(
     val scheduling: ReminderScheduling = ReminderScheduling.none,
     val now: () -> Instant = { Clock.System.now() },
     val zone: ZoneId = ZoneId.systemDefault(),
-    /** 派后台任务的那一头。null 就不挂 `start_task`。 */
-    val jobs: JobControls? = null,
 )
 
 /**
@@ -134,15 +132,15 @@ object TasksTools {
 
     private fun listDefinition() = CapabilityDefinition(
         name = LIST,
-        description = "列出进行中的提醒、目标和任务，带短编号。要改或取消某一条之前先用它拿编号。",
+        description = "列出进行中的提醒和目标，带短编号。要改或取消某一条之前先用它拿编号。",
         inputSchema = schema(
-            mapOf("kind" to enumProp("只看某一种，默认全部", "all", "reminder", "goal", "job")),
+            mapOf("kind" to enumProp("只看某一种，默认全部", "all", "reminder", "goal")),
         ),
     )
 
     private fun updateTaskDefinition() = CapabilityDefinition(
         name = UPDATE_TASK,
-        description = "对一条提醒、目标或任务做：complete 完成、cancel 取消、reschedule 改期（只有提醒能改期，给 at 或 in_minutes）。按 list_tasks 给的短编号指到那一条。",
+        description = "对一条提醒或目标做：complete 完成、cancel 取消、reschedule 改期（只有提醒能改期，给 at 或 in_minutes）。按 list_tasks 给的短编号指到那一条。",
         inputSchema = schema(
             mapOf(
                 "id" to stringProp("短编号，来自 list_tasks"),
@@ -248,7 +246,6 @@ object TasksTools {
     private fun kindLabel(kind: TaskKind) = when (kind) {
         TaskKind.REMINDER -> "提醒"
         TaskKind.GOAL -> "目标"
-        TaskKind.JOB -> "任务"
     }
 
     private fun describeLine(task: Task, env: TasksEnvironment): String = when (task.kind) {
@@ -258,19 +255,15 @@ object TasksTools {
             "- ${task.handle} · $due$every · ${task.title}"
         }
         TaskKind.GOAL -> "- ${task.handle} · ${task.title} · ${planProgress(task)}"
-        TaskKind.JOB -> "- ${task.handle} · ${task.title} · ${statusLabel(task.status)}"
     }
 
     fun planProgress(task: Task): String =
         if (task.plan.isEmpty()) "还没有步骤" else "步骤 ${task.plan.count { it.done }}/${task.plan.size}"
 
     fun statusLabel(status: TaskStatus) = when (status) {
-        TaskStatus.PROPOSED -> "等你确认"
-        TaskStatus.QUEUED -> "排队中"
+        TaskStatus.QUEUED -> "还没到点"
         TaskStatus.RUNNING -> "进行中"
-        TaskStatus.NEEDS_YOU -> "需要你"
         TaskStatus.DONE -> "已完成"
-        TaskStatus.FAILED -> "失败了"
         TaskStatus.CANCELLED -> "已取消"
     }
 
@@ -278,13 +271,12 @@ object TasksTools {
         val kind = when (input?.get("kind")?.stringValue) {
             "reminder" -> TaskKind.REMINDER
             "goal" -> TaskKind.GOAL
-            "job" -> TaskKind.JOB
             else -> null
         }
         val active = env.store.active().filter { kind == null || it.kind == kind }
-        if (active.isEmpty()) return success("现在没有进行中的提醒、目标或任务。")
+        if (active.isEmpty()) return success("现在没有进行中的提醒或目标。")
         val lines = mutableListOf<String>()
-        for (group in listOf(TaskKind.REMINDER, TaskKind.GOAL, TaskKind.JOB)) {
+        for (group in listOf(TaskKind.REMINDER, TaskKind.GOAL)) {
             val items = active.filter { it.kind == group }
             if (items.isEmpty()) continue
             lines += "${kindLabel(group)}："

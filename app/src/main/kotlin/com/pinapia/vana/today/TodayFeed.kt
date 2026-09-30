@@ -41,7 +41,7 @@ object TodayCompute {
         )
     }
 
-    /** 顶栏角标:需要他现在看一眼的(要确认的任务、已过点或今天到点的提醒)。 */
+    /** 顶栏角标:需要他现在看一眼的(已过点或今天到点的提醒)。 */
     fun attention(cards: List<TodayCard>): Int =
         cards.count { it.priority >= TodayPriority.DUE_TODAY_REMINDER }
 }

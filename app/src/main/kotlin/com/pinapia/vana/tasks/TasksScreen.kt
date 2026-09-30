@@ -77,8 +77,8 @@ fun reminderLine(task: Task, env: TasksEnvironment): String {
 }
 
 /**
- * 「任务」页:进行中的提醒、目标、后台任务,加上最近做完的。
- * 提醒只发本地通知、不联网;目标是他自己长期在做的事;后台任务是他点了确认才会跑的。
+ * 「任务」页:进行中的提醒、目标,加上最近做完的。
+ * 提醒只发本地通知、不联网;目标是他自己长期在做的事。以前还有「后台任务」一节,2026-09-30 连同子 agent 撤掉了。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,7 +97,6 @@ fun TasksScreen(
 
     val reminders = tasks.filter { it.kind == TaskKind.REMINDER && it.isActive }.sortedBy { it.dueAt }
     val goals = tasks.filter { it.kind == TaskKind.GOAL && it.isActive }
-    val jobs = tasks.filter { it.kind == TaskKind.JOB && it.isActive }
     val finished = tasks.filter { !it.isActive }.sortedByDescending { it.updatedAt }.take(FINISHED_LIMIT)
 
     Scaffold(
@@ -139,7 +138,7 @@ fun TasksScreen(
         ) {
             item { NotificationBanner(hasReminders = reminders.isNotEmpty()) }
 
-            if (reminders.isEmpty() && goals.isEmpty() && jobs.isEmpty()) {
+            if (reminders.isEmpty() && goals.isEmpty()) {
                 item {
                     Text(
                         uiText("还没有要做的事", "Nothing on your list"),
@@ -154,17 +153,6 @@ fun TasksScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                    )
-                }
-            }
-
-            if (jobs.isNotEmpty()) {
-                item { SectionTitle(uiText("后台任务", "Background tasks")) }
-                items(jobs, key = { "job-${it.id}" }) { task ->
-                    TaskRow(
-                        title = task.title,
-                        subtitle = CoreToday.statusLabel(task.status),
-                        onClick = { onOpenTask(task.id) },
                     )
                 }
             }

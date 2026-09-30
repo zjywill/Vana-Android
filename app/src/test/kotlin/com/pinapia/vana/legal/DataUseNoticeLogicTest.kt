@@ -1,6 +1,7 @@
 package com.pinapia.vana.legal
 
 import java.util.Locale
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,5 +46,37 @@ class DataUseNoticeLogicTest {
                 )
             }
         }
+    }
+
+    /**
+     * 声明和行为对不上是合规这一块唯一的失败模式。后台任务(子 agent)2026-09-30 撤掉了:告知屏和隐私说明
+     * 中英两份都不能再许它,也都要说清侧聊各自发什么。隐私说明读的是打进包里的那两份原文件。
+     */
+    @Test
+    fun theNoticeAndBothPrivacyPoliciesDescribeSideChatsAndNoLongerPromiseBackgroundTasks() {
+        withLocale(Locale.SIMPLIFIED_CHINESE) {
+            val leaving = DataUseNotice.leaves.points.joinToString()
+            assertTrue(leaving.contains("侧聊"))
+            assertFalse(leaving.contains("后台任务"))
+        }
+        withLocale(Locale.ENGLISH) {
+            val leaving = DataUseNotice.leaves.points.joinToString()
+            assertTrue(leaving.contains("side chat"))
+            assertFalse(leaving.contains("ackground task"))
+        }
+
+        val zh = java.io.File("src/main/assets/PrivacyPolicy.html").readText()
+        assertTrue(zh.contains("<strong>侧聊。</strong>"))
+        assertTrue(zh.contains("一条持续的主对话，加上你自己开的侧聊"))
+        assertTrue(zh.contains("主对话和全部侧聊，含照片"))
+        assertFalse(zh.contains("后台任务"))
+        assertFalse(zh.contains("只读任务自动开始"))
+        assertFalse(zh.contains("每周回顾"))
+
+        val en = java.io.File("src/main/assets/PrivacyPolicy.en.html").readText()
+        assertTrue(en.contains("<strong>Side chats.</strong>"))
+        assertTrue(en.contains("one ongoing main conversation plus any side chats you open yourself"))
+        assertFalse(en.contains("ackground task"))
+        assertFalse(en.contains("Weekly review"))
     }
 }

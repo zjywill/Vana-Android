@@ -52,19 +52,21 @@ import com.pinapia.vana.plugins.PluginDetailScreen
 import com.pinapia.vana.plugins.PluginsScreen
 import com.pinapia.vana.settings.CloudCatalog
 import com.pinapia.vana.notes.NotesScreen
-import com.pinapia.vana.tasks.AppJobControls
-import com.pinapia.vana.tasks.LocalJobControls
 import com.pinapia.vana.tasks.LocalTasksEnvironment
 import com.pinapia.vana.tasks.ReminderScheduler
-import com.pinapia.vana.tasks.SubagentScheduler
 import com.pinapia.vana.tasks.TaskDetailScreen
 import com.pinapia.vana.tasks.TasksEnvironment
 import com.pinapia.vana.tasks.TasksScreen
 import com.pinapia.vana.tenant.TenantListScreen
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** 目标那条侧聊里替他起的头。放进输入框,他看一眼再发。 */
+private fun goalReviewPrompt(title: String): String =
+    L10n.text("回顾一下「$title」最近的进展，接下来该做什么？", "Let's look back at how \"$title\" has been going. What should I do next?")
 
 /** 插件页和「今天」卡片上的入口 id 对到路由。插件只说「是什么」,去哪儿由外壳定。 */
 private fun surfaceRoute(surfaceId: String): String? = when (surfaceId) {
@@ -117,16 +119,12 @@ fun VanaApp(
     LaunchedEffect(Unit) {
         CheckInScheduler.reschedule(app)
         ReminderScheduler.rescheduleAll(app)
-        SubagentScheduler.resume(app)
     }
 
-    val jobControls = remember { AppJobControls(app) }
-
-    /** 当前成员的提醒/目标存储,加上把提醒排到系统闹钟上的那一头、派后台任务的那一头。 */
+    /** 当前成员的提醒/目标存储,加上把提醒排到系统闹钟上的那一头。 */
     fun tasksEnvironment() = TasksEnvironment(
         store = TenantScope.currentStores.tasks,
         scheduling = ReminderScheduler.scheduling(app, TenantScope.current.id),
-        jobs = jobControls,
     )
 
     DisposableEffect(lifecycleOwner) {
@@ -134,7 +132,6 @@ fun VanaApp(
             if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_STOP) {
                 CheckInScheduler.reschedule(app)
                 ReminderScheduler.rescheduleAll(app)
-                SubagentScheduler.resume(app)
                 scope.launch {
                     BackgroundDigest.runIfDue(app)
                 }
@@ -183,34 +180,7 @@ fun VanaApp(
         sides = TenantScope.currentStores.sides,
     )
 
-    val pendingJobConsent by jobControls.pendingConsent.collectAsStateWithLifecycle()
-    pendingJobConsent?.let { pending ->
-        val providerName = CloudCatalog.providerName(pending.providerId)
-        AlertDialog(
-            onDismissRequest = jobControls::declineConsent,
-            title = { Text(uiText("发送给 $providerName？", "Send to $providerName?")) },
-            text = {
-                Text(
-                    uiText(
-                        "后台任务会把任务说明、它要用到的长期记忆和它搜到的内容，发送给第三方模型服务 $providerName 来完成，" +
-                            "由对方按它自己的隐私政策处理。这台设备上发给这家服务的请求只问这一次；换用其他服务时会再次询问。",
-                        "A background task sends its brief, the long-term memory it needs and what it finds to the third-party model " +
-                            "service $providerName, handled under its own privacy policy. On this device you will only be asked once " +
-                            "for this service; switching to another service will ask again.",
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = jobControls::confirmConsent) { Text(uiText("同意并开始", "Agree and Start")) }
-            },
-            dismissButton = {
-                TextButton(onClick = jobControls::declineConsent) { Text(uiText("取消", "Cancel")) }
-            },
-        )
-    }
-
     CompositionLocalProvider(
-        LocalJobControls provides jobControls,
         LocalTasksEnvironment provides remember(tenantId) { tasksEnvironment() },
     ) {
     NavHost(navController = navController, startDestination = start) {
@@ -301,6 +271,10 @@ fun VanaApp(
             // 宿主里还在写的那一个就接着用——同一个对象,不是重新读盘。
             val sideViewModel = remember(id) {
                 host.open(id) { HostedSideChat.make(chatFactory(sideChat = sideChat)) }.viewModel
+            }
+            // 从目标详情进来的:输入框里替他起个头。他已经打了字就不动。
+            LaunchedEffect(id) {
+                host.takeDraft(id)?.let { draft -> if (sideViewModel.input.value.isEmpty()) sideViewModel.setInput(draft) }
             }
             ChatScreen(
                 viewModel = sideViewModel,
@@ -396,10 +370,19 @@ fun VanaApp(
             )
         }
         composable(Routes.TASK) { entry ->
+            val host = sideChatHost(entry)
             TaskDetailScreen(
                 env = tasksEnvironment(),
                 taskId = entry.arguments?.getString("id").orEmpty(),
                 onBack = { navController.popBackStack() },
+                // 「在侧聊里聊这个目标」:同名的侧聊有了就接着用,输入框里替他起个头;任务页退到底下,返回回到主对话。
+                onDiscussGoal = { goal ->
+                    scope.launch {
+                        val chat = TenantScope.currentStores.sides.named(goal.title)
+                        host.stageDraft(chat.id, goalReviewPrompt(goal.title))
+                        navController.navigate(Routes.side(chat.id)) { popUpTo(Routes.CHAT) }
+                    }
+                },
             )
         }
         composable(Routes.MEMORY) {

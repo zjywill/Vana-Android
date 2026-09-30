@@ -5,8 +5,6 @@ import com.pinapia.vana.agentruntime.PluginContext
 import com.pinapia.vana.agentruntime.PluginTool
 import com.pinapia.vana.agentruntime.PromptBlock
 import com.pinapia.vana.agentruntime.ToolEffect
-import com.pinapia.vana.search.WebSearchTools
-import com.pinapia.vana.tasks.SubagentTools
 import com.pinapia.vana.tasks.TaskKind
 import com.pinapia.vana.tasks.TasksEnvironment
 import com.pinapia.vana.tasks.TasksTools
@@ -15,28 +13,17 @@ import com.pinapia.vana.tasks.TasksTools
  * 提醒、目标、现在几点。核心插件,任何 Vana 都带着。
  *
  * - 工具只有前台挂:后台派生用不到,也不该在用户不在场时替他设提醒。
+ * - 以前还有 `start_task`(派后台任务),2026-09-30 连同子 agent 撤掉了:独立的活由用户自己开侧聊。
  * - 进行中的目标(≤5 条,一行一个)**常驻 system 段**——以前「目标」是一条专属的会话线、名字才进 system 段;
  *   现在只有一条对话,模型随时知道他在推进什么。它排在易变那一片,目标一变只打掉尾巴。
  */
 class TasksPlugin(private val env: TasksEnvironment) : AgentPlugin {
     override val id = "tasks"
 
-    override fun tools(context: PluginContext): List<PluginTool> = buildList {
-        addAll(
-            PluginTool.from(TasksTools.registry(env)) { name ->
-                if (name in TasksTools.READ_TOOLS) setOf(ToolEffect.READ) else setOf(ToolEffect.WRITE_LOCAL)
-            },
-        )
-        // 派后台任务:放一张确认卡、要用户点了才跑,所以是写盘 + 要用户参与——
-        // 隐私会话(写盘)和后台路(没人在场)都不挂,后台助手因此不能再派后台助手。
-        if (env.jobs != null) {
-            addAll(
-                PluginTool.from(SubagentTools.startTaskRegistry(env)) {
-                    setOf(ToolEffect.WRITE_LOCAL, ToolEffect.NEEDS_USER)
-                },
-            )
+    override fun tools(context: PluginContext): List<PluginTool> =
+        PluginTool.from(TasksTools.registry(env)) { name ->
+            if (name in TasksTools.READ_TOOLS) setOf(ToolEffect.READ) else setOf(ToolEffect.WRITE_LOCAL)
         }
-    }
 
     override fun promptBlocks(context: PluginContext, mountedTools: Set<String>): List<PromptBlock> = buildList {
         if (TasksTools.CREATE_REMINDER in mountedTools) {
@@ -48,17 +35,6 @@ class TasksPlugin(private val env: TasksEnvironment) : AgentPlugin {
                         "它可能比设定的晚几分钟，不要承诺分秒不差。" +
                         "用户说想长期坚持某件事（备半马、学吉他、把作息调回来）时，可以问他要不要记成一个目标（${TasksTools.CREATE_GOAL}）；" +
                         "目标有进展或改了计划时用 ${TasksTools.UPDATE_GOAL} 记下。已经不做的提醒或目标，用 ${TasksTools.UPDATE_TASK} 完成或取消。",
-                ),
-            )
-        }
-        if (SubagentTools.START_TASK in mountedTools) {
-            val web = if (WebSearchTools.SEARCH_TOOL_NAME in mountedTools) "它能上网搜索；" else "它现在不能上网（没配搜索），只能用记忆和过往的对话；"
-            add(
-                PromptBlock(
-                    PromptOrder.GUIDE_JOBS,
-                    "遇到**独立的、要花几分钟**的事（比较几个方案、整理一个主题的资料、查一批信息），可以用 ${SubagentTools.START_TASK} 派给后台助手，" +
-                        "${web}它看不到这段对话，所以 brief 要写得自足。它会先给用户一张确认卡，他点了才跑，做完结果会出现在对话里。" +
-                        "一句话能答的、需要来回商量的、涉及他此刻感受的事，直接在对话里做，不要派。",
                 ),
             )
         }
