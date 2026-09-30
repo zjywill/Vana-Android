@@ -406,7 +406,7 @@ fun SettingsScreen(
             )
 
             HorizontalDivider()
-            // 「提醒」这个词留给任务页里的提醒,这一节只管每天早晚那两条。
+            // 「提醒」这个词留给「今天」页里的提醒,这一节只管每天早晚那两条。
             Text(uiText("每日 check-in", "Daily check-ins"), style = MaterialTheme.typography.titleMedium)
             SettingSwitch(uiText("每日 check-in", "Daily check-ins"), checkIns) { enabled ->
                 if (enabled) {

@@ -25,7 +25,7 @@ class TaskStore(
     private val file = File(directory, FILE_NAME)
     private val _revision = MutableStateFlow(0L)
 
-    /** 每次写入之后加一。界面(任务页、今天卡片)据此重读。 */
+    /** 每次写入之后加一。界面(「今天」页、任务详情、顶栏角标)据此重读。 */
     val revision: StateFlow<Long> = _revision.asStateFlow()
 
     private class Loaded(val tasks: List<Task>, val foreign: List<JsonElement>)

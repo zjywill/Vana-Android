@@ -100,8 +100,6 @@ import com.pinapia.vana.session.TurnSegment
 import com.pinapia.vana.session.compactionSummary
 import com.pinapia.vana.session.foldedSpan
 import com.pinapia.vana.tenant.TenantScope
-import com.pinapia.vana.today.TodayAction
-import com.pinapia.vana.today.TodayStrip
 import com.pinapia.vana.vision.AttachmentImporter
 import com.pinapia.vana.vision.ChatAttachment
 import com.pinapia.vana.vision.DraftAttachment
@@ -162,10 +160,8 @@ fun ChatScreen(
     onOpenPlugins: () -> Unit,
     /** 进「不留痕」浮层。浮层自己(ephemeral)没有这个入口。 */
     onOpenEphemeral: () -> Unit = {},
-    onOpenTasks: () -> Unit = {},
-    onOpenTask: (String) -> Unit = {},
-    /** 「今天」卡片上指向插件入口的那种(用药到期回访)。 */
-    onOpenSurface: (String) -> Unit = {},
+    /** 顶栏那颗 ☀:「今天」那一页。只有主对话有。 */
+    onOpenToday: () -> Unit = {},
     /** 「⋯ › 侧聊」。只有主对话有这个入口:侧聊里不能再开侧聊。 */
     onOpenSideChats: () -> Unit = {},
     /** 侧聊里按了「删除这条侧聊」并确认之后。 */
@@ -182,31 +178,12 @@ fun ChatScreen(
     val historyLoaded by viewModel.isHistoryLoaded.collectAsStateWithLifecycle()
     val hasOlderHistory by viewModel.hasOlderHistory.collectAsStateWithLifecycle()
     val focusMedication by viewModel.focusMedication.collectAsStateWithLifecycle()
-    val todayCards by viewModel.todayCards.collectAsStateWithLifecycle()
     val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
-    val todayAfterId by viewModel.todayAfterId.collectAsStateWithLifecycle()
     val sideChat by viewModel.sideChat.collectAsStateWithLifecycle()
     // 只为了「已带回主对话」那一下能重画:按完要看得见结果。
     val broughtBack by viewModel.broughtBack.collectAsStateWithLifecycle()
     var renamingSideChat by remember { mutableStateOf<String?>(null) }
     var confirmDeleteSideChat by remember { mutableStateOf(false) }
-    // 「今天」那张卡:本机数据拼的,不进线程、不进上下文。只在主对话里出(不留痕、侧聊都没有)。
-    val today: @Composable () -> Unit = {
-        if (viewModel.isMainThread) {
-            TodayStrip(
-                cards = todayCards,
-                onAction = { action ->
-                    when (action) {
-                        TodayAction.OpenTasks -> onOpenTasks()
-                        TodayAction.OpenMemory -> onOpenMemory()
-                        is TodayAction.OpenTask -> onOpenTask(action.id)
-                        is TodayAction.OpenSurface -> onOpenSurface(action.surfaceId)
-                        is TodayAction.Ask -> viewModel.send(action.prompt)
-                    }
-                },
-            )
-        }
-    }
     var pendingDeleteAssistantId by remember { mutableStateOf<String?>(null) }
     val input by viewModel.input.collectAsStateWithLifecycle()
     val isReplying by viewModel.isReplying.collectAsStateWithLifecycle()
@@ -377,17 +354,15 @@ fun ChatScreen(
     // 只在「最后一条」换了的时候回到底部(新消息、后台追加的消息):往前翻出更早的历史会让条数变多,
     // 那不该把用户拽回底部。打开 app 读完历史那一下直接落在末尾,不要从头一路动画滚过整条线程。
     var scrolledToEndOnce by remember { mutableStateOf(false) }
-    // 回到前台就是又打开了一次:「今天」挪到最新那条下面(下面那个 effect 跟着贴一次底)。
+    // 回到前台:离开的这段时间里可能有提醒过了点,顶栏那颗角标要跟上。
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        if (viewModel.isMainThread && !viewModel.isReplying.value) viewModel.pinTodayToLatest()
+        if (viewModel.isMainThread) viewModel.refreshToday()
     }
-    LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id, todayAfterId) {
+    LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id) {
         if (!historyLoaded) return@LaunchedEffect
         followOutput.value = true
         if (session.messages.isNotEmpty()) {
-            // 打开时线程是空的,「今天」那一项排在所有消息前面:最后一条的下标要往后挪一格。
-            // 只有主对话有那一项。
-            val last = session.messages.lastIndex + if (viewModel.isMainThread && todayAfterId == null) 1 else 0
+            val last = session.messages.lastIndex
             if (scrolledToEndOnce) {
                 listState.animateScrollToItem(last)
             } else {
@@ -458,7 +433,7 @@ fun ChatScreen(
                     },
                     actions = {
                       if (viewModel.isSideChat) {
-                        // 侧聊自己的「⋯」:改名、删除。没有「任务」、没有主菜单——侧聊里不能再开侧聊。
+                        // 侧聊自己的「⋯」:改名、删除。没有「今天」、没有主菜单——侧聊里不能再开侧聊。
                         Box {
                             IconButton(onClick = { showOverflowMenu = true }) {
                                 Icon(VanaIcons.EllipsisVertical, contentDescription = uiText("更多", "More"))
@@ -485,11 +460,20 @@ fun ChatScreen(
                         }
                       }
                       if (viewModel.isMainThread) {
-                        IconButton(onClick = onOpenTasks) {
+                        // 「今天」:今天要做的、之后的提醒、目标。角标是需要他看一眼的那几件(今天到点、已过点的提醒)。
+                        // 不放进对话那一列(见 `TodayScreen`),也不上底部导航栏:只有两个地方时撑不起一条。
+                        IconButton(onClick = onOpenToday) {
                             BadgedBox(
                                 badge = { if (attentionCount > 0) Badge { Text(attentionCount.toString()) } },
                             ) {
-                                Icon(VanaIcons.CheckCircle, contentDescription = uiText("任务", "Tasks"))
+                                Icon(
+                                    VanaIcons.Sun,
+                                    contentDescription = if (attentionCount > 0) {
+                                        uiText("今天，$attentionCount 件需要你看", "Today, $attentionCount need your attention")
+                                    } else {
+                                        uiText("今天", "Today")
+                                    },
+                                )
                             }
                         }
                         // 顶栏不再替某一个插件占位(以前是心形=测量、烧瓶=用药):
@@ -583,10 +567,6 @@ fun ChatScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            // 打开时线程是空的:「今天」排在最前面(那时候最前面就是最新的);之后说的话排在它下面。
-                            if (viewModel.isMainThread && historyLoaded && todayAfterId == null) {
-                                item(key = "today") { today() }
-                            }
                             // 侧聊的空白页不是主对话的首屏:欢迎卡、首屏建议都不出,只说一句这里是什么。
                             if (session.isEmpty && historyLoaded && viewModel.isSideChat) {
                                 item {
@@ -638,10 +618,7 @@ fun ChatScreen(
                                     onAnswerAsk = { callId, answer ->
                                         viewModel.answerAsk(message.id, callId, answer)
                                     },
-                                    onOpenTask = onOpenTask,
                                 )
-                                // 打开 app 那一刻的最新一条下面。之后说的话排在它下面,它不跟着挪。
-                                if (message.id == todayAfterId) today()
                               }
                             }
                         }
@@ -1289,7 +1266,6 @@ private fun MessageBubble(
     onOpenSettings: () -> Unit,
     onDelete: () -> Unit,
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
-    onOpenTask: (String) -> Unit = {},
     /** 这条能不能搬到另一条线上(在侧聊里接着聊 / 带回主对话)。 */
     sideChatMove: SideChatMove = SideChatMove.NONE,
     onSideChatMove: () -> Unit = {},

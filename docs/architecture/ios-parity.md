@@ -51,5 +51,5 @@ Android 先行做完了「日常 agent + 健康插件」这一轮（`daily-agent
 
 ## iOS 侧要新做的（Android 已有）
 
-`Task`/`TaskStore`、提醒调度、「今天」条、任务页与详情、
+`Task`/`TaskStore`、提醒调度、「今天」页（原来的「今天」条和任务页，2026-09-30 合成一页，这一步 iOS 先行）、任务详情、
 `fetch_url`、笔记与清单插件、线程存储与窗口（若 iOS 还是旧的会话列表）、`WindowPolicy`（纯逻辑，可直接对照 Android 的测试）。

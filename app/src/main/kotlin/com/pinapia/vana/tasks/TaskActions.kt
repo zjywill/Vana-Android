@@ -4,7 +4,7 @@ import com.pinapia.vana.ui.L10n
 import kotlinx.datetime.Instant
 
 /**
- * 用户在「任务」页上手动做的事。和模型那边的工具([TasksTools])守同一批上限——两条路进来的东西
+ * 用户在「今天」页和任务详情里手动做的事。和模型那边的工具([TasksTools])守同一批上限——两条路进来的东西
  * 在盘上长得一样,也一样会被闹钟排上。返回 null 表示成功,否则是要给用户看的原因。
  */
 object TaskActions {

@@ -155,7 +155,7 @@ interface VanaPlugin {
 
     fun suggestions(context: SuggestionContext): SuggestionSet = SuggestionSet(emptyList())
 
-    /** 这个插件想放进「今天」的卡片。只读本机数据,不发模型请求;关掉的插件不会被问到。 */
+    /** 这个插件想放进「今天」页的那几行。只读本机数据,不发模型请求;关掉的插件不会被问到。 */
     fun todayCards(context: TodayContext): List<TodayCard> = emptyList()
 
     /** 聊天里这个插件的工具调用怎么写成一行字(「查看了用药表」)。不认识的返回 null。 */

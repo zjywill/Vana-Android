@@ -6,9 +6,8 @@ import com.pinapia.vana.tasks.Task
 import java.time.ZoneId
 import kotlinx.datetime.Instant
 
-/** 点一张「今天」卡片该去哪儿/做什么。 */
+/** 点「今天」页上的一行该去哪儿/做什么。任务详情、插件入口在那一页上面推,替他问一句要回到对话去发。 */
 sealed interface TodayAction {
-    data object OpenTasks : TodayAction
     data class OpenTask(val id: String) : TodayAction
     data object OpenMemory : TodayAction
 
@@ -20,9 +19,11 @@ sealed interface TodayAction {
 }
 
 /**
- * 「今天」头上的一张卡。**由本机数据拼出来,一次模型调用都不发**——这是它和「让模型写一段早间简报」
+ * 「今天」页上的一行。**由本机数据拼出来,一次模型调用都不发**——这是它和「让模型写一段早间简报」
  * 的根本区别:天天打开天天付钱是不该的。谁贡献的([pluginId])、多重要([priority],大的在前)、
  * 点了去哪([action])。
+ *
+ * 目标不在这里:那一页的「目标」一节把进行中的整张列出来,这里再放两行就是同一件事摆两遍。
  */
 data class TodayCard(
     val id: String,
@@ -30,12 +31,18 @@ data class TodayCard(
     val priority: Int,
     val title: String,
     val body: String? = null,
-    val action: TodayAction = TodayAction.OpenTasks,
+    val action: TodayAction,
     val kind: TodayKind = TodayKind.REMINDER,
-)
+) {
+    /** 这一行指着的那条任务(今天到点的提醒)。「之后」那一节靠它去重,「完成」那颗按钮也靠它。 */
+    val taskId: String? get() = (action as? TodayAction.OpenTask)?.id
+}
 
-/** 卡片是哪一类。决定那一行图标的颜色和那两个字,不影响排序(排序看 `priority`)。和 iOS 同一套。 */
-enum class TodayKind { REMINDER, OVERDUE, GOAL, FOLLOW_UP, MEDICATION }
+/**
+ * 这一行是哪一类。决定那颗图标的颜色和那两个字,不影响排序(排序看 `priority`)。和 iOS 同一套。
+ * iOS 那边还有一类「现在的状况」(健康那一行,排在那一页的「现在」一节);Android 不读设备健康数据,没有这一类。
+ */
+enum class TodayKind { REMINDER, OVERDUE, FOLLOW_UP, MEDICATION }
 
 /** 各插件拼卡片要看的那点本机数据。 */
 class TodayContext(
@@ -51,19 +58,4 @@ object TodayPriority {
     const val OVERDUE_REMINDER = 90
     const val DUE_TODAY_REMINDER = 75
     const val FOLLOW_UP_DUE = 70
-    const val GOAL = 40
-}
-
-/** 折叠时那一行:「今天 · 1 条提醒 · 3 件其他」。 */
-object TodaySummary {
-    fun line(cards: List<TodayCard>): String? {
-        if (cards.isEmpty()) return null
-        val reminders = cards.count { it.priority == TodayPriority.OVERDUE_REMINDER || it.priority == TodayPriority.DUE_TODAY_REMINDER }
-        val rest = cards.size - reminders
-        val parts = buildList {
-            if (reminders > 0) add("$reminders 条提醒")
-            if (rest > 0) add("$rest 件其他")
-        }
-        return parts.joinToString(" · ")
-    }
 }

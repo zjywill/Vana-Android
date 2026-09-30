@@ -5,6 +5,7 @@ import com.pinapia.vana.memory.MemorySnapshot
 import com.pinapia.vana.plugins.PluginIds
 import com.pinapia.vana.plugins.PluginRegistry
 import com.pinapia.vana.tasks.Task
+import com.pinapia.vana.tasks.TaskKind
 import java.time.ZoneId
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -41,14 +42,26 @@ object TodayCompute {
         )
     }
 
-    /** 顶栏角标:需要他现在看一眼的(已过点或今天到点的提醒)。 */
+    /** 顶栏「今天」上的角标:需要他现在看一眼的(已过点或今天到点的提醒)。 */
     fun attention(cards: List<TodayCard>): Int =
         cards.count { it.priority >= TodayPriority.DUE_TODAY_REMINDER }
+
+    /**
+     * 「之后」那一节:还在排着、「今天要做」里没列过的提醒,按到点先后。
+     *
+     * **按卡片认,不按时间再算一遍**([TodayCard.taskId]):两处各算一次「今天结束在哪一刻」,过零点那一下
+     * 就会一条出现两遍或者一条都不见。
+     */
+    fun later(cards: List<TodayCard>, tasks: List<Task>): List<Task> {
+        val listed = cards.mapNotNullTo(HashSet()) { it.taskId }
+        return tasks.filter { it.kind == TaskKind.REMINDER && it.isActive && it.id !in listed }.sortedBy { it.dueAt }
+    }
 }
 
 /**
- * 「今天」的数据源:任务、记忆、用药任何一处变了,或者过了一分钟(提醒到点就该出现),就重算一遍。
- * 全是读本机文件,一次模型调用都不发。
+ * 「今天」的数据源:任务、记忆、用药任何一处变了,或者过了一分钟(提醒到点就该出现),就重算一遍;
+ * 打开「今天」那一页、回到前台时也各重算一次([refresh])。全是读本机文件,一次模型调用都不发。
+ * 归主对话的 view model 持有:顶栏那颗角标和「今天」那一页读的是同一份。
  */
 class TodayFeed(
     private val scope: CoroutineScope,

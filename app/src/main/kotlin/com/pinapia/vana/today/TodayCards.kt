@@ -1,7 +1,6 @@
 package com.pinapia.vana.today
 
 import com.pinapia.vana.tasks.ReminderRules
-import com.pinapia.vana.tasks.Task
 import com.pinapia.vana.tasks.TaskKind
 import com.pinapia.vana.tasks.TaskStatus
 import com.pinapia.vana.ui.L10n
@@ -10,12 +9,10 @@ import java.util.Locale
 private fun english(): Boolean = Locale.getDefault().language.equals("en", ignoreCase = true)
 
 /**
- * 核心贡献的「今天」卡片:到点/错过的提醒、在推进的目标、说好回头看的事。
- * 全部由本机数据拼出来,不调模型。
+ * 核心贡献的「今天」卡片:今天到点/错过的提醒、说好回头看的事。
+ * 全部由本机数据拼出来,不调模型。目标不出卡:那一页的「目标」一节整张列出来。
  */
 object CoreToday {
-    private const val MAX_GOAL_CARDS = 2
-
     fun cards(context: TodayContext): List<TodayCard> = buildList {
         val en = english()
         val endOfDay = ReminderRules.endOfDay(context.now, context.zone)
@@ -38,20 +35,6 @@ object CoreToday {
             )
         }
 
-        for (task in context.tasks.filter { it.kind == TaskKind.GOAL && it.isActive }.take(MAX_GOAL_CARDS)) {
-            add(
-                TodayCard(
-                    id = "goal-${task.id}",
-                    pluginId = "core",
-                    priority = TodayPriority.GOAL,
-                    title = task.title,
-                    body = goalProgress(task),
-                    action = TodayAction.OpenTask(task.id),
-                    kind = TodayKind.GOAL,
-                ),
-            )
-        }
-
         for (item in context.dueFollowUps.take(2)) {
             add(
                 TodayCard(
@@ -70,16 +53,6 @@ object CoreToday {
             )
         }
     }
-
-    private fun goalProgress(task: Task): String =
-        if (task.plan.isEmpty()) {
-            L10n.text("还没有步骤", "No steps yet")
-        } else {
-            L10n.text(
-                "步骤 ${task.plan.count { it.done }}/${task.plan.size}",
-                "Steps ${task.plan.count { it.done }}/${task.plan.size}",
-            )
-        }
 
     /** 界面上给状态一个标签。 */
     fun statusLabel(status: TaskStatus): String = when (status) {

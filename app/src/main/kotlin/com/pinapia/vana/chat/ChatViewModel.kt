@@ -135,7 +135,7 @@ class ChatViewModel(
     private val _historyLoaded = MutableStateFlow(ephemeral)
     val isHistoryLoaded: StateFlow<Boolean> = _historyLoaded.asStateFlow()
 
-    /** 「今天」头上的卡片。本机数据拼的,只在主对话里出(浮层、侧聊都没有)。 */
+    /** 「今天」页上的那几行。本机数据拼的,只在主对话上有(浮层、侧聊里没有那颗按钮)。 */
     private val todayFeed: TodayFeed? = tasksEnvironment?.takeIf { isMainThread }?.let { env ->
         TodayFeed(
             scope = viewModelScope,
@@ -147,22 +147,16 @@ class ChatViewModel(
     }
     val todayCards: StateFlow<List<TodayCard>> = todayFeed?.cards ?: MutableStateFlow(emptyList())
 
-    /**
-     * 「今天」那张卡排在哪条消息下面。**每次打开 app 时定一次**([pinTodayToLatest]):那一刻它是最新的一条;
-     * 之后说的话排在它下面,它不跟着往下挪。null 表示打开时线程是空的——排在最前面。
-     * 它只是屏幕上的一张卡,不进线程、不进上下文。
-     */
-    private val _todayAfterId = MutableStateFlow<String?>(null)
-    val todayAfterId: StateFlow<String?> = _todayAfterId.asStateFlow()
-
-    /** 打开 app(读完线程、或者回到前台)时调一次。排队中的不算——那几条 Vana 还没看到。 */
-    fun pinTodayToLatest() {
-        if (!isMainThread) return
-        _todayAfterId.value = _session.value.messages.lastOrNull { !it.isQueued }?.id
-    }
-
-    /** 顶栏「任务」上的角标:需要他看一眼的有几件。 */
+    /** 顶栏「今天」上的角标:需要他看一眼的有几件。 */
     val attentionCount: StateFlow<Int> = todayFeed?.attention ?: MutableStateFlow(0)
+
+    /**
+     * 重拼一次「今天」。打开那一页、回到前台时调:离开的这段时间里可能有提醒过了点,角标和那一页都要跟上,
+     * 不等下一次每分钟那一拍。
+     */
+    fun refreshToday() {
+        todayFeed?.refresh()
+    }
 
     private val _hasOlder = MutableStateFlow(false)
     val hasOlderHistory: StateFlow<Boolean> = _hasOlder.asStateFlow()
@@ -338,7 +332,6 @@ class ChatViewModel(
             val loaded = loadImagePayloads(_session.value.copy(messages = messages))
             // 读盘期间他要是已经发了话(极少),别把它盖掉。
             _session.update { current -> loaded.copy(messages = loaded.messages + current.messages) }
-            pinTodayToLatest()
             _historyLoaded.value = true
         }
     }

@@ -146,7 +146,7 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 - 现有插件：核心（记忆、召回、反问、搜索、读网页、位置、提醒/目标）、`NotesVanaPlugin`（笔记与清单，可关）、
   `HealthVanaPlugin`（可关，用药与测量另有子开关）。加新插件：`VanaPlugin`（名片 + 在某条路上贡献的
   `AgentPlugin`）注册进 `PluginRegistry.all`；开关兑现成「给不给 store」；提示词块排进 `PromptOrder` 对应的区间；
-  可选的还有 `todayCards`（「今天」卡片）、`welcomeBlurb`、`suggestions`、`toolLabel`、`memoryExclusions`。
+  可选的还有 `todayCards`（「今天」页上的行）、`welcomeBlurb`、`suggestions`、`toolLabel`、`memoryExclusions`。
 
 ## 提醒、目标、「今天」（`tasks/`、`today/`）
 
@@ -154,21 +154,30 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
   `GOAL`（用户长期在做的事，有步骤和进展记录）。取代了原来的「目标线」会话。以前的第三种 `JOB`（后台任务）撤掉之后，
   盘上那几条认不出 kind，原样留着、不再显示。
 - **目标详情里「在侧聊里聊这个目标」**取代原来的「每周回顾」：开一条以目标命名的侧聊（`SideChatStore.named`，同名的有了
-  就接着用），输入框里替他起个头（`SideChatHost.stageDraft`），他看一眼再发；任务页退到底下，返回回到主对话。
+  就接着用），输入框里替他起个头（`SideChatHost.stageDraft`），他看一眼再发；「今天」页退到底下，返回回到主对话。
 - **提醒到点不调模型**（`ReminderScheduler`）：`AlarmManager.setAndAllowWhileIdle`（**非精确**，不申请
   `SCHEDULE_EXACT_ALARM`——Play 对精确闹钟有类别限制，界面和工具回答都照实说「可能晚几分钟」）；响的时候发本地通知、
   往线程末尾追加一条 `Origin.REMINDER` 主动消息。重复提醒按**挂钟时间**推下一次（不是加 24 小时，夏令时不漂）。
   重启和每次打开 app 时 `rescheduleAll`；过点很久没响的补响一次并标明「错过的」。别让提醒去调模型。
 - **精确时间不进 system 段**（每分钟都变，会打掉缓存）：要知道几点就调 `get_current_time`。进行中的目标
   （≤5 个）常驻 system 段，排在易变的那一片。
-- **「今天」是本机数据拼出来的，一次模型调用都不发**（`TodayCompute`/`TodayFeed`）：核心贡献到点/过点的提醒、
-  目标、到期的待跟进；健康贡献到期的用药回访（`VanaPlugin.todayCards`，关掉的插件不被问）。
+- **「今天」是本机数据拼出来的，一次模型调用都不发**（`TodayCompute`/`TodayFeed`）：核心贡献今天到点/过点的提醒、
+  到期的待跟进；健康贡献到期的用药回访（`VanaPlugin.todayCards`，关掉的插件不被问）。
   天天打开天天付钱是不该的——别把它改成让模型写一段早间简报。
-- **「今天」是一张普通卡片，排在对话那一列里**（`TodayStrip`）：头上「今天 · 日期」，一件事一行，图标按
-  `TodayKind` 上色（和 iOS 同一套颜色），最多五行、多了指向任务页。**不折叠、不悬浮**——浮在顶上时对话从它底下
-  穿过去。**每次打开 app 时它是最新的一条**：排在那一刻最后一条消息下面（`ChatViewModel.todayAfterId`，读完线程、
-  `ON_START` 各定一次），之后说的话排在它下面；打开时线程是空的就排在最前面（这时贴底的下标要多挪一格）。
-  它只是屏幕上的一张卡，**不进线程、不进给模型的上下文**。
+- **「今天」是单独一页，不在对话那一列里**（`TodayScreen`，主对话顶栏那颗带角标的 ☀，导航目的地）。它和原来的
+  任务页合成了一页：「今天要做」（插件贡献的那几行，带类别小字）、「之后」（还没轮到今天的提醒）、「目标」、「最近完成」；
+  一行一个样子（按类别上色的圆 + 标题 + 一行进展），提醒那几行右边是「完成」。iOS 最上面还有一节「现在」（健康状况那一行），
+  Android 不读设备健康数据，没有这一节。为什么拿出来见 iOS `CLAUDE.md` 同名一节和方案 §7.4，这里记落地要守的几条：
+  - **别再把它放回对话里**。它说的是现在，对话那一列是发生过的事，线性的时间线上没有它的位置；为它写的贴底特例
+    （`todayAfterId`、贴底下标多挪一格）也一起删了。入口不上底部导航栏：只有两个地方时撑不起一条，还会一直压在输入框
+    底下。代价是打开 app 不再自动看见它，急的（今天到点、已过点的提醒）靠角标（`TodayCompute.attention`）兜住。
+  - **「之后」按卡片去重，不按时间再算一遍**（`TodayCard.taskId` → `TodayCompute.later`）：两处各算一次「今天结束在
+    哪一刻」，过零点那一下就会一条出现两遍或者一条都不见。
+  - **目标不出卡**（「目标」一节整张列出来，再出一行就是同一件事摆两遍）；**条数不设上限**（今天到点的提醒少列一条，
+    就是那一页在说谎；回访那几类各插件自己限着）。
+  - 数据是主对话 view model 手里那份 `TodayFeed`（角标数的是同一份），那一页从返回栈上主对话那一项取它。任务详情、
+    用药、记忆页在那一页上面推；替他问一句（`TodayAction.Ask`）当场交给主对话发、再退回对话。打开那一页、回到前台
+    各重拼一次（`refreshToday`），不等每分钟那一拍。页脚照实说提醒可能晚几分钟（非精确闹钟），这句 iOS 没有。
 - 用户手动做的事和模型工具走同一批上限（`TaskActions` 对 `TasksTools`）：两条路进来的东西在盘上长得一样。
 
 ## 设置归哪儿（`SettingsScreen` / `PluginsScreen` / `PluginDetailScreen`）
@@ -240,8 +249,8 @@ plugins/      插件装配与插件页（`PluginRegistry`：哪条路挂哪些�
 memory/       长期记忆
 recall/       召回（读线程档案，`SideChatRecall` 算跨线程够得着哪些）与后台一轮（`BackgroundTurn`：待跟进回访）、`BackgroundModelWork` 那把锁
 search/       网页搜索、读网页（`FetchUrlPolicy`、`HtmlText`）
-tasks/        提醒/目标：`TaskStore`、`ReminderScheduler`、`TasksTools`、任务页与详情
-today/        「今天」：`TodayCompute`（纯函数）、`TodayFeed`、对话里那张 `TodayStrip`
+tasks/        提醒/目标：`TaskStore`、`ReminderScheduler`、`TasksTools`、任务详情、添加提醒/目标的对话框（`TaskEditors`）
+today/        「今天」：`TodayCompute`（纯函数）、`TodayFeed`、那一页 `TodayScreen`（合并了原来的任务页）
 notes/        笔记与清单
 session/      消息模型（`ChatMessage`；`ChatSession` 只是内存里那条线程末尾的一段视图）
 thread/       一条永远的对话：`ThreadStore` / `ThreadWriter` / `ThreadArchive` / `ThreadWindow`；侧聊 `SideChatStore`；`ConversationHistory`

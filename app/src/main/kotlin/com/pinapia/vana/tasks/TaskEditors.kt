@@ -5,51 +5,36 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.pinapia.vana.today.CoreToday
 import com.pinapia.vana.ui.L10n
-import com.pinapia.vana.ui.icons.VanaIcons
 import com.pinapia.vana.ui.uiText
 import java.time.Instant as JInstant
 import java.time.LocalDate
@@ -58,6 +43,11 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.util.Locale
 import kotlinx.datetime.Instant
+
+/*
+ * 提醒和目标的添加对话框、通知横幅、一行任务底下那句字。以前和「任务」页写在一起;那一页 2026-09-30 并进了
+ * 「今天」(`today/TodayScreen.kt`),这几样留在 tasks/ 里:它们说的是任务本身,和摆在哪一页无关。
+ */
 
 private fun english(): Boolean = Locale.getDefault().language.equals("en", ignoreCase = true)
 
@@ -76,217 +66,20 @@ fun reminderLine(task: Task, env: TasksEnvironment): String {
     return if (every.isEmpty()) when_ else "$when_ · $every"
 }
 
-/**
- * 「任务」页:进行中的提醒、目标,加上最近做完的。
- * 提醒只发本地通知、不联网;目标是他自己长期在做的事。以前还有「后台任务」一节,2026-09-30 连同子 agent 撤掉了。
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TasksScreen(
-    env: TasksEnvironment,
-    onOpenTask: (String) -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val revision by env.store.revision.collectAsState()
-    val tasks = remember(revision) { env.store.all() }
-    var addMenu by remember { mutableStateOf(false) }
-    var addingReminder by remember { mutableStateOf(false) }
-    var addingGoal by remember { mutableStateOf(false) }
-    var showFinished by remember { mutableStateOf(false) }
-
-    val reminders = tasks.filter { it.kind == TaskKind.REMINDER && it.isActive }.sortedBy { it.dueAt }
-    val goals = tasks.filter { it.kind == TaskKind.GOAL && it.isActive }
-    val finished = tasks.filter { !it.isActive }.sortedByDescending { it.updatedAt }.take(FINISHED_LIMIT)
-
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(uiText("任务", "Tasks")) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(VanaIcons.ArrowLeft, contentDescription = uiText("返回", "Back"))
-                    }
-                },
-                actions = {
-                    Column {
-                        IconButton(onClick = { addMenu = true }) {
-                            Icon(VanaIcons.Plus, contentDescription = uiText("添加", "Add"))
-                        }
-                        DropdownMenu(expanded = addMenu, onDismissRequest = { addMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text(uiText("新提醒", "New reminder")) },
-                                onClick = { addMenu = false; addingReminder = true },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(uiText("新目标", "New goal")) },
-                                onClick = { addMenu = false; addingGoal = true },
-                            )
-                        }
-                    }
-                },
-            )
-        },
-    ) { insets ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(insets)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            item { NotificationBanner(hasReminders = reminders.isNotEmpty()) }
-
-            if (reminders.isEmpty() && goals.isEmpty()) {
-                item {
-                    Text(
-                        uiText("还没有要做的事", "Nothing on your list"),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                    Text(
-                        uiText(
-                            "在对话里说「明天早上八点提醒我带伞」或「我想备战半马」，Vana 会替你记在这里；也可以点右上角的加号自己添加。",
-                            "Say “remind me to bring an umbrella tomorrow at 8” or “I'm training for a half marathon” in the chat, or tap + to add one yourself.",
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-                    )
-                }
-            }
-
-            if (reminders.isNotEmpty()) {
-                item { SectionTitle(uiText("提醒", "Reminders")) }
-                items(reminders, key = { "reminder-${it.id}" }) { task ->
-                    TaskRow(
-                        title = task.title,
-                        subtitle = reminderLine(task, env),
-                        onClick = { onOpenTask(task.id) },
-                        trailing = {
-                            IconButton(onClick = { TaskActions.complete(env, task.id) }) {
-                                Icon(VanaIcons.CheckCircle, contentDescription = uiText("完成", "Done"))
-                            }
-                        },
-                    )
-                }
-            }
-
-            if (goals.isNotEmpty()) {
-                item { SectionTitle(uiText("目标", "Goals")) }
-                items(goals, key = { "goal-${it.id}" }) { task ->
-                    TaskRow(
-                        title = task.title,
-                        subtitle = if (task.plan.isEmpty()) {
-                            uiText("还没有步骤", "No steps yet")
-                        } else {
-                            uiText(
-                                "步骤 ${task.plan.count { it.done }}/${task.plan.size}",
-                                "Steps ${task.plan.count { it.done }}/${task.plan.size}",
-                            )
-                        },
-                        onClick = { onOpenTask(task.id) },
-                    )
-                }
-            }
-
-            if (finished.isNotEmpty()) {
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    TextButton(onClick = { showFinished = !showFinished }) {
-                        Text(
-                            if (showFinished) uiText("收起最近完成的", "Hide recent") else uiText("最近完成的（${finished.size}）", "Recently finished (${finished.size})"),
-                        )
-                    }
-                }
-                if (showFinished) {
-                    items(finished, key = { "done-${it.id}" }) { task ->
-                        TaskRow(
-                            title = task.title,
-                            subtitle = CoreToday.statusLabel(task.status),
-                            muted = true,
-                            onClick = { onOpenTask(task.id) },
-                        )
-                    }
-                }
-            }
-
-            item {
-                Text(
-                    uiText(
-                        "提醒只在本机发通知，不联网；系统为了省电，可能比设定的时间晚几分钟。",
-                        "Reminders are local notifications only. To save battery, Android may deliver them a few minutes late.",
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            }
-        }
-    }
-
-    if (addingReminder) {
-        AddReminderDialog(
-            env = env,
-            onDismiss = { addingReminder = false },
+/** 目标一行的第二行字:「步骤 1/3」。 */
+fun goalProgress(task: Task): String =
+    if (task.plan.isEmpty()) {
+        L10n.text("还没有步骤", "No steps yet")
+    } else {
+        L10n.text(
+            "步骤 ${task.plan.count { it.done }}/${task.plan.size}",
+            "Steps ${task.plan.count { it.done }}/${task.plan.size}",
         )
     }
-    if (addingGoal) {
-        AddGoalDialog(
-            env = env,
-            onDismiss = { addingGoal = false },
-        )
-    }
-}
-
-private const val FINISHED_LIMIT = 15
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.padding(top = 16.dp, bottom = 2.dp),
-    )
-}
-
-@Composable
-private fun TaskRow(
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    muted: Boolean = false,
-    trailing: @Composable (() -> Unit)? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            )
-            if (subtitle.isNotEmpty()) {
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        trailing?.invoke()
-    }
-}
 
 /** 通知被关着,提醒就是设了也看不到——要在他设提醒的地方就说清,而不是等它没响。 */
 @Composable
-private fun NotificationBanner(hasReminders: Boolean) {
+fun NotificationBanner(hasReminders: Boolean) {
     val context = LocalContext.current
     var enabled by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -321,7 +114,7 @@ private enum class QuickTime { IN_HOUR, TONIGHT, TOMORROW_MORNING, CUSTOM }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddReminderDialog(env: TasksEnvironment, onDismiss: () -> Unit) {
+fun AddReminderDialog(env: TasksEnvironment, onDismiss: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var quick by remember { mutableStateOf(QuickTime.TONIGHT) }
     var custom by remember { mutableStateOf<LocalDateTime?>(null) }
@@ -464,7 +257,7 @@ private fun DateTimePickerDialog(
 }
 
 @Composable
-private fun AddGoalDialog(env: TasksEnvironment, onDismiss: () -> Unit) {
+fun AddGoalDialog(env: TasksEnvironment, onDismiss: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var why by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }

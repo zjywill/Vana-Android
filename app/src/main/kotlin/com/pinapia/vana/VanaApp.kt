@@ -56,9 +56,10 @@ import com.pinapia.vana.tasks.LocalTasksEnvironment
 import com.pinapia.vana.tasks.ReminderScheduler
 import com.pinapia.vana.tasks.TaskDetailScreen
 import com.pinapia.vana.tasks.TasksEnvironment
-import com.pinapia.vana.tasks.TasksScreen
 import com.pinapia.vana.tenant.TenantListScreen
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.today.TodayAction
+import com.pinapia.vana.today.TodayScreen
 import com.pinapia.vana.ui.L10n
 import com.pinapia.vana.ui.uiText
 import kotlinx.coroutines.delay
@@ -68,7 +69,7 @@ import kotlinx.coroutines.launch
 private fun goalReviewPrompt(title: String): String =
     L10n.text("回顾一下「$title」最近的进展，接下来该做什么？", "Let's look back at how \"$title\" has been going. What should I do next?")
 
-/** 插件页和「今天」卡片上的入口 id 对到路由。插件只说「是什么」,去哪儿由外壳定。 */
+/** 插件页和「今天」页上的入口 id 对到路由。插件只说「是什么」,去哪儿由外壳定。 */
 private fun surfaceRoute(surfaceId: String): String? = when (surfaceId) {
     PluginSurface.MEDICATIONS -> Routes.MEDICATIONS
     PluginSurface.MEASUREMENTS -> Routes.MEASUREMENTS
@@ -86,7 +87,7 @@ private object Routes {
     const val PLUGIN = "plugin/{id}"
     fun plugin(id: String) = "plugin/$id"
     const val NOTES = "notes"
-    const val TASKS = "tasks"
+    const val TODAY = "today"
     const val TASK = "task/{id}"
     fun task(id: String) = "task/$id"
     const val EPHEMERAL = "ephemeral"
@@ -229,9 +230,7 @@ fun VanaApp(
                     onOpenMemory = { navController.navigate(Routes.MEMORY) },
                     onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
                     onOpenEphemeral = { navController.navigate(Routes.EPHEMERAL) },
-                    onOpenTasks = { navController.navigate(Routes.TASKS) },
-                    onOpenTask = { navController.navigate(Routes.task(it)) },
-                    onOpenSurface = { surface -> surfaceRoute(surface)?.let { navController.navigate(it) } },
+                    onOpenToday = { navController.navigate(Routes.TODAY) },
                     onOpenSideChats = { navController.navigate(Routes.SIDES) },
                     onOpenSideChat = { navController.navigate(Routes.side(it.id)) },
                     sideChatsUnread = sideChatsUnread.isNotEmpty(),
@@ -282,8 +281,6 @@ fun VanaApp(
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenMemory = { navController.navigate(Routes.MEMORY) },
                 onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
-                onOpenTasks = { navController.navigate(Routes.TASKS) },
-                onOpenTask = { navController.navigate(Routes.task(it)) },
                 onDeleteSideChat = {
                     // 先停下、落盘,再按「名单 → 线程和照片 → 目录」的顺序删;界面当场关掉,不等。
                     val leaving = host.discard(id)
@@ -362,10 +359,31 @@ fun VanaApp(
                 onBack = { navController.popBackStack() },
             )
         }
-        composable(Routes.TASKS) {
-            TasksScreen(
+        composable(Routes.TODAY) { entry ->
+            // 「今天」读的是主对话手里那一份:顶栏那颗角标数的是同一份,替他问的那一句也要交给它去发。
+            val chatEntry = remember(entry) { navController.getBackStackEntry(Routes.CHAT) }
+            val chatViewModel: ChatViewModel = viewModel(
+                viewModelStoreOwner = chatEntry,
+                key = "chat-$tenantId",
+                factory = chatFactory(),
+            )
+            val cards by chatViewModel.todayCards.collectAsStateWithLifecycle()
+            TodayScreen(
                 env = tasksEnvironment(),
-                onOpenTask = { navController.navigate(Routes.task(it)) },
+                cards = cards,
+                onRefresh = chatViewModel::refreshToday,
+                onAction = { action ->
+                    when (action) {
+                        is TodayAction.OpenTask -> navController.navigate(Routes.task(action.id))
+                        TodayAction.OpenMemory -> navController.navigate(Routes.MEMORY)
+                        is TodayAction.OpenSurface -> surfaceRoute(action.surfaceId)?.let { navController.navigate(it) }
+                        // 替他问的那一句当场发,再退回对话:发送不用等这一页走,回到那一屏时回答已经在写了。
+                        is TodayAction.Ask -> {
+                            chatViewModel.send(action.prompt)
+                            navController.popBackStack(Routes.CHAT, inclusive = false)
+                        }
+                    }
+                },
                 onBack = { navController.popBackStack() },
             )
         }
@@ -375,7 +393,7 @@ fun VanaApp(
                 env = tasksEnvironment(),
                 taskId = entry.arguments?.getString("id").orEmpty(),
                 onBack = { navController.popBackStack() },
-                // 「在侧聊里聊这个目标」:同名的侧聊有了就接着用,输入框里替他起个头;任务页退到底下,返回回到主对话。
+                // 「在侧聊里聊这个目标」:同名的侧聊有了就接着用,输入框里替他起个头;「今天」页退到底下,返回回到主对话。
                 onDiscussGoal = { goal ->
                     scope.launch {
                         val chat = TenantScope.currentStores.sides.named(goal.title)
