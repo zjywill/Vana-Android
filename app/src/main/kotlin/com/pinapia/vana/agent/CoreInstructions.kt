@@ -1,5 +1,6 @@
 package com.pinapia.vana.agent
 
+import com.pinapia.vana.thread.SideChatTitle
 import com.pinapia.vana.ui.L10n
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -41,6 +42,23 @@ object CoreInstructions {
             - 例外只有一种：某段明说「用户同意把原图发给你」，那张图就真的在这条消息里，直接看图回答，不要再说你看不到图片。这只发生在用户自己同意的时候——多半是本机一个字都没认出来的那类，也可能是他特意要你看的那一张。**看得见图也只描述你看到的、给一般性的判断和下一步**，不要把它说成确定的鉴定结论。
             - 语气克制、清楚，不制造焦虑。
         """.trimIndent()
+
+    /**
+     * 侧聊里多说的那一段。不说的话,模型会把这里当成主对话:要么以为「刚才聊的」就在上面,要么答应
+     * 「到时候在这儿提醒你」——而提醒到点只进主对话。
+     *
+     * 名字是他起的(或者拿第一句话起的),一行、有长度上限([SideChatTitle])。还没起名时不写话题,
+     * 不拿「新侧聊」这三个字去误导模型。**不带任何领域词**:侧聊不属于哪个插件。
+     * 侧聊存在期间逐字不变(改名时变一次),排在静态区,不打缓存。
+     */
+    fun sideChat(title: String): String {
+        val topic = SideChatTitle.clean(title)
+        val opening = if (topic.isEmpty()) "这是一条侧聊。" else "这是一条侧聊，话题是「$topic」。"
+        return opening +
+            "用户把这件事从他和你的主对话里单独拿出来聊，好让它不挤占日常的那条对话。" +
+            "专心聊这件事。主对话里最近说的你在这里看不到，需要的背景他会说。" +
+            "提醒和目标照常能建，但提醒到点时出现在主对话里，不在这里。"
+    }
 
     /** 易变的一小段,单独成块。只到天,不到时分:精确时间走工具,不进 system 段。 */
     fun today(today: LocalDate = LocalDate.now()): String = "今天是 ${formatToday(today)}。"

@@ -137,6 +137,8 @@ class PromptAssemblyTest {
         route: PluginRoute = PluginRoute.FOREGROUND,
         isPrivate: Boolean = false,
         persona: AssistantPersona = AssistantPersona.BALANCED,
+        /** 在哪条侧聊里(它的名字)。null 是主对话。 */
+        sideChatTitle: String? = null,
     ): CloudEngine {
         val context: PluginContext = when (route) {
             PluginRoute.FOREGROUND -> PluginRegistry.foregroundContext(isPrivate = isPrivate)
@@ -149,6 +151,7 @@ class PromptAssemblyTest {
             plugins = PluginRegistry.agentPlugins(env, route),
             pluginContext = context,
             persona = persona,
+            sideChatTitle = sideChatTitle,
         )
     }
 
@@ -610,6 +613,39 @@ class PromptAssemblyTest {
         val corpus = engine(env()).everythingTheModelReads()
         val seen = healthWords.filter { corpus.contains(it) }
         assertTrue("健康开着时应当命中大量健康词，实际只有：$seen", seen.size >= 15)
+    }
+
+    // ================= 侧聊 =================
+
+    /**
+     * 侧聊说明只在侧聊里发,排在静态区(插话之后、人格之前、易变快照之前);还没起名时不写话题。
+     * 侧聊不属于哪个插件:健康关掉之后,侧聊里模型读到的东西照样一个健康词都没有。
+     */
+    @Test
+    fun theSideChatParagraphIsOnlySentInsideASideChatInTheStaticZone() {
+        val marker = "这是一条侧聊"
+        assertFalse(engine(env()).systemInstruction(acceptsInterjections = true).contains(marker))
+
+        val persona = AssistantPersona.COACH
+        val text = engine(env(), persona = persona, sideChatTitle = "十月去京都").systemInstruction(acceptsInterjections = true)
+        assertTrue(text.contains("话题是「十月去京都」"))
+        val order = listOf(
+            "用户可能在你查资料或回答的中途补一句", // 插话
+            marker, // 侧聊
+            persona.instruction, // 人格
+            "今天是", // 易变从这里开始
+        ).map { it to text.indexOf(it) }
+        order.forEach { (needle, index) -> assertTrue("缺少：$needle", index >= 0) }
+        assertEquals("侧聊说明排在插话之后、人格之前", order.map { it.second }.sorted(), order.map { it.second })
+
+        val untitled = engine(env(), sideChatTitle = "").systemInstruction()
+        assertTrue(untitled.contains(marker))
+        assertFalse(untitled.contains("话题是"))
+
+        assertNoHealthWords(
+            engine(env(health = false), sideChatTitle = "十月去京都").everythingTheModelReads(),
+            "侧聊",
+        )
     }
 
     @Test

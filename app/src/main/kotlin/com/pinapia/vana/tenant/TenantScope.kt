@@ -5,7 +5,9 @@ import com.pinapia.vana.measurements.MeasurementStore
 import com.pinapia.vana.memory.MemoryStore
 import com.pinapia.vana.notes.NoteStore
 import com.pinapia.vana.tasks.TaskStore
+import com.pinapia.vana.thread.ConversationHistory
 import com.pinapia.vana.thread.LegacySessions
+import com.pinapia.vana.thread.SideChatStore
 import com.pinapia.vana.thread.ThreadStore
 import com.pinapia.vana.thread.ThreadWriter
 import com.pinapia.vana.vision.AttachmentStore
@@ -22,8 +24,13 @@ data class TenantStores(
     val threadWriter: ThreadWriter,
     val tasks: TaskStore,
     val notes: NoteStore,
+    /** 侧聊:名单加每条一个线程目录。和主对话共用 [attachments]——删侧聊时照片跟着走。 */
+    val sides: SideChatStore,
 ) {
     constructor(root: File) : this(root, prepare(root))
+
+    /** 「设置 › 对话历史」的范围:主对话加全部侧聊。 */
+    val history: ConversationHistory by lazy { ConversationHistory(threadWriter, sides) }
 
     private constructor(root: File, attachments: AttachmentStore) : this(
         memory = MemoryStore(directory = root),
@@ -33,6 +40,7 @@ data class TenantStores(
         thread = ThreadStore(directory = File(root, "thread"), attachments = attachments),
         tasks = TaskStore(directory = root),
         notes = NoteStore(directory = root),
+        sides = SideChatStore.instance(File(root, SideChatStore.DIRECTORY_NAME), attachments),
     )
 
     private constructor(
@@ -43,7 +51,8 @@ data class TenantStores(
         thread: ThreadStore,
         tasks: TaskStore,
         notes: NoteStore,
-    ) : this(memory, medications, measurements, attachments, thread, ThreadWriter(thread), tasks, notes)
+        sides: SideChatStore,
+    ) : this(memory, medications, measurements, attachments, thread, ThreadWriter(thread), tasks, notes, sides)
 
     private companion object {
         /** 先清旧会话存储(只一次),再建照片仓库——顺序反了它会先把刚建好的目录当旧的删掉。 */

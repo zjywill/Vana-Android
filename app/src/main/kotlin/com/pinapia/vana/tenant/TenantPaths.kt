@@ -1,12 +1,14 @@
 package com.pinapia.vana.tenant
 
+import com.pinapia.vana.thread.SideChatStore
 import java.io.File
 import java.util.UUID
 
 /**
- * 每个成员一个目录:`filesDir/tenants/<uuid>/{thread,attachments,memory.json,medications.json,measurements.json,tasks.json,notes.json}`。
+ * 每个成员一个目录:`filesDir/tenants/<uuid>/{thread,sides,attachments,memory.json,medications.json,measurements.json,tasks.json,notes.json}`。
  *
- * 目录隔离,不是给每条记录加 tenantId。这份清单就是「隔离」的定义。
+ * 目录隔离,不是给每条记录加 tenantId。这份清单就是「隔离」的定义:漏了哪一样,那一样就不跟着成员走
+ * (建成员时不建、老布局迁移时不搬)。删成员是整个目录一起删。
  */
 object TenantPaths {
     const val ROOT_NAME = "tenants"
@@ -16,6 +18,7 @@ object TenantPaths {
 
     val perTenantItems = listOf(
         Item("thread", isDirectory = true),
+        Item(SideChatStore.DIRECTORY_NAME, isDirectory = true),
         Item("attachments", isDirectory = true),
         Item("memory.json", isDirectory = false),
         Item("medications.json", isDirectory = false),

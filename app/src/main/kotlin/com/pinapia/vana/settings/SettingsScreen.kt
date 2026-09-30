@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.pinapia.vana.BuildConfig
 import com.pinapia.vana.checkin.CheckInScheduler
 import com.pinapia.vana.location.LocationProvider
-import com.pinapia.vana.thread.ThreadWriter
+import com.pinapia.vana.thread.ConversationHistory
 import com.pinapia.vana.update.CheckForUpdatesRow
 import com.pinapia.vana.vision.PhotoImagePolicy
 import com.pinapia.vana.voice.VoiceDictation
@@ -67,7 +67,8 @@ fun SettingsScreen(
     engineSettings: EngineSettings,
     secureKeyStore: SecureKeyStore,
     locationProvider: LocationProvider,
-    threadWriter: ThreadWriter,
+    /** 「对话历史」的范围:这位成员的主对话加全部侧聊。 */
+    history: ConversationHistory,
     onBack: () -> Unit,
     onOpenMemory: () -> Unit,
     onOpenPlugins: () -> Unit,
@@ -91,10 +92,8 @@ fun SettingsScreen(
     var confirmClearChats by remember { mutableStateOf(false) }
     var confirmClearOld by remember { mutableStateOf(false) }
     var historyBytes by remember { mutableStateOf<Long?>(null) }
-    LaunchedEffect(threadWriter, confirmClearChats, confirmClearOld) {
-        historyBytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            threadWriter.write { it.sizeBytes() }
-        }
+    LaunchedEffect(history, confirmClearChats, confirmClearOld) {
+        historyBytes = history.sizeBytes()
     }
     var showProviders by remember { mutableStateOf(false) }
     var showModels by remember { mutableStateOf(false) }
@@ -328,10 +327,10 @@ fun SettingsScreen(
             )
             Text(
                 uiText(
-                    "Vana 只有这一条对话，打开就接着上次。更早的内容不会一直发给模型——它们留在本机，需要时才被翻出来。" +
-                        (historyBytes?.let { "目前占用 ${formatBytes(it)}。" } ?: ""),
-                    "Vana has a single conversation that picks up where you left off. Older content is not sent to the model every time; it stays on this device and is looked up when needed." +
-                        (historyBytes?.let { " Currently using ${formatBytes(it)}." } ?: ""),
+                    "Vana 只有一条主对话，打开就接着上次；另外还有你自己开的侧聊。更早的内容不会一直发给模型——它们留在本机，需要时才被翻出来。" +
+                        (historyBytes?.let { "主对话和侧聊目前一共占用 ${formatBytes(it)}。" } ?: ""),
+                    "Vana has one main conversation that picks up where you left off, plus any side chats you open. Older content is not sent to the model every time; it stays on this device and is looked up when needed." +
+                        (historyBytes?.let { " The main conversation and side chats currently use ${formatBytes(it)}." } ?: ""),
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -349,7 +348,10 @@ fun SettingsScreen(
                 Text(uiText("清空全部对话", "Clear all conversations"), color = MaterialTheme.colorScheme.error)
             }
             Text(
-                uiText("清除会删除本机保存的消息（连同其中的照片），无法撤销。", "Clearing permanently deletes messages saved on this device, along with their photos."),
+                uiText(
+                    "清除的范围包括侧聊，会删除本机保存的消息（连同其中的照片），无法撤销。单独删一条侧聊在「侧聊」页。",
+                    "Clearing includes side chats and permanently deletes messages saved on this device, along with their photos. To delete a single side chat, use the Side chats page.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -622,15 +624,18 @@ fun SettingsScreen(
             onDismissRequest = { confirmClearChats = false },
             title = { Text(uiText("清空全部对话？", "Clear all conversations?")) },
             text = {
-                Text(uiText("此操作会删除本机保存的所有消息，无法撤销。", "This permanently deletes every message saved on this device."))
+                Text(
+                    uiText(
+                        "主对话和全部侧聊里保存的消息、以及它们带的照片都会被删除，无法撤销。",
+                        "Every message in the main conversation and in all side chats, and their photos, will be deleted. This cannot be undone.",
+                    ),
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
                     confirmClearChats = false
                     scope.launch {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            threadWriter.write { it.deleteAll() }
-                        }
+                        history.clearAll()
                         onChatsCleared()
                     }
                 }) { Text(uiText("清空对话", "Clear conversations")) }
@@ -648,8 +653,8 @@ fun SettingsScreen(
             text = {
                 Text(
                     uiText(
-                        "30 天前的消息会从本机删掉（连同其中的照片），近 30 天的不动，无法撤销。",
-                        "Messages older than 30 days are deleted from this device along with their photos. Newer ones stay. This cannot be undone.",
+                        "主对话和侧聊里 30 天前的消息会从本机删掉（连同其中的照片），近 30 天的不动，无法撤销。整条都在 30 天前的侧聊会一起删掉。",
+                        "Messages older than 30 days in the main conversation and side chats are deleted from this device along with their photos. Newer ones stay. Side chats with nothing newer are removed. This cannot be undone.",
                     ),
                 )
             },
@@ -657,11 +662,7 @@ fun SettingsScreen(
                 TextButton(onClick = {
                     confirmClearOld = false
                     scope.launch {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            threadWriter.write {
-                                it.deleteOlderThan(kotlinx.datetime.Clock.System.now() - kotlin.time.Duration.parse("30d"))
-                            }
-                        }
+                        history.clearOlderThan(kotlinx.datetime.Clock.System.now() - kotlin.time.Duration.parse("30d"))
                         onChatsCleared()
                     }
                 }) { Text(uiText("清除", "Clear")) }

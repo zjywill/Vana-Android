@@ -81,11 +81,31 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew ...
 - **档案**（`ThreadArchive`）：进程内存里的索引，启动时后台扫一遍，之后靠 `ThreadStore.ChangeListener` 增量更新，
   不落盘。召回（`search_sessions` / `read_session`，工具名沿用旧的）**只在真的有原文滑出窗口时才挂**，只搜窗口之外的、
   只搜用户说过的话（精度重于广度）；短编号是消息 id 的散列，不是「第几条」。
-- **收割和窗口解耦**（`MemoryHarvester`）：线程 meta 里一个**水位线**，只喂水位线之后的消息，从最旧的开始按转写
+- **收割和窗口解耦**（`MemoryHarvester`）：每条线程 meta 里一个**水位线**（主对话那一路连全部侧聊一起收，记忆只有一份），只喂水位线之后的消息，从最旧的开始按转写
   字符数分块，抽完才推水位线；切到后台、空闲半小时、有原文滑出窗口时触发，走 `BackgroundModelWork` 那把锁，
   过 provider 同意的闸。失败即放弃、水位线不动。
 - **「不留痕」是浮层**（`ChatViewModel(ephemeral = true)`）：内存里聊，不读盘不写盘、不抽记忆，离开那一页就没了。
   隐私会话按写入路径定义的机制没变，只是换了载体。
+
+## 侧聊（`SideChatStore` / `ChatViewModel(sideChat = …)` / `SideChatListScreen`）
+
+设计和边界在方案 §16 和 iOS `CLAUDE.md` 的「侧聊」一节（**只有用户手动开**；主对话永远是家；窗口各管各的，
+记忆和档案共享）。Android 的落地差异记在 `daily-agent-plan.md` §16.10。改的时候容易踩的几条：
+
+- **盘上**：`<tenant>/sides/index.json`（名单）加每条一个 `<uuid>/`，和 `thread/` **同一格式**。`sides` 在
+  `TenantPaths.perTenantItems` 里——那份清单就是「隔离」的定义。
+- **一个 `sides/` 目录一个 `SideChatStore`（`instance`），一条侧聊一个 `ThreadWriter`（`writer(id)`）**：两个实例就是两个写者。
+  侧聊就是 `ChatViewModel(sideChat = …)` 接 `writer(id)`，插话、窗口、重试、同意闸全部原样；主对话专属的
+  「今天」、欢迎卡、首屏建议、check-in、快捷方式按 `isMainThread` 关。
+- **view model 没给 `sides` 时从主对话线程的目录推**（`SideChatStore.beside`），不指着 `TenantScope`：
+  「清空全部对话」连侧聊一起清，默认值指着真的那份的话，一条测试就能把真的侧聊全删了。
+- **照片仓库是成员名下所有线程共用的**：`ThreadStore.deleteAll()` 只删这条线程自己引用的照片；
+  要一张不留走 `ConversationHistory.clearAll()`（「对话历史」的三样都经它，范围是主对话加全部侧聊）。
+- **删的顺序是先落名单、再清线程（连照片）、最后删目录**；孤儿目录只在名单读懂、且没有 `index.json.bak` 时清。
+- **离开 = 返回栈上那一项被弹出**：返回键 / 返回箭头 / 删除显式调 `leaveSideChat()`，`onCleared()` 兜底。
+  离开时的落盘和收割在 `SideChatStore.launch` 里做——`onCleared` 时 `viewModelScope` 已经取消了。
+- **侧聊说明块**（`CoreInstructions.sideChat`，`PromptOrder.SIDE_CHAT = 25`）在静态区，名字在第一次请求**之前**定下来，
+  不带领域词（`PromptAssemblyTest` 盯着）。
 
 ## 插件（`AgentPlugin`，`:agent-runtime`）
 
@@ -222,7 +242,7 @@ tasks/        提醒/目标/后台任务：`TaskStore`、`ReminderScheduler`、`
 today/        「今天」：`TodayCompute`（纯函数）、`TodayFeed`、对话里那张 `TodayStrip`
 notes/        笔记与清单
 session/      消息模型（`ChatMessage`；`ChatSession` 只是内存里那条线程末尾的一段视图）
-thread/       一条永远的对话：`ThreadStore` / `ThreadWriter` / `ThreadArchive` / `ThreadWindow`
+thread/       一条永远的对话：`ThreadStore` / `ThreadWriter` / `ThreadArchive` / `ThreadWindow`；侧聊 `SideChatStore`；`ConversationHistory`
 settings/     设置页、ModelCapabilityTags、DeveloperScreen
 tenant/       家庭成员（数据目录隔离）
 vision/       拍照 / 选文件 / OCR / RecognizedTextLayout

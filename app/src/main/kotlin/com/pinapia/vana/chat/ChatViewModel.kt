@@ -37,6 +37,10 @@ import com.pinapia.vana.settings.SecureKeyStore
 import com.pinapia.vana.tasks.TasksEnvironment
 import com.pinapia.vana.tenant.Tenant
 import com.pinapia.vana.tenant.TenantScope
+import com.pinapia.vana.thread.ConversationHistory
+import com.pinapia.vana.thread.SideChat
+import com.pinapia.vana.thread.SideChatStore
+import com.pinapia.vana.thread.SideChatTitle
 import com.pinapia.vana.thread.ThreadWindow
 import com.pinapia.vana.today.TodayCard
 import com.pinapia.vana.today.TodayFeed
@@ -81,8 +85,12 @@ import android.view.Choreographer
  * - **收割**:记忆抽取按水位线做,和窗口解耦。
  *
  * [ephemeral] 是「不留痕」浮层:内存里聊,不读盘不写盘、不抽记忆、不启动任务,关了就没。
+ *
+ * 给了 `sideChat` 就是一条侧聊:同一个类型接另一条线程([SideChatStore.writer]),插话、排队、窗口、重试、
+ * hook、同意闸全部原样。主对话专属的那几样(「今天」、首屏、check-in、快捷方式)只在 [isMainThread] 上有。
  */
 class ChatViewModel(
+    /** 这位成员的主对话。侧聊的线程不从这里来,由 [sides] 给。 */
     private val threadWriter: ThreadWriter,
     private val engineSettings: EngineSettings,
     private val secureKeyStore: SecureKeyStore,
@@ -95,8 +103,26 @@ class ChatViewModel(
     /** 提醒、目标的存储和闹钟。浮层里没有。 */
     private val tasksEnvironment: TasksEnvironment? = null,
     val ephemeral: Boolean = false,
+    /** 给了就是那条侧聊。 */
+    sideChat: SideChat? = null,
+    /** 这位成员的侧聊名单。不给就用主对话旁边那份([SideChatStore.beside]),和线程永远是同一位成员的。 */
+    sides: SideChatStore? = null,
 ) : ViewModel() {
-    private val threadStore get() = threadWriter.store
+    /** 这位成员的侧聊名单。主对话拿它做两件事:收割时连侧聊一起收;「⋯ › 侧聊」那一页。 */
+    val sides: SideChatStore = sides ?: SideChatStore.beside(threadWriter.store)
+
+    private val _sideChat = MutableStateFlow(sideChat?.takeIf { !ephemeral })
+
+    /** 这是哪条侧聊。名字会被他改、会拿第一句话起,所以是个流。主对话和不留痕都是 null。 */
+    val sideChat: StateFlow<SideChat?> = _sideChat.asStateFlow()
+    val isSideChat: Boolean = _sideChat.value != null
+
+    /** 那条永远的对话本身。「今天」、首屏、check-in、快捷方式都只在这里。 */
+    val isMainThread: Boolean get() = !ephemeral && !isSideChat
+
+    /** 这一份对话实际读写的线程:主对话,或者这条侧聊自己的那一条(同一条永远是同一个写者)。 */
+    private val writer: ThreadWriter = _sideChat.value?.let { this.sides.writer(it.id) } ?: threadWriter
+    private val threadStore get() = writer.store
 
     private val _session = MutableStateFlow(ChatSession(id = THREAD_SESSION_ID, isPrivate = ephemeral))
     val session: StateFlow<ChatSession> = _session.asStateFlow()
@@ -105,8 +131,8 @@ class ChatViewModel(
     private val _historyLoaded = MutableStateFlow(ephemeral)
     val isHistoryLoaded: StateFlow<Boolean> = _historyLoaded.asStateFlow()
 
-    /** 「今天」头上的卡片。本机数据拼的,浮层里不出。 */
-    private val todayFeed: TodayFeed? = tasksEnvironment?.takeIf { !ephemeral }?.let { env ->
+    /** 「今天」头上的卡片。本机数据拼的,只在主对话里出(浮层、侧聊都没有)。 */
+    private val todayFeed: TodayFeed? = tasksEnvironment?.takeIf { isMainThread }?.let { env ->
         TodayFeed(
             scope = viewModelScope,
             loadTasks = { env.store.all() },
@@ -127,6 +153,7 @@ class ChatViewModel(
 
     /** 打开 app(读完线程、或者回到前台)时调一次。排队中的不算——那几条 Vana 还没看到。 */
     fun pinTodayToLatest() {
+        if (!isMainThread) return
         _todayAfterId.value = _session.value.messages.lastOrNull { !it.isQueued }?.id
     }
 
@@ -144,6 +171,7 @@ class ChatViewModel(
     private var loadingOlder = false
 
     /** 界面这一份已经同步给盘的 id。只删这里面有、列表里没了的,后台追加、界面还没读到的不会被误删。 */
+    @Volatile
     private var syncedIds: Set<String> = emptySet()
     private val dirtyIds = HashSet<String>()
     private val persistSignal = Channel<Unit>(Channel.CONFLATED)
@@ -188,8 +216,11 @@ class ChatViewModel(
     private var followUpHooks: AgentHookDispatcher? = null
     private var idleHarvestJob: Job? = null
 
+    /** 已经离开过这条侧聊了。返回键、删除、被快捷方式顶掉、被回收,几条路都会走到 [leaveSideChat]。 */
+    private var didLeaveSideChat = false
+
     private val harvester = MemoryHarvester(
-        writer = threadWriter,
+        writers = { if (isMainThread) listOf(writer) + this.sides.allWriters() else listOf(writer) },
         memory = TenantScope.currentStores.memory,
         settings = engineSettings,
         secureKeyStore = secureKeyStore,
@@ -257,13 +288,13 @@ class ChatViewModel(
             todayFeed?.start(
                 kotlinx.coroutines.flow.merge(
                     tasksEnvironment!!.store.revision,
-                    threadWriter.revision,
+                    writer.revision,
                 ),
             )
             loadInitialHistory()
             viewModelScope.launch {
                 // 后台来的主动消息(check-in、提醒、任务结果):等这一轮回复结束再并进列表。
-                threadWriter.revision.collect { if (it > 0) mergeBackgroundMessages() }
+                writer.revision.collect { if (it > 0) mergeBackgroundMessages() }
             }
         }
         viewModelScope.launch {
@@ -278,7 +309,7 @@ class ChatViewModel(
     private fun loadInitialHistory() {
         viewModelScope.launch {
             val (page, windowPos) = withContext(Dispatchers.IO) {
-                threadWriter.write { store -> store.loadTail() to store.meta().windowStartPos }
+                writer.write { store -> store.loadTail() to store.meta().windowStartPos }
             }
             var messages = page.messages
             var oldest = page.oldestSegment
@@ -288,7 +319,7 @@ class ChatViewModel(
                 while (hasOlder && messages.isNotEmpty() &&
                     (threadStore.positionOf(messages.first().id) ?: Double.MAX_VALUE) > windowPos
                 ) {
-                    val older = withContext(Dispatchers.IO) { threadWriter.write { it.loadOlder(oldest) } }
+                    val older = withContext(Dispatchers.IO) { writer.write { it.loadOlder(oldest) } }
                     messages = older.messages + messages
                     oldest = older.oldestSegment
                     hasOlder = older.hasOlder
@@ -314,7 +345,7 @@ class ChatViewModel(
         loadingOlder = true
         viewModelScope.launch {
             try {
-                val page = withContext(Dispatchers.IO) { threadWriter.write { it.loadOlder(oldestSegment) } }
+                val page = withContext(Dispatchers.IO) { writer.write { it.loadOlder(oldestSegment) } }
                 oldestSegment = page.oldestSegment
                 _hasOlder.value = page.hasOlder
                 if (page.messages.isNotEmpty()) {
@@ -334,7 +365,7 @@ class ChatViewModel(
         viewModelScope.launch {
             val lastPos = _session.value.messages.lastOrNull()?.let { threadStore.positionOf(it.id) }
             val fresh = withContext(Dispatchers.IO) {
-                threadWriter.write { it.messagesAfter(lastPos) }
+                writer.write { it.messagesAfter(lastPos) }
             }.map { it.second }.filter { it.id !in syncedIds }
             if (fresh.isEmpty()) return@launch
             syncedIds = syncedIds + fresh.map { it.id }
@@ -349,6 +380,9 @@ class ChatViewModel(
     }
 
     private suspend fun persistNow() {
+        // 这条侧聊已经被删了(从「设置 › 对话历史」清空全部时,它可能还在返回栈上):一个字都别写回去,
+        // 不然删掉的内容会作为一个孤儿目录又落回盘上。
+        _sideChat.value?.let { chat -> if (sides.get(chat.id) == null) return }
         // 还在写的助手消息如果还是个空壳,先不落盘——崩了留下一个空气泡比什么都没有更糟。
         val inFlightId = replyingMessageId.takeIf { _isReplying.value }
         val messages = _session.value.messages.filterNot { message ->
@@ -356,7 +390,7 @@ class ChatViewModel(
         }
         val dirty = synchronized(dirtyIds) { dirtyIds.toSet().also { dirtyIds.clear() } }
         val known = syncedIds
-        syncedIds = withContext(Dispatchers.IO) { threadWriter.write { it.sync(messages, dirty, known) } }
+        syncedIds = withContext(Dispatchers.IO) { writer.write { it.sync(messages, dirty, known) } }
     }
 
     /** 删掉这一条(连同它引用的、别处没在用的照片)。 */
@@ -380,12 +414,16 @@ class ChatViewModel(
         persist()
     }
 
-    /** 清空整条对话。设置里「对话历史」用。 */
+    /** 清空整条对话。主对话这一份连侧聊一起清——「清空全部对话」里的「全部」就是这个意思。 */
     fun clearHistory() {
         if (_isReplying.value) return
         stopReply()
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { threadWriter.write { it.deleteAll() } }
+            if (isMainThread) {
+                ConversationHistory(writer, sides).clearAll()
+            } else {
+                withContext(Dispatchers.IO) { writer.write { it.deleteAll() } }
+            }
             _session.value = ChatSession(id = THREAD_SESSION_ID, isPrivate = ephemeral)
             syncedIds = emptySet()
             dirtyIds.clear()
@@ -408,7 +446,8 @@ class ChatViewModel(
      */
     fun applyCheckIn(question: String?) {
         val text = question?.trim().orEmpty()
-        if (text.isEmpty() || ephemeral) return
+        // 主对话永远是家:check-in 只落在主对话里。
+        if (text.isEmpty() || !isMainThread) return
         val opener = ChatMessage(role = ChatMessage.Role.ASSISTANT, text = text, origin = ChatMessage.Origin.CHECK_IN)
         updateSession { copy(messages = messages + opener) }
         persist()
@@ -420,7 +459,7 @@ class ChatViewModel(
      */
     fun applyAskAndSend(question: String?) {
         val trimmed = question?.trim().orEmpty()
-        if (trimmed.isEmpty()) return
+        if (trimmed.isEmpty() || !isMainThread) return
         send(trimmed)
     }
 
@@ -502,9 +541,75 @@ class ChatViewModel(
         )
         updateSession { copy(messages = messages + user) }
         persist()
+        noteSideChatActivity(trimmed)
         if (!_isReplying.value) {
             startReply()
         }
+    }
+
+    // ------------------------------------------------------------------ 侧聊
+
+    /**
+     * 侧聊里说了一句话:名单按最近说过话排;还没起名的拿这句起名。
+     *
+     * 名字要在**这一轮请求发出去之前**定下来:侧聊说明块里带着它,先发一版没名字的、下一轮再换,等于白白
+     * 打掉一次 prompt 缓存。所以这里当场改内存里那一份,盘上那份由名单自己按同一条规则改
+     * ([SideChatStore.noteActivity]),在名单自己的作用域里做,他马上离开也不丢。
+     */
+    private fun noteSideChatActivity(text: String) {
+        val chat = _sideChat.value ?: return
+        val now = kotlinx.datetime.Clock.System.now()
+        val title = if (chat.autoTitled) SideChatTitle.make(text) else null
+        _sideChat.value = chat.copy(
+            lastActiveAt = now,
+            title = title ?: chat.title,
+            autoTitled = chat.autoTitled && title == null,
+        )
+        sides.launch { sides.noteActivity(chat.id, text, now) }
+    }
+
+    /** 他在侧聊里改了名字。 */
+    fun renameSideChat(title: String) {
+        val chat = _sideChat.value ?: return
+        _sideChat.value = chat.copy(title = SideChatTitle.clean(title), autoTitled = false)
+        sides.launch { sides.rename(chat.id, title) }
+    }
+
+    /**
+     * 离开这条侧聊(返回、删它、被快捷方式或 check-in 顶回主对话、被回收)。**正在写的回复停下**——等于按了
+     * 停止,已经写出来的留着;回来时接上同一个对象、让它接着写完是 S2 的事。离开时顺手收割一次:里面刚说的
+     * 那几句,主对话那边的收割要等到下一次切后台才轮得到。
+     *
+     * 标记是**当场**做的,落盘和收割在名单自己的作用域里做:这个 view model 马上就要被回收,它自己的
+     * `viewModelScope` 等不到写完。几条路会前后脚走到这儿,只有第一条算数。
+     *
+     * @param harvesting 要删这条侧聊时传 false:删完之后再去读它没有意义。
+     */
+    fun leaveSideChat(harvesting: Boolean = true): Job? {
+        if (!isSideChat || didLeaveSideChat) return null
+        didLeaveSideChat = true
+        stopReply()
+        idleHarvestJob?.cancel()
+        return sides.launch {
+            persistNow()
+            if (harvesting && _sideChat.value?.let { sides.get(it.id) } != null) harvester.runIfDue()
+        }
+    }
+
+    /** 在侧聊里按了「删除这条侧聊」:先让它停下、落盘,再按「名单 → 线程和照片 → 目录」的顺序删。 */
+    fun deleteSideChat(): Job? {
+        val chat = _sideChat.value ?: return null
+        val leaving = leaveSideChat(harvesting = false)
+        return sides.launch {
+            leaving?.join()
+            sides.delete(chat.id)
+        }
+    }
+
+    override fun onCleared() {
+        // 离开侧聊的最后一道:返回栈上这一项被弹掉了,不管是从哪条路。
+        leaveSideChat()
+        super.onCleared()
     }
 
     /** 他在点名确认的 dialog 上按了「同意并发送」:记下来,把刚才那句(还在输入框里)发出去。 */
@@ -938,7 +1043,7 @@ class ChatViewModel(
             isEnabled = engineSettings::isPluginEnabled,
             tenant = tenantProvider(),
             // 召回读整条线程的档案;只有真的有原文滑出了窗口,PluginRegistry 才会把它挂上。
-            archive = threadWriter.archive,
+            archive = writer.archive,
             hiddenBeforePos = ::hiddenBeforePos,
             memoryStore = stores.memory,
             memorySnapshot = memorySnapshotProvider,
@@ -970,6 +1075,7 @@ class ChatViewModel(
             thinkingEnabled = engineSettings.thinkingEnabled,
             persona = engineSettings.persona,
             hooks = followUpHooks(),
+            sideChatTitle = _sideChat.value?.title,
         )
     }
 
@@ -998,7 +1104,7 @@ class ChatViewModel(
      */
     private fun hiddenBeforePos(): Double? {
         if (ephemeral) return null
-        return windowStartId?.let { threadStore.positionOf(it) }?.takeIf { pos -> threadWriter.archive.hasRowsBefore(pos) }
+        return windowStartId?.let { threadStore.positionOf(it) }?.takeIf { pos -> writer.archive.hasRowsBefore(pos) }
     }
 
     private fun windowStartIndex(): Int =
@@ -1029,7 +1135,7 @@ class ChatViewModel(
         windowStartId = messages[newStart].id
         if (!ephemeral) {
             val pos = threadStore.positionOf(messages[newStart].id)
-            viewModelScope.launch { threadWriter.write { store -> store.updateMeta { it.copy(windowStartPos = pos) } } }
+            viewModelScope.launch { writer.write { store -> store.updateMeta { it.copy(windowStartPos = pos) } } }
             // 有原文要离开窗口了:趁这时候把还没抽过的收割一遍(不等它,也不因此阻塞这一轮)。
             harvestSoon()
         }
@@ -1125,6 +1231,8 @@ class ChatViewModel(
         private val measurementSnapshotProvider: () -> MeasurementSnapshot = { MeasurementSnapshot.empty },
         private val tasksEnvironment: TasksEnvironment? = null,
         private val ephemeral: Boolean = false,
+        private val sideChat: SideChat? = null,
+        private val sides: SideChatStore? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -1139,6 +1247,8 @@ class ChatViewModel(
                 measurementSnapshotProvider = measurementSnapshotProvider,
                 tasksEnvironment = tasksEnvironment,
                 ephemeral = ephemeral,
+                sideChat = sideChat,
+                sides = sides,
             ) as T
         }
     }

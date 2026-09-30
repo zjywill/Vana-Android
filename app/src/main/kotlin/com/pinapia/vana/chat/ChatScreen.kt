@@ -165,7 +165,11 @@ fun ChatScreen(
     onOpenTask: (String) -> Unit = {},
     /** 「今天」卡片上指向插件入口的那种(用药到期回访)。 */
     onOpenSurface: (String) -> Unit = {},
-    /** 只有浮层需要:退出并丢掉这一页里的全部内容。 */
+    /** 「⋯ › 侧聊」。只有主对话有这个入口:侧聊里不能再开侧聊。 */
+    onOpenSideChats: () -> Unit = {},
+    /** 侧聊里按了「删除这条侧聊」并确认之后。 */
+    onDeleteSideChat: () -> Unit = {},
+    /** 浮层和侧聊需要:退出这一页(浮层连同里面的全部内容)。 */
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -176,9 +180,12 @@ fun ChatScreen(
     val todayCards by viewModel.todayCards.collectAsStateWithLifecycle()
     val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
     val todayAfterId by viewModel.todayAfterId.collectAsStateWithLifecycle()
-    // 「今天」那张卡:本机数据拼的,不进线程、不进上下文。不留痕那一层里不出。
+    val sideChat by viewModel.sideChat.collectAsStateWithLifecycle()
+    var renamingSideChat by remember { mutableStateOf<String?>(null) }
+    var confirmDeleteSideChat by remember { mutableStateOf(false) }
+    // 「今天」那张卡:本机数据拼的,不进线程、不进上下文。只在主对话里出(不留痕、侧聊都没有)。
     val today: @Composable () -> Unit = {
-        if (!viewModel.ephemeral) {
+        if (viewModel.isMainThread) {
             TodayStrip(
                 cards = todayCards,
                 onAction = { action ->
@@ -365,14 +372,15 @@ fun ChatScreen(
     var scrolledToEndOnce by remember { mutableStateOf(false) }
     // 回到前台就是又打开了一次:「今天」挪到最新那条下面(下面那个 effect 跟着贴一次底)。
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        if (!viewModel.ephemeral && !viewModel.isReplying.value) viewModel.pinTodayToLatest()
+        if (viewModel.isMainThread && !viewModel.isReplying.value) viewModel.pinTodayToLatest()
     }
     LaunchedEffect(historyLoaded, session.messages.lastOrNull()?.id, todayAfterId) {
         if (!historyLoaded) return@LaunchedEffect
         followOutput.value = true
         if (session.messages.isNotEmpty()) {
             // 打开时线程是空的,「今天」那一项排在所有消息前面:最后一条的下标要往后挪一格。
-            val last = session.messages.lastIndex + if (todayAfterId == null) 1 else 0
+            // 只有主对话有那一项。
+            val last = session.messages.lastIndex + if (viewModel.isMainThread && todayAfterId == null) 1 else 0
             if (scrolledToEndOnce) {
                 listState.animateScrollToItem(last)
             } else {
@@ -414,10 +422,16 @@ fun ChatScreen(
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Vana")
+                            // 侧聊一直认得出是侧聊:标题写它的名字,副标题说它是什么(同「当前是谁」要一直在视线里)。
+                            Text(
+                                sideChat?.displayTitle ?: "Vana",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                             val subtitle = buildList {
                                 if (!TenantScope.current.isOwner) add(TenantScope.current.displayName)
                                 if (session.isPrivate) add(uiText("不留痕 · 关掉就没", "Off the record · gone when closed"))
+                                if (sideChat != null) add(uiText("侧聊", "Side chat"))
                             }.joinToString(" · ")
                             if (subtitle.isNotEmpty()) {
                                 Text(
@@ -436,7 +450,34 @@ fun ChatScreen(
                         }
                     },
                     actions = {
-                      if (!viewModel.ephemeral) {
+                      if (viewModel.isSideChat) {
+                        // 侧聊自己的「⋯」:改名、删除。没有「任务」、没有主菜单——侧聊里不能再开侧聊。
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(VanaIcons.EllipsisVertical, contentDescription = uiText("更多", "More"))
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(uiText("改名", "Rename")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        renamingSideChat = sideChat?.title.orEmpty()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(uiText("删除这条侧聊", "Delete this side chat"), color = MaterialTheme.colorScheme.error) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        confirmDeleteSideChat = true
+                                    },
+                                )
+                            }
+                        }
+                      }
+                      if (viewModel.isMainThread) {
                         IconButton(onClick = onOpenTasks) {
                             BadgedBox(
                                 badge = { if (attentionCount > 0) Badge { Text(attentionCount.toString()) } },
@@ -454,6 +495,13 @@ fun ChatScreen(
                                 expanded = showOverflowMenu,
                                 onDismissRequest = { showOverflowMenu = false },
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(uiText("侧聊", "Side chats")) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onOpenSideChats()
+                                    },
+                                )
                                 DropdownMenuItem(
                                     text = { Text(uiText("Vana 记住的事", "What Vana remembers")) },
                                     onClick = {
@@ -511,10 +559,15 @@ fun ChatScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             // 打开时线程是空的:「今天」排在最前面(那时候最前面就是最新的);之后说的话排在它下面。
-                            if (historyLoaded && todayAfterId == null) {
+                            if (viewModel.isMainThread && historyLoaded && todayAfterId == null) {
                                 item(key = "today") { today() }
                             }
-                            if (session.isEmpty && historyLoaded) {
+                            // 侧聊的空白页不是主对话的首屏:欢迎卡、首屏建议都不出,只说一句这里是什么。
+                            if (session.isEmpty && historyLoaded && viewModel.isSideChat) {
+                                item {
+                                    SideChatNote(setupGuidance = engineGuidance, onOpenSettings = onOpenSettings)
+                                }
+                            } else if (session.isEmpty && historyLoaded) {
                                 item {
                                     WelcomeCard(
                                         isOwner = TenantScope.current.isOwner,
@@ -703,6 +756,50 @@ fun ChatScreen(
                 }
             }
         }
+    }
+
+    renamingSideChat?.let { current ->
+        var text by remember { mutableStateOf(current) }
+        AlertDialog(
+            onDismissRequest = { renamingSideChat = null },
+            title = { Text(uiText("改名", "Rename")) },
+            text = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                    placeholder = { Text(sideChat?.displayTitle.orEmpty()) },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.renameSideChat(text)
+                    renamingSideChat = null
+                }) { Text(uiText("好", "OK")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingSideChat = null }) { Text(uiText("取消", "Cancel")) }
+            },
+        )
+    }
+
+    if (confirmDeleteSideChat) {
+        AlertDialog(
+            onDismissRequest = { confirmDeleteSideChat = false },
+            title = {
+                Text(uiText("删除「${sideChat?.displayTitle.orEmpty()}」？", "Delete \"${sideChat?.displayTitle.orEmpty()}\"?"))
+            },
+            text = { Text(SideChatCopy.deleteMessage) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDeleteSideChat = false
+                    onDeleteSideChat()
+                }) { Text(uiText("删除", "Delete"), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDeleteSideChat = false }) { Text(uiText("取消", "Cancel")) }
+            },
+        )
     }
 
     pendingDeleteAssistantId?.let { assistantId ->
@@ -1080,6 +1177,38 @@ private fun WelcomeCard(
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 侧聊空着时那一句。不是欢迎卡:他刚自己开了这条侧聊,知道这个 app 是什么;要说的只是这里和主对话是什么关系。
+ * 没配好模型时,配置提示也放在这里(主对话里它嵌在欢迎卡上)。
+ */
+@Composable
+private fun SideChatNote(setupGuidance: String?, onOpenSettings: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (!setupGuidance.isNullOrBlank()) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(setupGuidance, style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = onOpenSettings) { Text(uiText("去设置", "Open Settings")) }
+                }
+            }
+        }
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+            modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(uiText("侧聊", "Side chat"), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    SideChatCopy.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

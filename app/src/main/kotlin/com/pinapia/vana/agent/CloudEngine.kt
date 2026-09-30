@@ -33,6 +33,8 @@ class CloudEngine(
     private val persona: AssistantPersona = AssistantPersona.BALANCED,
     private val hooks: AgentHookDispatcher? = null,
     private val maxToolRounds: Int = DEFAULT_TOOL_ROUNDS,
+    /** 这一轮在哪条侧聊里(它的名字)。主对话、后台、不留痕都是 null。 */
+    private val sideChatTitle: String? = null,
 ) : AgentEngine {
     override val name: String = "云端模型"
 
@@ -113,7 +115,7 @@ class CloudEngine(
     }
 
     /**
-     * 引擎自己的几段。今天是易变的,排在最后那一片;其余是静态的。目标由任务插件贡献。
+     * 引擎自己的几段:身份与规则、插话、侧聊说明、人格(静态区),今天(易变区)。目标由任务插件贡献。
      * 成员身份(替家人问)不在这里:那是健康插件的事,由 `FamilyPlugin` 贡献。
      */
     private fun coreBlocks(acceptsInterjections: Boolean): List<PromptBlock> = buildList {
@@ -126,6 +128,9 @@ class CloudEngine(
                     "用户可能在你查资料或回答的中途补一句。那是接着当前话题说的，不要当成一个全新的问题从头讲一遍。",
                 ),
             )
+        }
+        if (sideChatTitle != null) {
+            add(PromptBlock(PromptOrder.SIDE_CHAT, CoreInstructions.sideChat(sideChatTitle)))
         }
         if (persona.instruction.isNotBlank()) {
             add(PromptBlock(PromptOrder.PERSONA, persona.instruction))
@@ -144,6 +149,7 @@ class CloudEngine(
             thinkingEnabled: Boolean,
             persona: AssistantPersona,
             hooks: AgentHookDispatcher? = null,
+            sideChatTitle: String? = null,
         ): CloudEngine {
             val normalized = ApiKeyNormalizer.normalize(secureKeyStore.apiKey)
             when {
@@ -162,6 +168,7 @@ class CloudEngine(
                 thinkingEnabled = thinkingEnabled,
                 persona = persona,
                 hooks = hooks,
+                sideChatTitle = sideChatTitle,
             )
         }
     }

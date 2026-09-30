@@ -22,7 +22,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.activity.compose.BackHandler
 import com.pinapia.vana.chat.ChatScreen
+import com.pinapia.vana.chat.SideChatListScreen
+import com.pinapia.vana.thread.SideChat
 import com.pinapia.vana.chat.ChatViewModel
 import com.pinapia.vana.checkin.CheckInScheduler
 import com.pinapia.vana.exercises.ExerciseLibrary
@@ -80,6 +83,9 @@ private object Routes {
     const val TASK = "task/{id}"
     fun task(id: String) = "task/$id"
     const val EPHEMERAL = "ephemeral"
+    const val SIDES = "sides"
+    const val SIDE = "side/{id}"
+    fun side(id: String) = "side/$id"
     const val MEDICATIONS = "medications"
     const val MEASUREMENTS = "measurements"
     const val TENANTS = "tenants"
@@ -139,6 +145,32 @@ fun VanaApp(
 
     val start = if (accepted) Routes.CHAT else Routes.NOTICE
 
+    // 主对话永远是家:快捷方式、check-in 都只落在主对话里。正开着侧聊(或侧聊列表)时先回到主对话,
+    // 不然那句话要等他自己退回来才发得出去。侧聊那一页被弹掉时,它的 view model 在 onCleared 里停下。
+    val pendingAsk by VanaLaunchRouter.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(checkInQuestion, pendingAsk) {
+        if (checkInQuestion == null && pendingAsk == null) return@LaunchedEffect
+        val route = navController.currentDestination?.route
+        if (route == Routes.SIDE || route == Routes.SIDES) {
+            navController.popBackStack(Routes.CHAT, inclusive = false)
+        }
+    }
+
+    fun chatFactory(ephemeral: Boolean = false, sideChat: SideChat? = null) = ChatViewModel.Factory(
+        threadWriter = TenantScope.currentStores.threadWriter,
+        engineSettings = app.engineSettings,
+        secureKeyStore = app.secureKeyStore,
+        locationProvider = app.locationProvider,
+        exerciseLibrary = exerciseLibrary,
+        memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
+        medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
+        measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
+        tasksEnvironment = tasksEnvironment(),
+        ephemeral = ephemeral,
+        sideChat = sideChat,
+        sides = TenantScope.currentStores.sides,
+    )
+
     val pendingJobConsent by jobControls.pendingConsent.collectAsStateWithLifecycle()
     pendingJobConsent?.let { pending ->
         val providerName = CloudCatalog.providerName(pending.providerId)
@@ -185,17 +217,7 @@ fun VanaApp(
             key(tenantId) {
                 val chatViewModel: ChatViewModel = viewModel(
                     key = "chat-$tenantId",
-                    factory = ChatViewModel.Factory(
-                        threadWriter = TenantScope.currentStores.threadWriter,
-                        engineSettings = app.engineSettings,
-                        secureKeyStore = app.secureKeyStore,
-                        locationProvider = app.locationProvider,
-                        exerciseLibrary = exerciseLibrary,
-                        memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
-                        medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
-                        measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
-                        tasksEnvironment = tasksEnvironment(),
-                    ),
+                    factory = chatFactory(),
                 )
                 LaunchedEffect(checkInQuestion) {
                     if (checkInQuestion != null) {
@@ -226,25 +248,65 @@ fun VanaApp(
                     onOpenTasks = { navController.navigate(Routes.TASKS) },
                     onOpenTask = { navController.navigate(Routes.task(it)) },
                     onOpenSurface = { surface -> surfaceRoute(surface)?.let { navController.navigate(it) } },
+                    onOpenSideChats = { navController.navigate(Routes.SIDES) },
                 )
             }
+        }
+        composable(Routes.SIDES) {
+            SideChatListScreen(
+                store = TenantScope.currentStores.sides,
+                tenant = TenantScope.current,
+                onOpen = { navController.navigate(Routes.side(it.id)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.SIDE) { entry ->
+            // 一条侧聊:另一个聊天 view model 接另一条线程。返回回到「⋯ › 侧聊」那一页。
+            val id = entry.arguments?.getString("id").orEmpty()
+            val sides = TenantScope.currentStores.sides
+            var lookedUp by remember(id) { mutableStateOf(false) }
+            var found by remember(id) { mutableStateOf<SideChat?>(null) }
+            LaunchedEffect(id) {
+                found = sides.get(id)
+                lookedUp = true
+            }
+            if (!lookedUp) return@composable
+            val sideChat = found
+            if (sideChat == null) {
+                // 名单上已经没有它了(刚被删):别开一条空的出来。
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+            val sideViewModel: ChatViewModel = viewModel(
+                key = "side-${TenantScope.current.id}-$id",
+                factory = chatFactory(sideChat = sideChat),
+            )
+            // 离开侧聊就停(等于按了停止,写出来的留着)。接着写完是 S2 的事。
+            val leave = {
+                sideViewModel.leaveSideChat()
+                navController.popBackStack()
+            }
+            BackHandler { leave() }
+            ChatScreen(
+                viewModel = sideViewModel,
+                exerciseLibrary = exerciseLibrary,
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenMemory = { navController.navigate(Routes.MEMORY) },
+                onOpenPlugins = { navController.navigate(Routes.PLUGINS) },
+                onOpenTasks = { navController.navigate(Routes.TASKS) },
+                onOpenTask = { navController.navigate(Routes.task(it)) },
+                onDeleteSideChat = {
+                    sideViewModel.deleteSideChat()
+                    navController.popBackStack()
+                },
+                onBack = { leave() },
+            )
         }
         composable(Routes.EPHEMERAL) {
             // 「不留痕」浮层:一个只活在内存里的聊天,离开这一页它的 ViewModel 就被回收,内容跟着没。
             val ephemeralViewModel: ChatViewModel = viewModel(
                 key = "ephemeral",
-                factory = ChatViewModel.Factory(
-                    threadWriter = TenantScope.currentStores.threadWriter,
-                    engineSettings = app.engineSettings,
-                    secureKeyStore = app.secureKeyStore,
-                    locationProvider = app.locationProvider,
-                    exerciseLibrary = exerciseLibrary,
-                    memorySnapshotProvider = { TenantScope.currentStores.memory.snapshot() },
-                    medicationSnapshotProvider = { TenantScope.currentStores.medications.snapshot() },
-                    measurementSnapshotProvider = { TenantScope.currentStores.measurements.snapshot() },
-                    tasksEnvironment = tasksEnvironment(),
-                    ephemeral = true,
-                ),
+                factory = chatFactory(ephemeral = true),
             )
             ChatScreen(
                 viewModel = ephemeralViewModel,
@@ -260,7 +322,7 @@ fun VanaApp(
                 engineSettings = app.engineSettings,
                 secureKeyStore = app.secureKeyStore,
                 locationProvider = app.locationProvider,
-                threadWriter = TenantScope.currentStores.threadWriter,
+                history = TenantScope.currentStores.history,
                 onBack = { navController.popBackStack() },
                 onOpenMemory = { navController.navigate(Routes.MEMORY) },
                 onOpenPlugins = { navController.navigate(Routes.PLUGINS) },

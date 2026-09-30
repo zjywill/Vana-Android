@@ -30,8 +30,10 @@ import kotlinx.serialization.json.Json
  * put/del 盖过,读旧段时按 [resolved] 跳过——所以它得一直记着已经见过哪些 id。
  */
 class ThreadStore(
-    private val directory: File,
-    private val attachments: AttachmentStore? = null,
+    /** 这条线程的目录。主对话是 `<成员>/thread`,侧聊是 `<成员>/sides/<uuid>`。 */
+    val directory: File,
+    /** 照片仓库。主对话和侧聊共用成员的那一个 `attachments/`。 */
+    val attachments: AttachmentStore? = null,
     private val json: Json = defaultJson,
 ) {
     /** 界面拿到的一页:按位置排好的消息,以及还有没有更早的。 */
@@ -275,15 +277,23 @@ class ThreadStore(
         doomed.size
     }
 
-    /** 清空整条线程(和它引用过的全部照片)。 */
+    /**
+     * 清空整条线程,连同**它自己**引用过的照片。
+     *
+     * 只删它引用的,不是整个 `attachments/`:照片仓库是成员名下所有线程共用的,删一条侧聊不能把
+     * 主对话里的照片一起带走。「清空全部对话」要的那种一张不留,由调用方在清完每一条线程之后自己
+     * 清仓库([ConversationHistory.clearAll])。
+     */
     fun deleteAll() = synchronized(lock) {
+        val photos = ArrayList<String>()
+        scan { _, message -> message.attachments.mapNotNullTo(photos) { it.imageFileName } }
         directory.listFiles()?.forEach { if (it.name != LEGACY_MARKER) it.delete() }
         positions.clear()
         resolved.clear()
         maxPos = 0.0
         currentIndex = 1
         currentRecords = 0
-        attachments?.removeAll()
+        if (photos.isNotEmpty()) attachments?.remove(photos.distinct())
         changeListener?.onCleared()
     }
 
@@ -307,6 +317,9 @@ class ThreadStore(
 
     private fun append(records: List<Rec>) {
         if (records.isEmpty()) return
+        // 侧聊删掉之后目录就没了。晚到的一次写不该让 app 崩掉:建回来,多出的是一个不在名单上的目录,
+        // 下次启动时由 `SideChatStore` 清掉。
+        if (!directory.exists()) directory.mkdirs()
         if (currentRecords >= SEGMENT_MAX_RECORDS) {
             currentIndex++
             currentRecords = 0
