@@ -306,7 +306,7 @@ iOS 2026-08-29 被判的那条,两边同一套修法,细节见 iOS `CLAUDE.md` �
 ## 约定
 
 - Compose only，不写 View/XML 界面（`themes.xml` 只管启动窗口到第一帧那一下；shortcuts / Manifest 除外）。
-- **辅助调用一律显式关掉思考**（首屏建议、追问 chip、抽记忆——凡是「让模型写几行短句」的）。
+- **辅助调用一律显式关掉思考**（首屏建议、抽记忆——凡是「让模型写几行短句」的）。
   留空不等于关：DeepSeek、Qwen、GLM、Gemini Flash 的默认是思考，而思考算进 output，
   一个 120 token 上限的请求会在写出正文之前用光预算。
 - Android 不连接设备健康数据；API key 只进 `EncryptedSharedPreferences`。

@@ -5,10 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pinapia.vana.agent.AgentError
 import com.pinapia.vana.agent.CloudEngine
-import com.pinapia.vana.agent.FollowUpSuggestionHook
 import com.pinapia.vana.agent.OpenAICompatibleModelClient
 import com.pinapia.vana.agent.UserFacingModelFailure
-import com.pinapia.vana.agentruntime.AgentHookDispatcher
 import com.pinapia.vana.agentruntime.AgentPendingInput
 import com.pinapia.vana.agentruntime.AgentTurnEvent
 import com.pinapia.vana.agentruntime.WindowPolicy
@@ -199,9 +197,6 @@ class ChatViewModel(
     private val _retryNotice = MutableStateFlow<String?>(null)
     val retryNotice: StateFlow<String?> = _retryNotice.asStateFlow()
 
-    private val _followUps = MutableStateFlow<List<String>>(emptyList())
-    val followUps: StateFlow<List<String>> = _followUps.asStateFlow()
-
     private val _draftAttachments = MutableStateFlow<List<DraftAttachment>>(emptyList())
     val draftAttachments: StateFlow<List<DraftAttachment>> = _draftAttachments.asStateFlow()
 
@@ -211,7 +206,6 @@ class ChatViewModel(
 
     private var replyJob: Job? = null
     private var replyingMessageId: String? = null
-    private var followUpHooks: AgentHookDispatcher? = null
     private var idleHarvestJob: Job? = null
 
     /** 已经离开过这条侧聊了。返回键、删除、被快捷方式顶掉、被回收,几条路都会走到 [leaveSideChat]。 */
@@ -428,7 +422,6 @@ class ChatViewModel(
             oldestSegment = Int.MAX_VALUE
             _hasOlder.value = false
             _focusMedication.value = null
-            resetFollowUps()
             _draftAttachments.value = emptyList()
         }
     }
@@ -523,7 +516,6 @@ class ChatViewModel(
             return
         }
         _input.value = ""
-        _followUps.value = emptyList()
         val persist = !ephemeral
         val store = TenantScope.currentStores.attachments
         val attachments = ready.map { draft ->
@@ -882,11 +874,6 @@ class ChatViewModel(
         _focusMedication.value = null
     }
 
-    private fun resetFollowUps() {
-        _followUps.value = emptyList()
-        followUpHooks = null
-    }
-
     private fun startReply() {
         if (_isReplying.value) return
         idleHarvestJob?.cancel()
@@ -1117,26 +1104,8 @@ class ChatViewModel(
             pluginContext = context,
             thinkingEnabled = engineSettings.thinkingEnabled,
             persona = engineSettings.persona,
-            hooks = followUpHooks(),
             sideChatTitle = _sideChat.value?.title,
         )
-    }
-
-    private fun followUpHooks(): AgentHookDispatcher {
-        followUpHooks?.let { return it }
-        val key = secureKeyStore.apiKey?.trim().orEmpty()
-        val hook = FollowUpSuggestionHook(
-            providerId = engineSettings.providerId,
-            model = engineSettings.model,
-            apiKey = key,
-            onSuggestions = { suggestions ->
-                if (_isReplying.value) return@FollowUpSuggestionHook
-                _followUps.value = suggestions
-            },
-        )
-        val dispatcher = AgentHookDispatcher(listOf(hook))
-        followUpHooks = dispatcher
-        return dispatcher
     }
 
     // ------------------------------------------------------------------ 召回够得着的别的线

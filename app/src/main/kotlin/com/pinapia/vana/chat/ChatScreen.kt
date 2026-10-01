@@ -89,7 +89,6 @@ import android.Manifest
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.ContextCompat
-import com.pinapia.vana.agent.FollowUpSuggester
 import com.pinapia.vana.ask.AskUserCard
 import com.pinapia.vana.ask.AskUserTools
 import com.pinapia.vana.exercises.ExerciseCards
@@ -189,7 +188,6 @@ fun ChatScreen(
     val isReplying by viewModel.isReplying.collectAsStateWithLifecycle()
     val engineGuidance by viewModel.engineGuidance.collectAsStateWithLifecycle()
     val retryNotice by viewModel.retryNotice.collectAsStateWithLifecycle()
-    val followUps by viewModel.followUps.collectAsStateWithLifecycle()
     val drafts by viewModel.draftAttachments.collectAsStateWithLifecycle()
     var showOverflowMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -713,14 +711,6 @@ fun ChatScreen(
                         enabled = !isReplying,
                         onQuestion = viewModel::send,
                         onClear = viewModel::clearFocus,
-                    )
-                }
-
-                if (!session.isEmpty) {
-                    FollowUpChips(
-                        chips = FollowUpSuggester.displayChips(followUps),
-                        enabled = !isReplying,
-                        onChip = viewModel::send,
                     )
                 }
 
