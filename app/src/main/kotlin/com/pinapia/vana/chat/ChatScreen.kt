@@ -10,7 +10,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
@@ -86,6 +88,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
+import android.content.ClipData
+import android.os.Build
+import android.widget.Toast
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.ContextCompat
@@ -599,7 +606,17 @@ fun ChatScreen(
                                     recovery = viewModel.errorRecovery(message.id),
                                     onRetry = { viewModel.retry(message.id) },
                                     onOpenSettings = onOpenSettings,
-                                    onDelete = { pendingDeleteAssistantId = message.id },
+                                    onDelete = {
+                                        // 用户那句删的也是一问一答:紧跟着的那条回答连它一起删。
+                                        pendingDeleteAssistantId = if (message.role == ChatMessage.Role.USER) {
+                                            session.messages.getOrNull(index + 1)
+                                                ?.takeIf { it.role == ChatMessage.Role.ASSISTANT }?.id
+                                        } else {
+                                            message.id
+                                        }
+                                    },
+                                    canDeleteUser = message.role == ChatMessage.Role.USER &&
+                                        session.messages.getOrNull(index + 1)?.role == ChatMessage.Role.ASSISTANT,
                                     sideChatMove = if (message.role == ChatMessage.Role.ASSISTANT) {
                                         // 读一下 broughtBack,让「已带回主对话」按完就重画。
                                         broughtBack.let { viewModel.sideChatMove(message) }
@@ -1242,6 +1259,7 @@ private suspend fun LazyListState.animateToConversationBottom(): Boolean {
     return true
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
@@ -1255,6 +1273,8 @@ private fun MessageBubble(
     onRetry: () -> Unit,
     onOpenSettings: () -> Unit,
     onDelete: () -> Unit,
+    /** 用户那句长按时给不给「删除」:后面紧跟着一条回答才有一问一答可删。 */
+    canDeleteUser: Boolean = false,
     onAnswerAsk: (String, com.pinapia.vana.ask.AskUserAnswer) -> Unit,
     /** 这条能不能搬到另一条线上(在侧聊里接着聊 / 带回主对话)。 */
     sideChatMove: SideChatMove = SideChatMove.NONE,
@@ -1288,15 +1308,54 @@ private fun MessageBubble(
             }
             if (isUser) {
                 if (message.text.isNotBlank()) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                    ) {
-                        Text(
-                            text = message.text,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        )
+                    var menu by remember(message.id) { mutableStateOf(false) }
+                    val clipboard = LocalClipboard.current
+                    val context = LocalContext.current
+                    val scope = rememberCoroutineScope()
+                    Box {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                            modifier = Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = { menu = true },
+                                onLongClickLabel = uiText("更多操作", "More actions"),
+                            ),
+                        ) {
+                            Text(
+                                text = message.text,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            )
+                        }
+                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(uiText("复制", "Copy")) },
+                                onClick = {
+                                    menu = false
+                                    // 复制的是他打的那句话,不带照片识别出来的文字(那些在附件里点得开)。
+                                    scope.launch {
+                                        clipboard.setClipEntry(
+                                            ClipEntry(ClipData.newPlainText("Vana", message.text)),
+                                        )
+                                    }
+                                    // Android 13 起系统自己会弹一条「已复制」,再弹一条就重了。
+                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                                        Toast.makeText(context, L10n.text(context, "已复制", "Copied"), Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                            )
+                            if (canDeleteUser) {
+                                DropdownMenuItem(
+                                    text = { Text(uiText("删除", "Delete")) },
+                                    enabled = !isReplying,
+                                    onClick = {
+                                        menu = false
+                                        onDelete()
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             } else {
